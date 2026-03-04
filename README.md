@@ -1,4 +1,4 @@
-# 🔐 Go Auth API
+# Go Auth API
 
 REST API Authentication dengan Fiber + PostgreSQL + JWT
 
