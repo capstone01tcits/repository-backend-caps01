@@ -17,6 +17,7 @@ services:
       - JWT_EXPIRE_HOURS=24
       - JWT_REFRESH_SECRET=change-this-refresh-secret
       - JWT_REFRESH_EXPIRE_HOURS=168
+      - AI_SERVICE_URL=http://ai-service:8000
     depends_on:
       postgres:
         condition: service_healthy

@@ -33,6 +33,7 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	authSvc := service.NewAuthService(userRepo)
 	authHandler := handler.NewAuthHandler(authSvc)
+	aiHandler := handler.NewAIHandler()
 
 	// Init Fiber
 	app := fiber.New(fiber.Config{
@@ -65,8 +66,13 @@ func main() {
 	// Protected routes
 	auth.Get("/me", middleware.Protected(), authHandler.GetProfile)
 
+	// AI Gateway routes (proxied to Python AI service)
+	ai := api.Group("/ai")
+	ai.Get("/health", aiHandler.HealthCheck)                     // Public: check AI service status
+	ai.All("/*", middleware.Protected(), aiHandler.Proxy)         // Protected: proxy all other AI requests
+
 	// Start server
 	addr := fmt.Sprintf(":%s", config.Cfg.AppPort)
-	fmt.Printf("🚀 Server running on http://localhost%s\n", addr)
+	fmt.Printf("✓ Server running on http://localhost%s\n", addr)
 	log.Fatal(app.Listen(addr))
 }

@@ -11,17 +11,18 @@ import (
 )
 
 type Config struct {
-	AppPort              string
-	AppEnv               string
-	DBHost               string
-	DBPort               string
-	DBUser               string
-	DBPassword           string
-	DBName               string
-	JWTSecret            string
-	JWTExpireHours       string
-	JWTRefreshSecret     string
+	AppPort               string
+	AppEnv                string
+	DBHost                string
+	DBPort                string
+	DBUser                string
+	DBPassword            string
+	DBName                string
+	JWTSecret             string
+	JWTExpireHours        string
+	JWTRefreshSecret      string
 	JWTRefreshExpireHours string
+	AIServiceURL          string
 }
 
 var Cfg Config
@@ -30,17 +31,18 @@ func Load() {
 	_ = godotenv.Load()
 
 	Cfg = Config{
-		AppPort:              getEnv("APP_PORT", "3000"),
-		AppEnv:               getEnv("APP_ENV", "development"),
-		DBHost:               getEnv("DB_HOST", "localhost"),
-		DBPort:               getEnv("DB_PORT", "5432"),
-		DBUser:               getEnv("DB_USER", "postgres"),
-		DBPassword:           getEnv("DB_PASSWORD", ""),
-		DBName:               getEnv("DB_NAME", "go_auth"),
-		JWTSecret:            getEnv("JWT_SECRET", "secret"),
-		JWTExpireHours:       getEnv("JWT_EXPIRE_HOURS", "24"),
-		JWTRefreshSecret:     getEnv("JWT_REFRESH_SECRET", "refresh_secret"),
+		AppPort:               getEnv("APP_PORT", "3000"),
+		AppEnv:                getEnv("APP_ENV", "development"),
+		DBHost:                getEnv("DB_HOST", "localhost"),
+		DBPort:                getEnv("DB_PORT", "5432"),
+		DBUser:                getEnv("DB_USER", "postgres"),
+		DBPassword:            getEnv("DB_PASSWORD", ""),
+		DBName:                getEnv("DB_NAME", "go_auth"),
+		JWTSecret:             getEnv("JWT_SECRET", "secret"),
+		JWTExpireHours:        getEnv("JWT_EXPIRE_HOURS", "24"),
+		JWTRefreshSecret:      getEnv("JWT_REFRESH_SECRET", "refresh_secret"),
 		JWTRefreshExpireHours: getEnv("JWT_REFRESH_EXPIRE_HOURS", "168"),
+		AIServiceURL:          getEnv("AI_SERVICE_URL", "http://localhost:8000"),
 	}
 }
 
