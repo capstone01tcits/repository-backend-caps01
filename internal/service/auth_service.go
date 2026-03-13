@@ -187,12 +187,12 @@ func (s *authService) RestoreAccount(refreshToken string) (*model.UserInfo, erro
 func (s *authService) generateTokenResponse(user *model.User) (*model.AuthResponse, error) {
 	userIDStr := user.ID.String()
 
-	accessToken, expiresIn, err := utils.GenerateAccessToken(userIDStr, user.Email)
+	accessToken, expiresIn, err := utils.GenerateAccessToken(userIDStr, user.Email, user.Role)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := utils.GenerateRefreshToken(userIDStr, user.Email)
+	refreshToken, err := utils.GenerateRefreshToken(userIDStr, user.Email, user.Role)
 	if err != nil {
 		return nil, err
 	}

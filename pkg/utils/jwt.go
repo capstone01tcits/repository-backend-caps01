@@ -13,17 +13,19 @@ import (
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
-	Type   string `json:"type"` // "access" or "refresh"
+	Role   string `json:"role"`      // user, admin
+	Type   string `json:"type"`      // "access" or "refresh"
 	jwt.RegisteredClaims
 }
 
-func GenerateAccessToken(userID, email string) (string, int64, error) {
+func GenerateAccessToken(userID, email, role string) (string, int64, error) {
 	hours, _ := strconv.Atoi(config.Cfg.JWTExpireHours)
 	expireTime := time.Now().Add(time.Duration(hours) * time.Hour)
 
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
+		Role:   role,
 		Type:   "access",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expireTime),
@@ -36,13 +38,14 @@ func GenerateAccessToken(userID, email string) (string, int64, error) {
 	return signed, expireTime.Unix(), err
 }
 
-func GenerateRefreshToken(userID, email string) (string, error) {
+func GenerateRefreshToken(userID, email, role string) (string, error) {
 	hours, _ := strconv.Atoi(config.Cfg.JWTRefreshExpireHours)
 	expireTime := time.Now().Add(time.Duration(hours) * time.Hour)
 
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
+		Role:   role,
 		Type:   "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expireTime),

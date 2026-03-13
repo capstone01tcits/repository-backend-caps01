@@ -154,7 +154,7 @@ func main() {
 	credits.Get("/", creditHandler.GetMyCredits)
 
 	// ==================== Admin Routes ====================
-	admin := api.Group("/admin", middleware.Protected())
+	admin := api.Group("/admin", middleware.Protected(), middleware.RequireRole("admin"))
 	admin.Post("/credits", creditHandler.AddCredits)
 
 	// ==================== AI Gateway Routes ====================

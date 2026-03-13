@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -30,17 +31,40 @@ var Cfg Config
 func Load() {
 	_ = godotenv.Load()
 
+	appEnv := getEnv("APP_ENV", "development")
+	jwtSecret := getEnv("JWT_SECRET", "")
+	jwtRefreshSecret := getEnv("JWT_REFRESH_SECRET", "")
+
+	// Validate JWT secrets
+	if jwtSecret == "" {
+		if appEnv == "production" {
+			log.Fatal("ERROR: JWT_SECRET must be set in production environment. Please set JWT_SECRET in .env")
+		}
+		jwtSecret = "dev-secret-change-in-production"
+		log.Println("WARNING: Using default JWT secret. Set JWT_SECRET in .env for production")
+	}
+
+	if jwtRefreshSecret == "" {
+		if appEnv == "production" {
+			log.Fatal("ERROR: JWT_REFRESH_SECRET must be set in production environment. Please set JWT_REFRESH_SECRET in .env")
+		}
+		jwtRefreshSecret = "dev-refresh-secret-change-in-production"
+		if appEnv != "production" {
+			log.Println("WARNING: Using default JWT refresh secret. Set JWT_REFRESH_SECRET in .env for production")
+		}
+	}
+
 	Cfg = Config{
 		AppPort:               getEnv("APP_PORT", "3000"),
-		AppEnv:                getEnv("APP_ENV", "development"),
+		AppEnv:                appEnv,
 		DBHost:                getEnv("DB_HOST", "localhost"),
 		DBPort:                getEnv("DB_PORT", "5432"),
 		DBUser:                getEnv("DB_USER", "postgres"),
 		DBPassword:            getEnv("DB_PASSWORD", ""),
 		DBName:                getEnv("DB_NAME", "go_auth"),
-		JWTSecret:             getEnv("JWT_SECRET", "secret"),
+		JWTSecret:             jwtSecret,
 		JWTExpireHours:        getEnv("JWT_EXPIRE_HOURS", "24"),
-		JWTRefreshSecret:      getEnv("JWT_REFRESH_SECRET", "refresh_secret"),
+		JWTRefreshSecret:      jwtRefreshSecret,
 		JWTRefreshExpireHours: getEnv("JWT_REFRESH_EXPIRE_HOURS", "168"),
 		AIServiceURL:          getEnv("AI_SERVICE_URL", "http://localhost:8000"),
 	}

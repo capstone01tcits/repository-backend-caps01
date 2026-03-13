@@ -28,7 +28,19 @@ func Protected() fiber.Handler {
 		// Store user info in context
 		c.Locals("userID", claims.UserID)
 		c.Locals("email", claims.Email)
+		c.Locals("role", claims.Role)
 
+		return c.Next()
+	}
+}
+
+// RequireRole middleware checks if user has required role
+func RequireRole(requiredRole string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role, ok := c.Locals("role").(string)
+		if !ok || role != requiredRole {
+			return utils.Unauthorized(c, "Insufficient permissions - admin role required")
+		}
 		return c.Next()
 	}
 }
