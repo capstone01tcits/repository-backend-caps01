@@ -334,13 +334,13 @@ curl http://localhost:3000/api/videos/{variant_id}/download \
 ```
 queued → processing → completed/failed
          ↓
-    Workers process scenes
-    ↓
-    Providers generate video
-    ↓
-    Polling tracks progress (60-sec intervals, 2-hour max)
-    ↓
-    Database updated with results
+        Workers process scenes
+         ↓
+        Providers generate video
+         ↓
+        Polling tracks progress (60-sec intervals, 2-hour max)
+         ↓
+        Database updated with results
 ```
 
 ### Credit Costs
