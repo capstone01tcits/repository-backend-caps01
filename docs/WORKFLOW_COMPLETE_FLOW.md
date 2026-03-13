@@ -1,6 +1,6 @@
 # Complete Workflow Flow - Register to Video Generation
 
-**Lengkap dari awal (Register) → hingga Video siap download dengan hasil!**
+**Complete flow from start (Register) until video ready for download!**
 
 ---
 
@@ -54,10 +54,10 @@ Content-Type: application/json
 ```
 
 ### Key Info to Save
-- ✅ `access_token` → Gunakan untuk semua request berikutnya
-- ✅ `refresh_token` → Untuk refresh token ketika expired
-- ✅ `user.id` → User ID
-- ✅ `user.credits` → **10 credits awal** (Rp 100.000 nilai)
+-  `access_token` → Gunakan untuk semua request berikutnya
+-  `refresh_token` → Untuk refresh token ketika expired
+-  `user.id` → User ID
+-  `user.credits` → 10 credits (default new user)
 
 ---
 
@@ -270,11 +270,9 @@ Content-Type: application/json
 }
 ```
 
-### Credit Update
-```
-Before: 10 credits
-After: 9 credits (-1 credit)
-```
+### Credits Used
+- Cost: 1 credit
+- User now has: 9 credits
 
 ### Save Variables
 ```
@@ -407,11 +405,9 @@ Content-Type: application/json
 }
 ```
 
-### Credit Update
-```
-Before: 9 credits
-After: 8 credits (-1 credit)
-```
+### Credits Used
+- Cost: 1 credit
+- User now has: 8 credits
 
 ### Save Variables
 ```
@@ -566,7 +562,7 @@ Authorization: Bearer {access_token}
 }
 ```
 
-#### T=90s (COMPLETED! ✅)
+#### T=90s (COMPLETED)
 ```json
 {
   "success": true,
@@ -599,7 +595,7 @@ GET /api/videos/storyboard/5ja7b810-9dad-11d1-80b4-00c04fd430c8
 Authorization: Bearer {access_token}
 ```
 
-### Response: 3 Video Variants ✅
+### Response: 3 Video Variants
 ```json
 {
   "success": true,
@@ -619,7 +615,6 @@ Authorization: Bearer {access_token}
       "model": "ltx-2-fast",
       "resolution": "1080p",
       "file_size": 52428800,
-      "credits_used": 40,
       "scenes": [
         {
           "id": "4sa7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -744,10 +739,10 @@ T=0:10     Create Project
 T=0:15     Create Business Brief
            ├─ Brief ID: 7ca7b810-...
            ├─ Target Audience: Profesional muda 25-40
-           └─ Budget: Rp 500 juta
+           └─ Company: PT Teknologi Indonesia
 
-T=0:20     Generate Content Pillars 💡 (1 credit)
-           ├─ Credits: 10 → 9
+T=0:20     Generate Content Pillars (1 credit)
+           ├─ Credits: 10 to 9
            ├─ Pillars: 3 variants
            │  ├─ Inovasi Produk
            │  ├─ Kepercayaan & Kredibilitas
@@ -757,10 +752,10 @@ T=0:20     Generate Content Pillars 💡 (1 credit)
 T=0:30     Select Content Pillar & Theme (0 credits)
            ├─ Selected: Inovasi Produk
            ├─ Theme: Product Features Showcase
-           └─ Credits: 9 (unchanged)
+           └─ Credits: 9 (no change)
 
-T=0:40     Generate Storyboards 📋 (1 credit)
-           ├─ Credits: 9 → 8
+T=0:40     Generate Storyboards (1 credit)
+           ├─ Credits: 9 to 8
            ├─ Storyboards: 3 variations
            │  ├─ Cinematic
            │  ├─ Vibrant
@@ -768,19 +763,19 @@ T=0:40     Generate Storyboards 📋 (1 credit)
            ├─ Scenes per storyboard: 3
            └─ Total duration per SB: 12 seconds
 
-T=0:50     Admin Top-up Credits ⬆️ (No cost)
+T=0:50     Admin Top-up Credits (0 credits)
            ├─ Added: 150 credits
-           └─ Credits: 8 → 158
+           └─ Credits: 8 to 158
 
-T=1:00     Generate Videos 🎥 (120 credits)
-           ├─ Credits: 158 → 38
+T=1:00     Generate Videos (120 credits)
+           ├─ Credits: 158 to 38
            ├─ Job started: queued
-           ├─ 3 Variants × 3 Scenes = 9 scenes total
+           ├─ 3 Variants x 3 Scenes = 9 scenes total
            ├─ Provider: LTX-2-Fast
            └─ Estimated time: ~90 seconds
 
 T=1:05     Poll Status (Every 5 sec)
-           ├─ Status: queued → processing
+           ├─ Status: queued to processing
            └─ Updated at each poll
 
 T=1:30     [ VIDEO GENERATION IN PROGRESS ]
@@ -790,38 +785,38 @@ T=1:30     [ VIDEO GENERATION IN PROGRESS ]
            └─ Credits Used: 80/120
 
 T=1:60     [ VIDEOS NEARLY COMPLETE ]
-           ├─ Variant 1 & 2: DONE ✅
+           ├─ Variant 1 & 2: DONE
            ├─ Variant 3: 80% complete
            └─ Credits Used: 110/120
 
-T=1:90     VIDEOS COMPLETE ✅✅✅
+T=1:90     VIDEOS COMPLETE
            ├─ Status: completed
            ├─ 3 Full Videos Ready
            │  ├─ Cinematic (52 MB)
            │  ├─ Vibrant (52 MB)
            │  └─ Professional (52 MB)
-           └─ Credits Final: 38 (Rp 380.000)
+           └─ Credits Final: 38
 
 T=2:00     Get All Variants
            ├─ Endpoint: /api/videos/storyboard/{id}
            ├─ Response: 3 videos with URLs
-           └─ Each video: 12 sec @ 1080p
+           └─ Each video: 12 sec at 1080p
 
-T=2:05     Download Cinematic ⬇️
+T=2:05     Download Cinematic
            ├─ URL: https://storage.example.com/videos/...mp4
            ├─ Size: 52 MB
            └─ Duration: 12 seconds
 
-T=2:10     Download Vibrant ⬇️
-           └─ 3 videos successfully downloaded!
+T=2:10     Download Vibrant
+           └─ 3 videos successfully downloaded
 
-T=2:15     Download Professional ⬇️
-           └─ Ready for use on social media
+T=2:15     Download Professional
+           └─ Ready for use
 
 T=2:20     [COMPLETE - READY TO USE]
            ├─ 3 video variants downloaded
            ├─ Credits remaining: 38
-           └─ Can regenerate or generate more!
+           └─ Can regenerate or generate more
 ```
 
 ---
