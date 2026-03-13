@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 
 	"go-auth/internal/model"
 	"go-auth/internal/repository"
@@ -61,13 +62,38 @@ func (s *videoService) GenerateVideo(userID string, req *model.GenerateVideoRequ
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
-	if user.Credits <= 0 {
-		return nil, errors.New("insufficient credits, please contact admin to add credits")
+
+	// Calculate total duration from storyboard scenes
+	totalDuration := 0
+	for _, scene := range storyboard.Scenes {
+		totalDuration += scene.Duration
 	}
 
-	// Deduct credit
-	user.Credits--
-	if err := s.userRepo.UpdateCredits(userID, user.Credits); err != nil {
+	// Determine provider and credits per second
+	provider := req.Provider
+	if provider == "" {
+		provider = "ltx-2-fast" // default provider
+	}
+
+	var creditsPerSecond int
+	switch provider {
+	case "ltx-2-pro":
+		creditsPerSecond = 3
+	case "open-source":
+		creditsPerSecond = 1
+	default: // ltx-2-fast
+		creditsPerSecond = 2
+	}
+
+	// Calculate required credits (3 variants per generation)
+	creditsNeeded := totalDuration * creditsPerSecond * 3
+	
+	if user.Credits < creditsNeeded {
+		return nil, errors.New(fmt.Sprintf("insufficient credits: need %d credits but you have %d", creditsNeeded, user.Credits))
+	}
+
+	// Deduct credits
+	if err := s.userRepo.UpdateCredits(userID, user.Credits-creditsNeeded); err != nil {
 		return nil, errors.New("failed to deduct credits")
 	}
 
@@ -87,12 +113,6 @@ func (s *videoService) GenerateVideo(userID string, req *model.GenerateVideoRequ
 		resolution = "1080p"
 	}
 
-	// Calculate total duration from storyboard scenes
-	totalDuration := 0
-	for _, scene := range storyboard.Scenes {
-		totalDuration += scene.Duration
-	}
-
 	video := &model.Video{
 		ProjectID:    pid,
 		UserID:       uid,
@@ -103,7 +123,7 @@ func (s *videoService) GenerateVideo(userID string, req *model.GenerateVideoRequ
 		Duration:     totalDuration,
 		Format:       format,
 		Resolution:   resolution,
-		CreditsUsed:  1,
+		CreditsUsed:  creditsNeeded,
 	}
 
 	if err := s.videoRepo.Create(video); err != nil {

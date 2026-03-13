@@ -45,4 +45,5 @@ type GenerateVideoRequest struct {
 	Title        string `json:"title"`
 	Format       string `json:"format"`     // mp4, webm
 	Resolution   string `json:"resolution"` // 1080p, 4K
+	Provider     string `json:"provider"`   // ltx-2-fast, ltx-2-pro, open-source (default: ltx-2-fast)
 }
