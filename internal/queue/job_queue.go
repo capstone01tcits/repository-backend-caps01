@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"app/internal/model"
-	"app/internal/repository"
-	"app/internal/service"
+	"github.com/google/uuid"
+	"go-auth/internal/model"
+	"go-auth/internal/repository"
+	"go-auth/internal/service"
 )
 
 // JobQueue manages the video generation job queue
@@ -191,7 +192,7 @@ func (q *SimpleJobQueue) worker(ctx context.Context, workerID int) {
 	}
 }
 
-func (q *SimpleJobQueue) pollJobStatus(ctx context.Context, jobID model.UUID) {
+func (q *SimpleJobQueue) pollJobStatus(ctx context.Context, jobID uuid.UUID) {
 	maxAttempts := 120 // Poll for up to 2 hours with 60-second intervals
 	attempt := 0
 	pollTicker := time.NewTicker(60 * time.Second)
@@ -232,7 +233,6 @@ func (q *SimpleJobQueue) pollJobStatus(ctx context.Context, jobID model.UUID) {
 }
 
 // Helper function to parse UUID string
-func parseUUID(s string) (interface{}, error) {
-	// For now, return the string; in real implementation, parse to UUID
-	return s, nil
+func parseUUID(s string) (uuid.UUID, error) {
+	return uuid.Parse(s)
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"app/internal/model"
+	"go-auth/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

@@ -24,11 +24,10 @@ type ContentService interface {
 type contentService struct {
 	contentRepo repository.ContentRepository
 	projectRepo repository.ProjectRepository
-	userRepo    repository.UserRepository
 }
 
-func NewContentService(contentRepo repository.ContentRepository, projectRepo repository.ProjectRepository, userRepo repository.UserRepository) ContentService {
-	return &contentService{contentRepo, projectRepo, userRepo}
+func NewContentService(contentRepo repository.ContentRepository, projectRepo repository.ProjectRepository) ContentService {
+	return &contentService{contentRepo, projectRepo}
 }
 
 // ==================== Content Pillar ====================
@@ -46,20 +45,6 @@ func (s *contentService) GenerateContentPillars(userID, projectID string) ([]mod
 
 	if project.UserID.String() != userID {
 		return nil, errors.New("unauthorized access to this project")
-	}
-
-	// Check user credits before generating
-	user, err := s.userRepo.FindByID(userID)
-	if err != nil {
-		return nil, errors.New("user not found")
-	}
-	if user.Credits < 1 {
-		return nil, errors.New("insufficient credits: need 1 credit to generate content pillars")
-	}
-
-	// Deduct 1 credit for pillar generation
-	if err := s.userRepo.UpdateCredits(userID, user.Credits-1); err != nil {
-		return nil, errors.New("failed to deduct credits")
 	}
 
 	pid, _ := uuid.Parse(projectID)

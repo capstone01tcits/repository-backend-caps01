@@ -51,8 +51,8 @@ func main() {
 	authSvc := service.NewAuthService(userRepo)
 	projectSvc := service.NewProjectService(projectRepo)
 	briefSvc := service.NewBriefService(briefRepo)
-	contentSvc := service.NewContentService(contentRepo, projectRepo, userRepo)
-	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, contentRepo, userRepo)
+	contentSvc := service.NewContentService(contentRepo, projectRepo)
+	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, contentRepo)
 	videoSvc := service.NewVideoService(videoRepo, storyboardRepo, projectRepo, userRepo)
 	creditSvc := service.NewCreditService(userRepo)
 

@@ -21,16 +21,14 @@ type storyboardService struct {
 	storyboardRepo repository.StoryboardRepository
 	projectRepo    repository.ProjectRepository
 	contentRepo    repository.ContentRepository
-	userRepo       repository.UserRepository
 }
 
 func NewStoryboardService(
 	storyboardRepo repository.StoryboardRepository,
-	projectRepo    repository.ProjectRepository,
-	contentRepo    repository.ContentRepository,
-	userRepo       repository.UserRepository,
+	projectRepo repository.ProjectRepository,
+	contentRepo repository.ContentRepository,
 ) StoryboardService {
-	return &storyboardService{storyboardRepo, projectRepo, contentRepo, userRepo}
+	return &storyboardService{storyboardRepo, projectRepo, contentRepo}
 }
 
 func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeID string) ([]model.Storyboard, error) {
@@ -55,20 +53,6 @@ func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeI
 	}
 	if theme.UserID.String() != userID {
 		return nil, errors.New("unauthorized access to this content theme")
-	}
-
-	// Check user credits before generating
-	user, err := s.userRepo.FindByID(userID)
-	if err != nil {
-		return nil, errors.New("user not found")
-	}
-	if user.Credits < 1 {
-		return nil, errors.New("insufficient credits: need 1 credit to generate storyboards")
-	}
-
-	// Deduct 1 credit for storyboard generation
-	if err := s.userRepo.UpdateCredits(userID, user.Credits-1); err != nil {
-		return nil, errors.New("failed to deduct credits")
 	}
 
 	pid, _ := uuid.Parse(projectID)

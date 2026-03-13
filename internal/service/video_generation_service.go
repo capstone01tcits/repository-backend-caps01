@@ -8,9 +8,9 @@ import (
 	"math/rand"
 	"time"
 
-	"app/internal/ai"
-	"app/internal/model"
-	"app/internal/repository"
+	"go-auth/internal/ai"
+	"go-auth/internal/model"
+	"go-auth/internal/repository"
 	"github.com/google/uuid"
 )
 
@@ -145,7 +145,7 @@ func (s *videoGenerationService) GenerateVideoVariants(ctx context.Context, user
 		}
 
 		// Create individual scene generation tasks
-		for j, scene := range scenePlan.([]map[string]interface{}) {
+		for j, scene := range scenePlan {
 			sceneGen := &model.SceneGeneration{
 				VariantID:   variant.ID,
 				SceneNumber: j + 1,
@@ -478,7 +478,7 @@ func (s *videoGenerationService) generatePromptForVariant(ctx context.Context, s
 	return fmt.Sprintf("%s with a %s style. This is variation %d.", basePrompt, variation, variantNumber)
 }
 
-func (s *videoGenerationService) generateScenePlan(sceneDuration int, sceneCount int) interface{} {
+func (s *videoGenerationService) generateScenePlan(sceneDuration int, sceneCount int) []map[string]interface{} {
 	scenes := make([]map[string]interface{}, sceneCount)
 
 	for i := 0; i < sceneCount; i++ {

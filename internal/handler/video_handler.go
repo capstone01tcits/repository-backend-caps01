@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	"app/internal/model"
-	"app/internal/service"
-	"app/pkg/utils"
+	"go-auth/internal/model"
+	"go-auth/internal/service"
+	"go-auth/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -215,35 +215,6 @@ func (h *VideoHandler) RegenerateScene(c *fiber.Ctx) error {
 		"status":            job.Status,
 	})
 }
-
-// GetVideo godoc
-// GET /api/videos/:id
-func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
-	videoIDStr := c.Params("id")
-	videoID, err := uuid.Parse(videoIDStr)
-	if err != nil {
-		return utils.BadRequest(c, "Invalid video ID format")
-	}
-
-	variant, err := h.videoGenService.GetVideoVariant(c.Context(), videoID)
-	if err != nil {
-		return utils.NotFound(c, "Video variant not found")
-	}
-
-	scenes, _ := h.videoGenService.GetVideoVariantWithScenes(c.Context(), videoID)
-	
-	sceneResponses := make([]model.SceneStatusResponse, len(scenes))
-	for i, scene := range scenes {
-		sceneResponses[i] = model.SceneStatusResponse{
-			ID:           scene.ID.String(),
-			SceneNumber:  scene.SceneNumber,
-			Status:       scene.Status,
-			VideoURL:     scene.VideoURL,
-			Duration:     scene.Duration,
-			ErrorMessage: scene.ErrorMessage,
-			UpdatedAt:    scene.UpdatedAt,
-		}
-	}
 
 // GetVideo godoc
 // GET /api/videos/:id

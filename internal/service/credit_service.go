@@ -1,14 +1,18 @@
 package service
 
 import (
+	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"go-auth/internal/repository"
 )
 
 type CreditService interface {
 	GetCredits(userID string) (int, error)
 	AddCredits(adminUserID, targetUserID string, amount int) (int, error)
+	GetUserCredits(ctx context.Context, userID uuid.UUID) (int, error)
+	DeductCredits(ctx context.Context, userID uuid.UUID, amount int, reason string) error
 }
 
 type creditService struct {
@@ -53,4 +57,23 @@ func (s *creditService) AddCredits(adminUserID, targetUserID string, amount int)
 	}
 
 	return newCredits, nil
+}
+
+func (s *creditService) GetUserCredits(ctx context.Context, userID uuid.UUID) (int, error) {
+	user, err := s.userRepo.FindByID(userID.String())
+	if err != nil {
+		return 0, errors.New("user not found")
+	}
+	return user.Credits, nil
+}
+
+func (s *creditService) DeductCredits(ctx context.Context, userID uuid.UUID, amount int, reason string) error {
+	user, err := s.userRepo.FindByID(userID.String())
+	if err != nil {
+		return errors.New("user not found")
+	}
+	if user.Credits < amount {
+		return errors.New("insufficient credits")
+	}
+	return s.userRepo.UpdateCredits(userID.String(), user.Credits-amount)
 }

@@ -39,11 +39,4 @@ func (v *Video) BeforeCreate(tx *gorm.DB) error {
 
 // ==================== Request Types ====================
 
-type GenerateVideoRequest struct {
-	ProjectID    string `json:"project_id" validate:"required"`
-	StoryboardID string `json:"storyboard_id" validate:"required"`
-	Title        string `json:"title"`
-	Format       string `json:"format"`     // mp4, webm
-	Resolution   string `json:"resolution"` // 1080p, 4K
-	Provider     string `json:"provider"`   // ltx-2-fast, ltx-2-pro, open-source (default: ltx-2-fast)
-}
+// Video requests are defined in generation_job.go
