@@ -49,9 +49,7 @@ type GenerationJob struct {
 
 func (gj *GenerationJob) BeforeCreate(tx *gorm.DB) error {
 	gj.ID = uuid.New()
-	if gj.VideoID == uuid.Nil {
-		gj.VideoID = uuid.New()
-	}
+	// VideoID is left NULL initially since videos are created during generation process
 	return nil
 }
 
