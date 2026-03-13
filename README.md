@@ -2,6 +2,14 @@
 
 Go REST API backend untuk AI Video Content Creator platform — Capstone project dengan SEVIMA. Meliputi authentication, project management, creative brief, content pillar generation, storyboard generation, video generation, credit system, dan admin management.
 
+## Documentation
+
+**Comprehensive API & Workflow References:**
+
+- **[API Documentation](docs/API_DOCUMENTATION.md)** — Complete API reference dengan semua endpoints, request/response examples, dan sistem video generation
+- **[Postman Collection](docs/postman_collection.json)** — Import ke Postman untuk testing (termasuk semua endpoints dengan pre-configured variables)
+- **[Complete Workflow](docs/WORKFLOW_COMPLETE_FLOW.md)** — End-to-end flow dari register hingga video download dengan HTTP requests, database changes, dan timeline
+
 ## Tech Stack
 
 **Go Backend (Port 3000)**
