@@ -145,12 +145,21 @@ func (s *videoGenerationService) GenerateVideoVariants(ctx context.Context, user
 
 		// Create individual scene generation tasks
 		for j, scene := range scenePlan {
+			// Handle both int and float64 for duration since JSON unmarshaling may change types
+			var duration int
+			switch d := scene["duration"].(type) {
+			case int:
+				duration = d
+			case float64:
+				duration = int(d)
+			}
+
 			sceneGen := &model.SceneGeneration{
 				VariantID:   variant.ID,
 				SceneNumber: j + 1,
 				SceneIndex:  j,
 				Prompt:      scene["prompt"].(string),
-				Duration:    int(scene["duration"].(float64)),
+				Duration:    duration,
 				Status:      "pending",
 			}
 
