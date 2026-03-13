@@ -55,42 +55,42 @@ Frontend (Ember JS)
 │  ┌──────────────────────────────────┐    │
 │  │  API Layer (Handlers)            │    │
 │  │  - Auth, Projects, Briefs        │    │
-│  │  - Video Generation (NEW)        │    │
-│  └────────────┬─────────────────────┘    │
-│               │                          │
-│  ┌────────────┴─────────────────────┐    │
+│  │  - Video Generation              │    │
+│  └────────────────┬─────────────────┘    │
+│                   │                      │
+│  ┌────────────────┴─────────────────┐    │
 │  │  Business Logic Layer (Services) │    │
-│  │  - VideoGenerationService (NEW)  │    │
+│  │  - VideoGenerationService        │    │
 │  │  - Credit Management             │    │
-│  └────────────┬─────────────────────┘    │
-│               │                          │
-│  ┌────────────┴─────────────────────┐    │
+│  └────────────────┬─────────────────┘    │
+│                   │                      │
+│  ┌────────────────┴─────────────────┐    │
 │  │  Data Layer (Repositories)       │    │
-│  │  - Video Repositories (NEW)      │    │
-│  │  - Job Queue Management (NEW)    │    │
-│  └────────────┬─────────────────────┘    │
-│               │                          │
-│  ┌────────────┴─────────────────────┐    │
+│  │  - Video Repositories            │    │
+│  │  - Job Queue Management          │    │
+│  └────────────────┬─────────────────┘    │
+│                   │                      │
+│  ┌────────────────┴─────────────────┐    │
 │  │  PostgreSQL + 12 Tables          │    │
 │  │  - Original 9 tables             │    │
 │  │  - GenerationJob, VideoVariant   │    │
-│  │  - SceneGeneration (NEW)         │    │
-│  └──────────────────────────────────┘    │
-│                                          │
-│  ┌────────────────────────────────────┐  │
+│  │  - SceneGeneration               │    │
+│  └────────────────┬─────────────────┘    │
+│                   │                      │
+│  ┌────────────────┴───────────────────┐  │
 │  │  Background Job Queue              │  │
 │  │  - 3 Worker Goroutines             │  │
 │  │  - Status Polling (60s interval)   │  │
 │  │  - Automatic Retry Logic           │  │
-│  └────────────┬───────────────────────┘  │
-│               │                          │
-│  ┌────────────┴───────────────────────┐  │
-│  │  AI Provider Abstraction (NEW)     │  │
+│  └────────────────┬───────────────────┘  │
+│                   │                      │
+│  ┌────────────────┴───────────────────┐  │
+│  │  AI Provider Abstraction           │  │
 │  │  - LTX, Runway, Wan2.1             │  │
 │  │  - Mock implementations            │  │
-│  └────────────────────────────────────┘  │
-│                                          │
-│  ┌────────────────────────────────────┐  │
+│  └────────────────┬───────────────────┘  │
+│                   │                      │
+│  ┌────────────────┴───────────────────┐  │
 │  │  AI Gateway (Proxy)                │──┼──► Python AI Service (Port 8000)
 │  └────────────────────────────────────┘  │
 └──────────────────────────────────────────┘
@@ -127,8 +127,8 @@ Content-Type: application/json
 
 | Role | Permissions |
 |------|-------------|
-| `user` | • Create/edit own projects<br/>• Access own briefs and content<br/>• Generate videos (credit-limited)<br/>• View own credits |
-| `admin` | • All user permissions<br/>• Add credits to users<br/>• View system statistics |
+| `user` | Create/edit own projects, access own briefs and content, generate videos (credit-limited), view own credits |
+| `admin` | All user permissions, add credits to users |
 
 ---
 
@@ -138,15 +138,10 @@ Content-Type: application/json
 
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Operation completed successfully",
   "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    ...
-  },
-  "meta": {
-    "timestamp": "2024-01-15T10:30:00Z",
-    "version": "2.0.0"
+    "id": "550e8400-e29b-41d4-a716-446655440000"
   }
 }
 ```
@@ -155,10 +150,8 @@ Content-Type: application/json
 
 ```json
 {
-  "status": "error",
-  "message": "Invalid request",
-  "error": "Email already registered",
-  "code": "DUPLICATE_EMAIL"
+  "success": false,
+  "message": "Error description"
 }
 ```
 
@@ -176,19 +169,7 @@ Content-Type: application/json
 | 401 | Unauthorized | Missing/invalid token |
 | 403 | Forbidden | Insufficient permissions |
 | 404 | Not Found | Resource not found |
-| 409 | Conflict | Duplicate resource |
 | 500 | Internal Server Error | Server error |
-
-### Common Error Codes
-
-| Code | HTTP | Meaning |
-|------|------|---------|
-| INVALID_CREDENTIALS | 401 | Email/password incorrect |
-| INSUFFICIENT_CREDITS | 400 | User doesn't have enough credits |
-| DUPLICATE_EMAIL | 409 | Email already registered |
-| NOT_FOUND | 404 | Resource doesn't exist |
-| UNAUTHORIZED | 401 | No/invalid authorization |
-| FORBIDDEN | 403 | No permission for action |
 
 ---
 
@@ -200,14 +181,10 @@ Content-Type: application/json
 GET /health
 ```
 
-Check backend and AI service status.
-
 **Response (200 OK):**
 ```json
 {
-  "status": "ok",
-  "message": "Backend service is running",
-  "ai_service": "connected"
+  "status": "ok"
 }
 ```
 
@@ -231,15 +208,21 @@ Content-Type: application/json
 **Response (201 Created):**
 ```json
 {
-  "status": "success",
-  "message": "User registered successfully",
+  "success": true,
+  "message": "Registration successful",
   "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "user",
-    "credits": 10,
-    "created_at": "2024-01-15T10:00:00Z"
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+    "expires_in": 86400,
+    "user": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "user",
+      "credits": 10,
+      "created_at": "2026-03-13T10:00:00Z",
+      "updated_at": "2026-03-13T10:00:00Z"
+    }
   }
 }
 ```
@@ -259,17 +242,20 @@ Content-Type: application/json
 **Response (200 OK):**
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Login successful",
   "data": {
     "access_token": "eyJhbGciOiJIUzI1NiIs...",
     "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+    "expires_in": 86400,
     "user": {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "name": "John Doe",
       "email": "john@example.com",
       "role": "user",
-      "credits": 10
+      "credits": 10,
+      "created_at": "2026-03-13T10:00:00Z",
+      "updated_at": "2026-03-13T10:00:00Z"
     }
   }
 }
@@ -285,14 +271,16 @@ Authorization: Bearer {access_token}
 **Response (200 OK):**
 ```json
 {
-  "status": "success",
+  "success": true,
+  "message": "Profile retrieved",
   "data": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "name": "John Doe",
     "email": "john@example.com",
     "role": "user",
     "credits": 10,
-    "created_at": "2024-01-15T10:00:00Z"
+    "created_at": "2026-03-13T10:00:00Z",
+    "updated_at": "2026-03-13T10:00:00Z"
   }
 }
 ```
@@ -310,6 +298,15 @@ Content-Type: application/json
 }
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Password changed successfully",
+  "data": null
+}
+```
+
 #### Refresh Token
 
 ```http
@@ -321,11 +318,70 @@ Content-Type: application/json
 }
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Token refreshed",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+    "expires_in": 86400,
+    "user": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "user",
+      "credits": 10,
+      "created_at": "2026-03-13T10:00:00Z",
+      "updated_at": "2026-03-13T10:00:00Z"
+    }
+  }
+}
+```
+
 #### Delete Account
 
 ```http
 DELETE /api/auth/account
 Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Account deleted successfully",
+  "data": null
+}
+```
+
+#### Restore Account
+
+```http
+POST /api/auth/restore
+Content-Type: application/json
+
+{
+  "refresh_token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Account restored successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "user",
+    "credits": 10,
+    "created_at": "2026-03-13T10:00:00Z",
+    "updated_at": "2026-03-13T10:00:00Z"
+  }
+}
 ```
 
 ---
@@ -342,6 +398,23 @@ Content-Type: application/json
 {
   "name": "Brand Campaign Q1 2026",
   "description": "Marketing video campaign for Q1"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Project created successfully",
+  "data": {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Brand Campaign Q1 2026",
+    "description": "Marketing video campaign for Q1",
+    "status": "draft",
+    "created_at": "2026-03-13T10:05:00Z",
+    "updated_at": "2026-03-13T10:05:00Z"
+  }
 }
 ```
 
@@ -379,6 +452,15 @@ DELETE /api/projects/{project_id}
 Authorization: Bearer {access_token}
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Project deleted successfully",
+  "data": null
+}
+```
+
 ---
 
 ### Business Brief APIs
@@ -400,6 +482,24 @@ Content-Type: application/json
   "key_message": "Innovation",
   "budget": "50000000",
   "timeline": "4 weeks"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Business brief created successfully",
+  "data": {
+    "id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "project_name": "Q1 Campaign",
+    "company_name": "Tech Corp",
+    "status": "draft",
+    "created_at": "2026-03-13T10:10:00Z",
+    "updated_at": "2026-03-13T10:10:00Z"
+  }
 }
 ```
 
@@ -427,27 +527,7 @@ Content-Type: application/json
 {
   "project_name": "Updated Brand Video Q3",
   "company_name": "Updated Company Name",
-  "industry": "Updated Industry",
-  "target_audience": "Updated audience",
-  "project_objective": "Updated objective",
-  "key_message": "Updated message",
-  "budget": "75000000",
-  "timeline": "6 weeks",
   "status": "submitted"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "message": "Business brief updated successfully",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "project_name": "Updated Brand Video Q3",
-    "status": "submitted",
-    "updated_at": "2024-01-15T11:00:00Z"
-  }
 }
 ```
 
@@ -461,9 +541,17 @@ Authorization: Bearer {access_token}
 **Response (200 OK):**
 ```json
 {
-  "status": "success",
-  "message": "Business brief deleted successfully"
+  "success": true,
+  "message": "Business brief deleted successfully",
+  "data": null
 }
+```
+
+#### List Creative Briefs by Business Brief
+
+```http
+GET /api/briefs/business/{business_brief_id}/creative
+Authorization: Bearer {access_token}
 ```
 
 ---
@@ -494,14 +582,17 @@ Content-Type: application/json
 **Response (201 Created):**
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Creative brief created successfully",
   "data": {
     "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "Product Launch Video",
     "duration": 60,
-    "created_at": "2024-01-15T10:40:00Z"
+    "status": "draft",
+    "created_at": "2026-03-13T10:40:00Z",
+    "updated_at": "2026-03-13T10:40:00Z"
   }
 }
 ```
@@ -513,49 +604,11 @@ GET /api/briefs/creative
 Authorization: Bearer {access_token}
 ```
 
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-      "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
-      "title": "Product Launch Video",
-      "video_type": "promotional",
-      "duration": 60,
-      "created_at": "2024-01-15T10:40:00Z"
-    }
-  ]
-}
-```
-
-#### Get Single Creative Brief
+#### Get Creative Brief
 
 ```http
 GET /api/briefs/creative/{creative_brief_id}
 Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "data": {
-    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
-    "title": "Product Launch Video",
-    "video_type": "promotional",
-    "duration": 60,
-    "style": "cinematic",
-    "tone": "professional",
-    "script": "Opening shot: wide aerial view...",
-    "call_to_action": "Visit our website",
-    "output_format": "mp4",
-    "resolution": "1080p",
-    "created_at": "2024-01-15T10:40:00Z"
-  }
-}
 ```
 
 #### Update Creative Brief
@@ -573,22 +626,7 @@ Content-Type: application/json
 }
 ```
 
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "message": "Creative brief updated successfully",
-  "data": {
-    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "title": "Updated Product Launch Video",
-    "duration": 90,
-    "tone": "uplifting",
-    "status": "submitted"
-  }
-}
-```
-
-####Delete Creative Brief
+#### Delete Creative Brief
 
 ```http
 DELETE /api/briefs/creative/{creative_brief_id}
@@ -598,16 +636,10 @@ Authorization: Bearer {access_token}
 **Response (200 OK):**
 ```json
 {
-  "status": "success",
-  "message": "Creative brief deleted successfully"
+  "success": true,
+  "message": "Creative brief deleted successfully",
+  "data": null
 }
-```
-
-#### List Creative Briefs by Business Brief
-
-```http
-GET /api/briefs/business/{business_brief_id}/creative
-Authorization: Bearer {access_token}
 ```
 
 ---
@@ -626,7 +658,40 @@ Content-Type: application/json
 }
 ```
 
-Cost: 1 credit per generation
+Cost: 0 credits
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Content pillars generated successfully",
+  "data": [
+    {
+      "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
+      "project_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Brand Awareness",
+      "description": "Content focused on increasing brand visibility and recognition",
+      "is_selected": false,
+      "content_themes": [
+        {
+          "id": "9da7b810-9dad-11d1-80b4-00c04fd430c8",
+          "title": "Brand Awareness - Theme A",
+          "description": "First theme variation for Brand Awareness",
+          "is_selected": false
+        },
+        {
+          "id": "0ea7b810-9dad-11d1-80b4-00c04fd430c8",
+          "title": "Brand Awareness - Theme B",
+          "description": "Second theme variation for Brand Awareness",
+          "is_selected": false
+        }
+      ],
+      "created_at": "2026-03-13T10:20:00Z",
+      "updated_at": "2026-03-13T10:20:00Z"
+    }
+  ]
+}
+```
 
 #### List Content Pillars
 
@@ -635,11 +700,31 @@ GET /api/projects/{project_id}/content-pillars
 Authorization: Bearer {access_token}
 ```
 
+#### Get Content Pillar
+
+```http
+GET /api/content-pillars/{pillar_id}
+Authorization: Bearer {access_token}
+```
+
 #### Select Content Pillar
 
 ```http
 POST /api/content-pillars/{pillar_id}/select
 Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Content pillar selected",
+  "data": {
+    "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
+    "is_selected": true,
+    "updated_at": "2026-03-13T10:21:00Z"
+  }
+}
 ```
 
 ---
@@ -660,6 +745,19 @@ POST /api/content-themes/{theme_id}/select
 Authorization: Bearer {access_token}
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Content theme selected",
+  "data": {
+    "id": "9da7b810-9dad-11d1-80b4-00c04fd430c8",
+    "is_selected": true,
+    "updated_at": "2026-03-13T10:22:00Z"
+  }
+}
+```
+
 ---
 
 ### Storyboard APIs
@@ -672,12 +770,64 @@ Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "project_id": "550e8400-e29b-41d4-a716-446655440000",
   "content_theme_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 }
 ```
 
-Cost: 1 credit per generation
+Cost: 0 credits
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Storyboards generated successfully",
+  "data": [
+    {
+      "id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
+      "project_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Storyboard A - Dynamic",
+      "description": "A dynamic, fast-paced storyboard",
+      "is_selected": false,
+      "scenes": [
+        {
+          "id": "6ka7b810-9dad-11d1-80b4-00c04fd430c8",
+          "scene_number": 1,
+          "title": "Opening Hook",
+          "description": "Attention-grabbing opening sequence",
+          "visual_description": "Wide shot with dramatic lighting and motion graphics",
+          "duration": 5
+        },
+        {
+          "id": "7la7b810-9dad-11d1-80b4-00c04fd430c8",
+          "scene_number": 2,
+          "title": "Problem Statement",
+          "description": "Present the challenge or pain point",
+          "visual_description": "Close-up shots with text overlay",
+          "duration": 8
+        },
+        {
+          "id": "8ma7b810-9dad-11d1-80b4-00c04fd430c8",
+          "scene_number": 3,
+          "title": "Solution Reveal",
+          "description": "Introduce the product as solution",
+          "visual_description": "Product showcase with smooth transitions",
+          "duration": 10
+        },
+        {
+          "id": "9na7b810-9dad-11d1-80b4-00c04fd430c8",
+          "scene_number": 4,
+          "title": "Call to Action",
+          "description": "End with clear CTA",
+          "visual_description": "Logo animation with contact info",
+          "duration": 7
+        }
+      ],
+      "created_at": "2026-03-13T10:25:00Z",
+      "updated_at": "2026-03-13T10:25:00Z"
+    }
+  ]
+}
+```
 
 #### List Storyboards
 
@@ -686,45 +836,11 @@ GET /api/projects/{project_id}/storyboards
 Authorization: Bearer {access_token}
 ```
 
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
-      "project_id": "550e8400-e29b-41d4-a716-446655440000",
-      "title": "Storyboard 1 - Premium Cinematic",
-      "description": "Professional product showcase",
-      "version": 1,
-      "total_duration": 12,
-      "created_at": "2024-01-15T10:45:00Z"
-    }
-  ]
-}
-```
-
-#### Get Single Storyboard
+#### Get Storyboard
 
 ```http
 GET /api/storyboards/{storyboard_id}
 Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "data": {
-    "id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
-    "project_id": "550e8400-e29b-41d4-a716-446655440000",
-    "title": "Storyboard 1 - Premium Cinematic",
-    "description": "Professional product showcase",
-    "version": 1,
-    "total_duration": 12,
-    "created_at": "2024-01-15T10:45:00Z"
-  }
-}
 ```
 
 #### Select Storyboard
@@ -732,6 +848,19 @@ Authorization: Bearer {access_token}
 ```http
 POST /api/storyboards/{storyboard_id}/select
 Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Storyboard selected",
+  "data": {
+    "id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
+    "is_selected": true,
+    "updated_at": "2026-03-13T10:26:00Z"
+  }
+}
 ```
 
 #### Get Scenes
@@ -755,12 +884,10 @@ Authorization: Bearer {access_token}
 **Response (200 OK):**
 ```json
 {
-  "status": "success",
+  "success": true,
+  "message": "Credits retrieved",
   "data": {
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "balance": 25,
-    "total_earned": 50,
-    "total_used": 25
+    "credits": 10
   }
 }
 ```
@@ -778,8 +905,20 @@ Content-Type: application/json
 
 {
   "user_id": "550e8400-e29b-41d4-a716-446655440000",
-  "amount": 100,
-  "reason": "Promotion bonus"
+  "amount": 100
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Credits added successfully",
+  "data": {
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "credits_added": 100,
+    "total_credits": 110
+  }
 }
 ```
 
@@ -793,9 +932,9 @@ The video generation system creates **3 automatic variations** of videos from a 
 
 - **Input**: One project briefing with storyboard
 - **Output**: 3 video variations (cinematic, vibrant, professional)
-- **Composition**: 2-3 scenes per video, 4-6 seconds each = 8-12 sec total
+- **Composition**: 2-3 scenes per video, 4-6 seconds each = 8-12 seconds total
 - **Processing**: Asynchronous queue with background workers
-- **Cost**: Calculated by provider and operation type
+- **Cost**: Only charged for video generation, not for content pillar or storyboard generation
 
 ### Video Generation Endpoints
 
@@ -808,34 +947,24 @@ Content-Type: application/json
 
 {
   "project_id": "550e8400-e29b-41d4-a716-446655440000",
-  "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-  "title": "My Brand Video",
-  "format": "mp4",
-  "resolution": "1080p"
+  "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 }
 ```
 
 **Parameters:**
 - `project_id` (required): UUID of project
-- `storyboard_id` (required): UUID of storyboard  
-- `title` (required): Video title
-- `format` (optional): Video format (default: "mp4")
-- `resolution` (optional): Video resolution (default: "1080p")
+- `storyboard_id` (required): UUID of storyboard
+- `custom_prompt` (optional): Custom prompt override
 
 **Response (201 Created):**
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Video generation job created",
   "data": {
     "generation_job_id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
     "status": "queued",
-    "project_id": "550e8400-e29b-41d4-a716-446655440000",
-    "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "title": "My Brand Video",
-    "format": "mp4",
-    "resolution": "1080p",
-    "created_at": "2024-01-15T10:30:00Z"
+    "created_at": "2026-03-13T10:30:00Z"
   }
 }
 ```
@@ -852,13 +981,12 @@ Authorization: Bearer {access_token}
 **Response (200 OK):**
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Job status retrieved",
   "data": {
     "id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
     "job_type": "generate",
     "status": "processing",
-    "priority": 1,
     "scene_count": 2,
     "video_duration": 10,
     "provider": "ltx",
@@ -866,9 +994,9 @@ Authorization: Bearer {access_token}
     "credits_required": 120,
     "credits_used": 0,
     "retry_count": 0,
-    "started_at": "2024-01-15T10:30:15Z",
-    "created_at": "2024-01-15T10:30:00Z",
-    "updated_at": "2024-01-15T10:30:15Z"
+    "started_at": "2026-03-13T10:30:15Z",
+    "created_at": "2026-03-13T10:30:00Z",
+    "updated_at": "2026-03-13T10:30:15Z"
   }
 }
 ```
@@ -891,7 +1019,7 @@ Authorization: Bearer {access_token}
 **Response (200 OK):**
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Video variants retrieved",
   "data": [
     {
@@ -904,8 +1032,6 @@ Authorization: Bearer {access_token}
       "duration": 10,
       "provider": "ltx",
       "model": "ltx-2-fast",
-      "resolution": "1080p",
-      "credits_used": 40,
       "scenes": [
         {
           "id": "9da7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -913,7 +1039,7 @@ Authorization: Bearer {access_token}
           "status": "completed",
           "video_url": "https://storage.example.com/scenes/scene-1.mp4",
           "duration": 5,
-          "updated_at": "2024-01-15T10:35:30Z"
+          "updated_at": "2026-03-13T10:35:30Z"
         },
         {
           "id": "0ea7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -921,11 +1047,11 @@ Authorization: Bearer {access_token}
           "status": "completed",
           "video_url": "https://storage.example.com/scenes/scene-2.mp4",
           "duration": 5,
-          "updated_at": "2024-01-15T10:35:45Z"
+          "updated_at": "2026-03-13T10:35:45Z"
         }
       ],
-      "created_at": "2024-01-15T10:30:00Z",
-      "updated_at": "2024-01-15T10:35:45Z"
+      "created_at": "2026-03-13T10:30:00Z",
+      "updated_at": "2026-03-13T10:35:45Z"
     }
   ]
 }
@@ -944,53 +1070,7 @@ Returns variant details with all scenes.
 
 ---
 
-#### List My Videos
-
-```http
-GET /api/videos
-Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": "video_1",
-      "project_id": "550e8400-e29b-41d4-a716-446655440000",
-      "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-      "title": "My Brand Video",
-      "status": "completed",
-      "format": "mp4",
-      "resolution": "1080p",
-      "created_at": "2024-01-15T10:30:00Z"
-    }
-  ]
-}
-```
-
----
-
-#### Get Single Video
-
-```http
-GET /api/videos/{video_id}
-Authorization: Bearer {access_token}
-```
-
----
-
-#### Get Videos by Project
-
-```http
-GET /api/projects/{project_id}/videos
-Authorization: Bearer {access_token}
-```
-
----
-
-#### Download Video
+#### Regenerate Video Variant
 
 ```http
 POST /api/videos/{variant_id}/regenerate
@@ -1005,7 +1085,7 @@ Content-Type: application/json
 **Response (201 Created):**
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Video regeneration job created",
   "data": {
     "generation_job_id": "3fa7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -1013,8 +1093,6 @@ Content-Type: application/json
   }
 }
 ```
-
-**Cost**: Same as original video generation (~120 credits)
 
 ---
 
@@ -1033,7 +1111,7 @@ Content-Type: application/json
 **Response (201 Created):**
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Scene regeneration job created",
   "data": {
     "generation_job_id": "4ga7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -1041,8 +1119,6 @@ Content-Type: application/json
   }
 }
 ```
-
-**Cost**: Lower than full video (~10 credits for single scene)
 
 ---
 
@@ -1056,7 +1132,7 @@ Authorization: Bearer {access_token}
 **Response (200 OK):**
 ```json
 {
-  "status": "success",
+  "success": true,
   "message": "Video download ready",
   "data": {
     "variant_id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -1070,8 +1146,6 @@ Authorization: Bearer {access_token}
 
 **Requirements:**
 - Video status must be "completed"
-- Download URL is signed and expires after 1 hour
-- Can be downloaded multiple times
 
 ---
 
@@ -1100,8 +1174,8 @@ Authorization: Bearer {access_token}
 - Priority-based job dequeuing
 
 **5. AI Providers**
-- LTX-2-Fast (Standard): $0.04/sec = 4 credits/sec
-- LTX-2-Pro (Premium): $0.06/sec = 6 credits/sec
+- LTX-2-Fast (Standard): 4 credits/sec
+- LTX-2-Pro (Premium): 6 credits/sec
 - Runway Gen4.5: 12 credits/sec
 - Runway Turbo: 5 credits/sec
 - Wan2.1 (Open Source): 1 credit/sec
@@ -1111,31 +1185,30 @@ Authorization: Bearer {access_token}
 
 ```
 User Request
-    ↓
+    |
 Validate credits
-    ↓
+    |
 Create GenerationJob (status: queued)
 Create 3 VideoVariants
 Create 2-3 SceneGenerations per variant
 Deduct credits
-    ↓
+    |
 Enqueue to JobQueue
-    ↓
+    |
 Worker picks up job (status: processing)
-    ↓
+    |
 For each scene:
   - Call VideoProvider.GenerateScene()
   - Store external job ID
-    ↓
+    |
 Start polling routine (every 60 seconds)
-    ↓
+    |
 Provider returns scene status
-    ↓
+    |
 When all scenes complete:
   - Update variant status
-  - Generate thumbnail
   - Update video URLs
-    ↓
+    |
 When all variants complete:
   - Update job status (completed)
   - Videos ready for download
@@ -1143,24 +1216,14 @@ When all variants complete:
 
 ### Credit System
 
-**Generation Costs:**
-```
-Cost = video_duration × scene_count × variant_count × provider_multiplier
-
-Example (Standard Tier):
-10 sec × 2 scenes × 3 variants × 2 = 120 credits
-```
+Credit hanya dikenakan pada operasi video generation. Generate content pillar dan storyboard tidak mengurangi credit.
 
 **Provider Costs (per second):**
-- LTX-2-Fast: 2 credits/sec
-- LTX-2-Pro: 3 credits/sec
+- LTX-2-Fast: 4 credits/sec
+- LTX-2-Pro: 6 credits/sec
 - Runway Gen4.5: 12 credits/sec
 - Runway Turbo: 5 credits/sec
 - Open Source: 1 credit/sec
-
-**Regeneration:**
-- Full video: Same as original generation
-- Single scene: Significantly cheaper (~1/3 cost)
 
 ### Polling Recommendations
 
@@ -1170,16 +1233,6 @@ Example (Standard Tier):
 3. After 1 minute, use 60-second intervals
 4. Stop polling after 2 hours (timeout)
 
-**Example Poll Sequence:**
-```
-0s:   POST /api/videos/generate → job_id
-2s:   GET /api/videos/generation/{job_id} → status: queued
-5s:   GET /api/videos/generation/{job_id} → status: processing
-10s:  GET /api/videos/storyboard/{id} → variants (mixed statuses)
-20s:  GET /api/videos/storyboard/{id} → variant 1 complete
-45s:  GET /api/videos/storyboard/{id} → all variants complete
-```
-
 ---
 
 ## Database Schema
@@ -1188,25 +1241,18 @@ Example (Standard Tier):
 
 | Table | Purpose | Key Fields |
 |-------|---------|-----------|
-| users | User accounts | id, email, password_hash, role, credits |
+| users | User accounts | id, email, password, role, credits |
 | projects | Video projects | id, user_id, name, status |
 | business_briefs | Business input | id, project_id, company_name, target_audience |
 | creative_briefs | Creative direction | id, business_brief_id, tone, style |
-| content_pillars | AI-generated pillars | id, project_id, title |
-| content_themes | Pillar themes | id, pillar_id, title |
-| storyboards | Storyboard variations | id, project_id, title |
+| content_pillars | AI-generated pillars | id, project_id, title, is_selected |
+| content_themes | Pillar themes | id, content_pillar_id, title, is_selected |
+| storyboards | Storyboard variations | id, project_id, title, is_selected |
 | scenes | Individual scenes | id, storyboard_id, scene_number, duration |
-| videos | Generated videos | id, storyboard_id, video_url (legacy) |
+| videos | Generated videos (legacy) | id, storyboard_id, video_url |
 | generation_jobs | Video job queue | id, status, provider, credits_required |
 | video_variants | 3 video variations | id, variant_number, video_url, status |
-| scene_generations | Individual scenes | id, variant_id, scene_number, video_url |
-
-### Primary Indexes
-
-- `generation_jobs.status` (queue queries)
-- `generation_jobs.user_id`, `generation_jobs.project_id`
-- `video_variants.storyboard_id` (batch retrieval)
-- `scene_generations.variant_id` (composition)
+| scene_generations | Individual scene tracking | id, variant_id, scene_number, video_url |
 
 ---
 
@@ -1234,11 +1280,6 @@ JWT_REFRESH_EXPIRE_HOURS=168
 
 # AI Service
 AI_SERVICE_URL=http://localhost:8000
-
-# Video Generation
-VIDEO_GENERATION_WORKERS=3
-VIDEO_POLLING_INTERVAL=60
-VIDEO_MAX_RETRIES=3
 ```
 
 ### Running the Services
@@ -1295,4 +1336,4 @@ curl -X POST http://localhost:3000/api/videos/generate \
 
 - **Postman Collection**: [postman_collection.json](./postman_collection.json)
 - **Main README**: [../README.md](../README.md)
-- **Architecture Details**: See README.md Video Generation System section
+- **Complete Workflow**: [WORKFLOW_COMPLETE_FLOW.md](./WORKFLOW_COMPLETE_FLOW.md)
