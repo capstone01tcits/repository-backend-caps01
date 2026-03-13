@@ -52,36 +52,36 @@ Frontend (Ember JS)
 ┌──────────────────────────────────────────┐
 │   Go Backend (Port 3000)                 │
 │                                          │
-│  ┌──────────────────────────────────┐   │
-│  │  API Layer (Handlers)            │   │
-│  │  - Auth, Projects, Briefs        │   │
-│  │  - Video Generation (NEW)        │   │
-│  └────────────┬─────────────────────┘   │
+│  ┌──────────────────────────────────┐    │
+│  │  API Layer (Handlers)            │    │
+│  │  - Auth, Projects, Briefs        │    │
+│  │  - Video Generation (NEW)        │    │
+│  └────────────┬─────────────────────┘    │
 │               │                          │
-│  ┌────────────┴─────────────────────┐   │
-│  │  Business Logic Layer (Services) │   │
-│  │  - VideoGenerationService (NEW)  │   │
-│  │  - Credit Management             │   │
-│  └────────────┬─────────────────────┘   │
+│  ┌────────────┴─────────────────────┐    │
+│  │  Business Logic Layer (Services) │    │
+│  │  - VideoGenerationService (NEW)  │    │
+│  │  - Credit Management             │    │
+│  └────────────┬─────────────────────┘    │
 │               │                          │
-│  ┌────────────┴─────────────────────┐   │
-│  │  Data Layer (Repositories)       │   │
-│  │  - Video Repositories (NEW)      │   │
-│  │  - Job Queue Management (NEW)    │   │
-│  └────────────┬─────────────────────┘   │
+│  ┌────────────┴─────────────────────┐    │
+│  │  Data Layer (Repositories)       │    │
+│  │  - Video Repositories (NEW)      │    │
+│  │  - Job Queue Management (NEW)    │    │
+│  └────────────┬─────────────────────┘    │
 │               │                          │
-│  ┌────────────┴─────────────────────┐   │
-│  │  PostgreSQL + 12 Tables          │   │
-│  │  - Original 9 tables             │   │
-│  │  - GenerationJob, VideoVariant   │   │
-│  │  - SceneGeneration (NEW)         │   │
-│  └────────────────────────────────────┘  │
+│  ┌────────────┴─────────────────────┐    │
+│  │  PostgreSQL + 12 Tables          │    │
+│  │  - Original 9 tables             │    │
+│  │  - GenerationJob, VideoVariant   │    │
+│  │  - SceneGeneration (NEW)         │    │
+│  └──────────────────────────────────┘    │
 │                                          │
 │  ┌────────────────────────────────────┐  │
-│  │  Background Job Queue             │  │
-│  │  - 3 Worker Goroutines            │  │
-│  │  - Status Polling (60s interval)  │  │
-│  │  - Automatic Retry Logic          │  │
+│  │  Background Job Queue              │  │
+│  │  - 3 Worker Goroutines             │  │
+│  │  - Status Polling (60s interval)   │  │
+│  │  - Automatic Retry Logic           │  │
 │  └────────────┬───────────────────────┘  │
 │               │                          │
 │  ┌────────────┴───────────────────────┐  │
