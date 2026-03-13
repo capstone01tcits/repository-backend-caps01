@@ -96,13 +96,20 @@ func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
 // GetUserProfile godoc
 // GET /api/auth/users/:user_id (Protected)
 func (h *AuthHandler) GetUserProfile(c *fiber.Ctx) error {
-	userID := c.Params("user_id")
+	requestingUserID := c.Locals("userID").(string)
+	requestingRole, _ := c.Locals("role").(string)
+	targetUserID := c.Params("user_id")
 
-	if userID == "" {
+	if targetUserID == "" {
 		return utils.BadRequest(c, "User ID is required")
 	}
 
-	profile, err := h.authService.GetProfile(userID)
+	// Authorization check: user can only view their own profile, or admin can view any profile
+	if requestingUserID != targetUserID && requestingRole != "admin" {
+		return utils.Unauthorized(c, "You cannot access another user's profile")
+	}
+
+	profile, err := h.authService.GetProfile(targetUserID)
 	if err != nil {
 		return utils.NotFound(c, "User not found")
 	}
