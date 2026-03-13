@@ -34,8 +34,8 @@ type GenerationJob struct {
 	CreditsUsed     int            `json:"credits_used"`
 	RetryCount      int            `gorm:"default:0" json:"retry_count"`
 	MaxRetries      int            `gorm:"default:3" json:"max_retries"`
-	StartedAt       *time.Time     `json:"started_at,omitempty"`
-	CompletedAt     *time.Time     `json:"completed_at,omitempty"`
+	StartedAt       *time.Time     `gorm:"type:datetime" json:"started_at,omitempty"`
+	CompletedAt     *time.Time     `gorm:"type:datetime" json:"completed_at,omitempty"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
