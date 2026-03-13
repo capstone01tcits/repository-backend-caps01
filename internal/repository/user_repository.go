@@ -3,6 +3,7 @@ package repository
 import (
 	"go-auth/internal/model"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -10,6 +11,12 @@ type UserRepository interface {
 	Create(user *model.User) error
 	FindByEmail(email string) (*model.User, error)
 	FindByID(id string) (*model.User, error)
+	UpdatePassword(id string, newPassword string) error
+	UpdateCredits(id string, credits int) error
+	Delete(id string) error
+	Restore(id string) error
+	FindByIDIncludeDeleted(id string) (*model.User, error)
+	Count() (int64, error)
 }
 
 type userRepository struct {
@@ -34,10 +41,69 @@ func (r *userRepository) FindByEmail(email string) (*model.User, error) {
 }
 
 func (r *userRepository) FindByID(id string) (*model.User, error) {
+	// Parse string to UUID for proper database query
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+	
 	var user model.User
-	err := r.db.Where("id = ?", id).First(&user).Error
+	err = r.db.Where("id = ?", uid).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) UpdatePassword(id string, newPassword string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	return r.db.Model(&model.User{}).Where("id = ?", uid).Update("password", newPassword).Error
+}
+
+func (r *userRepository) UpdateCredits(id string, credits int) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	return r.db.Model(&model.User{}).Where("id = ?", uid).Update("credits", credits).Error
+}
+
+func (r *userRepository) Delete(id string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	return r.db.Where("id = ?", uid).Delete(&model.User{}).Error
+}
+
+func (r *userRepository) Restore(id string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	return r.db.Unscoped().Model(&model.User{}).Where("id = ?", uid).Update("deleted_at", nil).Error
+}
+
+func (r *userRepository) FindByIDIncludeDeleted(id string) (*model.User, error) {
+	// Parse string to UUID for proper database query
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+	
+	var user model.User
+	err = r.db.Unscoped().Where("id = ?", uid).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) Count() (int64, error) {
+	var count int64
+	err := r.db.Model(&model.User{}).Count(&count).Error
+	return count, err
 }

@@ -38,6 +38,13 @@ func Unauthorized(c *fiber.Ctx, message string) error {
 	})
 }
 
+func NotFound(c *fiber.Ctx, message string) error {
+	return c.Status(fiber.StatusNotFound).JSON(Response{
+		Success: false,
+		Message: message,
+	})
+}
+
 func InternalError(c *fiber.Ctx, message string) error {
 	return c.Status(fiber.StatusInternalServerError).JSON(Response{
 		Success: false,

@@ -15,6 +15,9 @@ type AuthService interface {
 	Login(req *model.LoginRequest) (*model.AuthResponse, error)
 	RefreshToken(refreshToken string) (*model.AuthResponse, error)
 	GetProfile(userID string) (*model.UserInfo, error)
+	ChangePassword(userID string, req *model.ChangePasswordRequest) error
+	DeleteAccount(userID string) error
+	RestoreAccount(refreshToken string) (*model.UserInfo, error)
 }
 
 type authService struct {
@@ -38,10 +41,18 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.AuthResponse,
 		return nil, err
 	}
 
+	// First user is admin
+	role := "user"
+	count, _ := s.userRepo.Count()
+	if count == 0 {
+		role = "admin"
+	}
+
 	user := &model.User{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: string(hashed),
+		Role:     role,
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
@@ -85,9 +96,91 @@ func (s *authService) GetProfile(userID string) (*model.UserInfo, error) {
 	}
 
 	return &model.UserInfo{
-		ID:    user.ID.String(),
-		Name:  user.Name,
-		Email: user.Email,
+		ID:        user.ID.String(),
+		Name:      user.Name,
+		Email:     user.Email,
+		Role:      user.Role,
+		Credits:   user.Credits,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
+}
+
+func (s *authService) ChangePassword(userID string, req *model.ChangePasswordRequest) error {
+	// Get current user
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	// Verify old password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
+		return errors.New("old password is incorrect")
+	}
+
+	// Hash new password
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	// Update password
+	if err := s.userRepo.UpdatePassword(userID, string(hashed)); err != nil {
+		return errors.New("failed to update password")
+	}
+
+	return nil
+}
+
+func (s *authService) DeleteAccount(userID string) error {
+	// Check if user exists
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	// Soft delete user
+	if err := s.userRepo.Delete(userID); err != nil {
+		return errors.New("failed to delete account")
+	}
+
+	return nil
+}
+
+func (s *authService) RestoreAccount(refreshToken string) (*model.UserInfo, error) {
+	// Validate refresh token
+	claims, err := utils.ValidateRefreshToken(refreshToken)
+	if err != nil {
+		return nil, errors.New("invalid or expired refresh token")
+	}
+
+	// Find user including deleted (Unscoped)
+	user, err := s.userRepo.FindByIDIncludeDeleted(claims.UserID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	// Restore user (set deleted_at to null)
+	if err := s.userRepo.Restore(claims.UserID); err != nil {
+		return nil, errors.New("failed to restore account")
+	}
+
+	return &model.UserInfo{
+		ID:        user.ID.String(),
+		Name:      user.Name,
+		Email:     user.Email,
+		Role:      user.Role,
+		Credits:   user.Credits,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}, nil
 }
 
@@ -109,9 +202,13 @@ func (s *authService) generateTokenResponse(user *model.User) (*model.AuthRespon
 		RefreshToken: refreshToken,
 		ExpiresIn:    expiresIn,
 		User: model.UserInfo{
-			ID:    userIDStr,
-			Name:  user.Name,
-			Email: user.Email,
+			ID:        userIDStr,
+			Name:      user.Name,
+			Email:     user.Email,
+			Role:      user.Role,
+			Credits:   user.Credits,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
 		},
 	}, nil
 }

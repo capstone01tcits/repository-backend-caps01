@@ -1,0 +1,97 @@
+package handler
+
+import (
+	"go-auth/internal/service"
+	"go-auth/pkg/utils"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+type StoryboardHandler struct {
+	storyboardService service.StoryboardService
+}
+
+func NewStoryboardHandler(storyboardService service.StoryboardService) *StoryboardHandler {
+	return &StoryboardHandler{storyboardService}
+}
+
+// GenerateStoryboards godoc
+// POST /api/projects/:id/storyboards/generate
+func (h *StoryboardHandler) GenerateStoryboards(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	projectID := c.Params("id")
+
+	var body struct {
+		ContentThemeID string `json:"content_theme_id"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	if body.ContentThemeID == "" {
+		return utils.BadRequest(c, "content_theme_id is required")
+	}
+
+	storyboards, err := h.storyboardService.GenerateStoryboards(userID, projectID, body.ContentThemeID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.Created(c, "Storyboards generated successfully", storyboards)
+}
+
+// GetStoryboards godoc
+// GET /api/projects/:id/storyboards
+func (h *StoryboardHandler) GetStoryboards(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	projectID := c.Params("id")
+
+	storyboards, err := h.storyboardService.GetStoryboards(userID, projectID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Storyboards retrieved", storyboards)
+}
+
+// GetStoryboard godoc
+// GET /api/storyboards/:id
+func (h *StoryboardHandler) GetStoryboard(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	storyboardID := c.Params("id")
+
+	storyboard, err := h.storyboardService.GetStoryboard(userID, storyboardID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Storyboard retrieved", storyboard)
+}
+
+// SelectStoryboard godoc
+// POST /api/storyboards/:id/select
+func (h *StoryboardHandler) SelectStoryboard(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	storyboardID := c.Params("id")
+
+	storyboard, err := h.storyboardService.SelectStoryboard(userID, storyboardID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Storyboard selected", storyboard)
+}
+
+// GetScenes godoc
+// GET /api/storyboards/:id/scenes
+func (h *StoryboardHandler) GetScenes(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	storyboardID := c.Params("id")
+
+	scenes, err := h.storyboardService.GetScenes(userID, storyboardID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Scenes retrieved", scenes)
+}

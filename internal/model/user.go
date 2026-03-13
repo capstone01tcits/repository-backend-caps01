@@ -12,6 +12,8 @@ type User struct {
 	Name      string         `gorm:"not null" json:"name"`
 	Email     string         `gorm:"uniqueIndex;not null" json:"email"`
 	Password  string         `gorm:"not null" json:"-"`
+	Role      string         `gorm:"default:'user'" json:"role"`   // user, admin
+	Credits   int            `gorm:"default:10" json:"credits"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
@@ -43,9 +45,18 @@ type AuthResponse struct {
 }
 
 type UserInfo struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	Credits   int       `json:"credits"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" validate:"required,min=6"`
+	NewPassword string `json:"new_password" validate:"required,min=6"`
 }
 
 type RefreshRequest struct {

@@ -92,3 +92,83 @@ func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
 
 	return utils.OK(c, "Profile retrieved", profile)
 }
+
+// GetUserProfile godoc
+// GET /api/auth/users/:user_id (Protected)
+func (h *AuthHandler) GetUserProfile(c *fiber.Ctx) error {
+	userID := c.Params("user_id")
+
+	if userID == "" {
+		return utils.BadRequest(c, "User ID is required")
+	}
+
+	profile, err := h.authService.GetProfile(userID)
+	if err != nil {
+		return utils.NotFound(c, "User not found")
+	}
+
+	return utils.OK(c, "User profile retrieved", profile)
+}
+
+// ChangePassword godoc
+// POST /api/auth/change-password (Protected)
+func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+
+	var req model.ChangePasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	if req.OldPassword == "" || req.NewPassword == "" {
+		return utils.BadRequest(c, "Old password and new password are required")
+	}
+
+	if len(req.NewPassword) < 6 {
+		return utils.BadRequest(c, "New password must be at least 6 characters")
+	}
+
+	if req.OldPassword == req.NewPassword {
+		return utils.BadRequest(c, "New password must be different from old password")
+	}
+
+	err := h.authService.ChangePassword(userID, &req)
+	if err != nil {
+		return utils.Unauthorized(c, err.Error())
+	}
+
+	return utils.OK(c, "Password changed successfully", nil)
+}
+
+// DeleteAccount godoc
+// DELETE /api/auth/account (Protected)
+func (h *AuthHandler) DeleteAccount(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+
+	err := h.authService.DeleteAccount(userID)
+	if err != nil {
+		return utils.InternalError(c, err.Error())
+	}
+
+	return utils.OK(c, "Account deleted successfully", nil)
+}
+
+// RestoreAccount godoc
+// POST /api/auth/restore
+func (h *AuthHandler) RestoreAccount(c *fiber.Ctx) error {
+	var req model.RefreshRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	if req.RefreshToken == "" {
+		return utils.BadRequest(c, "Refresh token is required")
+	}
+
+	profile, err := h.authService.RestoreAccount(req.RefreshToken)
+	if err != nil {
+		return utils.Unauthorized(c, err.Error())
+	}
+
+	return utils.OK(c, "Account restored successfully", profile)
+}
