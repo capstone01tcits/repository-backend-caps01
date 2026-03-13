@@ -23,7 +23,7 @@ type BusinessBrief struct {
 	Timeline         string         `json:"timeline"`
 	Competitors      string         `gorm:"type:text" json:"competitors"`
 	AdditionalNotes  string         `gorm:"type:text" json:"additional_notes"`
-	Status           string         `gorm:"default:'draft'" json:"status"` // draft, submitted, approved, rejected
+	Status           string         `gorm:"default:draft" json:"status"` // draft, submitted, approved, rejected
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
@@ -58,7 +58,7 @@ type CreativeBrief struct {
 	OutputFormat     string         `json:"output_format"`      // mp4, webm, etc.
 	Resolution       string         `json:"resolution"`         // 1080p, 4K, etc.
 	AdditionalNotes  string         `gorm:"type:text" json:"additional_notes"`
-	Status           string         `gorm:"default:'draft'" json:"status"` // draft, submitted, in_production, completed
+	Status           string         `gorm:"default:draft" json:"status"` // draft, submitted, in_production, completed
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`

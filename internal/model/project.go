@@ -12,7 +12,7 @@ type Project struct {
 	UserID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	Name        string         `gorm:"not null" json:"name"`
 	Description string         `gorm:"type:text" json:"description"`
-	Status      string         `gorm:"default:'draft'" json:"status"` // draft, in_progress, completed
+	Status      string         `gorm:"default:draft" json:"status"` // draft, in_progress, completed
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`

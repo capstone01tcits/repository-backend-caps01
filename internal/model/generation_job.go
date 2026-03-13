@@ -20,14 +20,14 @@ type GenerationJob struct {
 	StoryboardID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
 	VideoID         *uuid.UUID     `gorm:"type:uuid;index" json:"video_id,omitempty"`
 	JobType         string         `gorm:"not null;index" json:"job_type"` // generate, regenerate, regenerate_scene
-	Status          string         `gorm:"default:'queued';index" json:"status"` // queued, processing, completed, failed
+	Status          string         `gorm:"default:queued;index" json:"status"` // queued, processing, completed, failed
 	Priority        int            `gorm:"default:0" json:"priority"`
 	Prompt          datatypes.JSON `gorm:"type:jsonb" json:"prompt"`
 	SceneCount      int            `gorm:"default:2" json:"scene_count"`
 	VideoDuration   int            `gorm:"default:10" json:"video_duration"` // in seconds
 	Provider        string         `json:"provider"`    // ltx, runway, wan, open_source
 	Model           string         `json:"model"`       // ltx-2-fast, gen4.5, wan2.1, etc
-	Resolution      string         `gorm:"default:'1080p'" json:"resolution"`
+	Resolution      string         `gorm:"default:1080p" json:"resolution"`
 	ProcessingNotes datatypes.JSON `gorm:"type:jsonb" json:"processing_notes"`
 	ErrorMessage    string         `gorm:"type:text" json:"error_message,omitempty"`
 	CreditsRequired int            `json:"credits_required"`
@@ -67,14 +67,14 @@ type VideoVariant struct {
 	Provider       string         `json:"provider"`    // ltx, runway, wan, open_source
 	Model          string         `json:"model"`       // specific model name
 	Duration       int            `json:"duration"`    // in seconds
-	Resolution     string         `gorm:"default:'1080p'" json:"resolution"`
-	Status         string         `gorm:"default:'pending'" json:"status"` // pending, processing, completed, failed
+	Resolution     string         `gorm:"default:1080p" json:"resolution"`
+	Status         string         `gorm:"default:pending" json:"status"` // pending, processing, completed, failed
 	VideoURL       string         `json:"video_url"`
 	ThumbnailURL   string         `json:"thumbnail_url"`
 	FileSize       int64          `json:"file_size"`
 	CreditsUsed    int            `json:"credits_used"`
 	ErrorMessage   string         `gorm:"type:text" json:"error_message,omitempty"`
-	RevisionOf     *uuid.UUID     `json:"revision_of,omitempty"` // if this is a regenerated version
+	RevisionOf     *uuid.UUID     `gorm:"type:uuid" json:"revision_of,omitempty"` // if this is a regenerated version
 	ExternalJobID  string         `json:"external_job_id"`        // job ID from provider (LTX, Runway, etc)
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
@@ -101,7 +101,7 @@ type SceneGeneration struct {
 	SceneIndex      int            `json:"scene_index"`
 	Prompt          string         `gorm:"type:text" json:"prompt"`
 	Duration        int            `json:"duration"` // in seconds
-	Status          string         `gorm:"default:'pending'" json:"status"` // pending, processing, completed, failed
+	Status          string         `gorm:"default:pending" json:"status"` // pending, processing, completed, failed
 	ExternalJobID   string         `json:"external_job_id"`
 	VideoURL        string         `json:"video_url"`
 	ErrorMessage    string         `gorm:"type:text" json:"error_message,omitempty"`

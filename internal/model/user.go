@@ -12,7 +12,7 @@ type User struct {
 	Name      string         `gorm:"not null" json:"name"`
 	Email     string         `gorm:"uniqueIndex;not null" json:"email"`
 	Password  string         `gorm:"not null" json:"-"`
-	Role      string         `gorm:"default:'user'" json:"role"`   // user, admin
+	Role	  string 		 `gorm:"default:user" json:"role"`   // user, admin
 	Credits   int            `gorm:"default:10" json:"credits"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

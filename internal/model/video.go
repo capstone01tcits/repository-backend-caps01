@@ -13,12 +13,12 @@ type Video struct {
 	UserID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	StoryboardID uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
 	Title        string         `gorm:"not null" json:"title"`
-	Status       string         `gorm:"default:'pending'" json:"status"` // pending, processing, completed, failed
+	Status       string         `gorm:"default:pending" json:"status"` // pending, processing, completed, failed
 	VideoURL     string         `json:"video_url"`
 	ThumbnailURL string         `json:"thumbnail_url"`
 	Duration     int            `json:"duration"`      // total duration in seconds
-	Format       string         `gorm:"default:'mp4'" json:"format"`
-	Resolution   string         `gorm:"default:'1080p'" json:"resolution"`
+	Format       string         `gorm:"default:mp4" json:"format"`
+	Resolution   string         `gorm:"default:1080p" json:"resolution"`
 	FileSize     int64          `json:"file_size"`     // in bytes
 	CreditsUsed  int            `gorm:"default:1" json:"credits_used"`
 	ErrorMessage string         `gorm:"type:text" json:"error_message,omitempty"`
