@@ -35,6 +35,9 @@ func main() {
 		&model.Storyboard{},
 		&model.Scene{},
 		&model.Video{},
+		&model.GenerationJob{},
+		&model.VideoVariant{},
+		&model.SceneGeneration{},
 	); err != nil {
 		log.Fatal("Migration failed:", err)
 	}
@@ -46,6 +49,9 @@ func main() {
 	contentRepo := repository.NewContentRepository(db)
 	storyboardRepo := repository.NewStoryboardRepository(db)
 	videoRepo := repository.NewVideoRepository(db)
+	jobRepo := repository.NewGenerationJobRepository(db)
+	variantRepo := repository.NewVideoVariantRepository(db)
+	sceneRepo := repository.NewSceneGenerationRepository(db)
 
 	// Init services
 	authSvc := service.NewAuthService(userRepo)
@@ -53,8 +59,8 @@ func main() {
 	briefSvc := service.NewBriefService(briefRepo)
 	contentSvc := service.NewContentService(contentRepo, projectRepo)
 	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, contentRepo)
-	videoSvc := service.NewVideoService(videoRepo, storyboardRepo, projectRepo, userRepo)
 	creditSvc := service.NewCreditService(userRepo)
+	videoGenSvc := service.NewVideoGenerationService(jobRepo, variantRepo, sceneRepo, creditSvc)
 
 	// Init handlers
 	authHandler := handler.NewAuthHandler(authSvc)
@@ -62,7 +68,7 @@ func main() {
 	briefHandler := handler.NewBriefHandler(briefSvc)
 	contentHandler := handler.NewContentHandler(contentSvc)
 	storyboardHandler := handler.NewStoryboardHandler(storyboardSvc)
-	videoHandler := handler.NewVideoHandler(videoSvc)
+	videoHandler := handler.NewVideoHandler(videoGenSvc)
 	creditHandler := handler.NewCreditHandler(creditSvc)
 	aiHandler := handler.NewAIHandler()
 

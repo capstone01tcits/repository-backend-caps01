@@ -143,6 +143,8 @@ func (q *SimpleJobQueue) Stop() error {
 
 	q.isRunning = false
 	close(q.stopChan)
+	// Reset channel for potential future Start() calls
+	q.stopChan = make(chan bool)
 	log.Println("Stopped job queue")
 	return nil
 }

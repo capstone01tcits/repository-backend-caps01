@@ -39,7 +39,6 @@ func (p *LTXStandardProvider) GenerateScene(ctx context.Context, req VideoGenera
 func (p *LTXStandardProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
 	// Simulate polling - in real implementation, would call LTX API
 	// For now, randomly transition between states
-	rand.Seed(time.Now().UnixNano())
 	randomStatus := rand.Intn(100)
 	
 	if randomStatus < 50 {
@@ -111,7 +110,6 @@ func (p *LTXPremiumProvider) GenerateScene(ctx context.Context, req VideoGenerat
 }
 
 func (p *LTXPremiumProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
-	rand.Seed(time.Now().UnixNano())
 	randomStatus := rand.Intn(100)
 	
 	if randomStatus < 40 {
@@ -179,7 +177,7 @@ func (p *RunwayProvider) GenerateScene(ctx context.Context, req VideoGenerationR
 }
 
 func (p *RunwayProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
-	rand.Seed(time.Now().UnixNano())
+
 	randomStatus := rand.Intn(100)
 	
 	if randomStatus < 45 {
@@ -247,7 +245,7 @@ func (p *RunwayTurboProvider) GenerateScene(ctx context.Context, req VideoGenera
 }
 
 func (p *RunwayTurboProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
-	rand.Seed(time.Now().UnixNano())
+
 	randomStatus := rand.Intn(100)
 	
 	if randomStatus < 35 {
@@ -315,7 +313,6 @@ func (p *Wan2Provider) GenerateScene(ctx context.Context, req VideoGenerationReq
 }
 
 func (p *Wan2Provider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
-	rand.Seed(time.Now().UnixNano())
 	randomStatus := rand.Intn(100)
 	
 	if randomStatus < 60 {
@@ -381,7 +378,6 @@ func (p *LTXOpenSourceProvider) GenerateScene(ctx context.Context, req VideoGene
 }
 
 func (p *LTXOpenSourceProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
-	rand.Seed(time.Now().UnixNano())
 	randomStatus := rand.Intn(100)
 	
 	if randomStatus < 65 {

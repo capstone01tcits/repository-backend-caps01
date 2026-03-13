@@ -131,13 +131,10 @@ func (s *videoService) GenerateVideo(userID string, req *model.GenerateVideoRequ
 	}
 
 	// Update project status
-	inProgress := "in_progress"
-	s.projectRepo.Update(&model.Project{
-		ID:     project.ID,
-		UserID: project.UserID,
-		Name:   project.Name,
-		Status: inProgress,
-	})
+	project.Status = "in_progress"
+	if err := s.projectRepo.Update(project); err != nil {
+		return nil, errors.New("failed to update project status")
+	}
 
 	return video, nil
 }

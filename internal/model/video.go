@@ -32,11 +32,6 @@ type Video struct {
 	Storyboard Storyboard `gorm:"foreignKey:StoryboardID" json:"-"`
 }
 
-func (v *Video) BeforeCreate(tx *gorm.DB) error {
-	v.ID = uuid.New()
-	return nil
-}
-
 // ==================== Request Types ====================
 
 // Video requests are defined in generation_job.go
