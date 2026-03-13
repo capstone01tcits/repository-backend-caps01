@@ -87,6 +87,9 @@ Database tables are auto-created on startup via GORM AutoMigrate. Nine tables ar
 | `storyboards` | `model.Storyboard` | Storyboard variations (FK → projects) |
 | `scenes` | `model.Scene` | Individual scenes in storyboards (FK → storyboards) |
 | `videos` | `model.Video` | Generated videos (FK → projects, storyboards) |
+| `generation_jobs` | `model.GenerationJob` | Video generation queue jobs |
+| `video_variants` | `model.VideoVariant` | 3 video variations per storyboard |
+| `scene_generations` | `model.SceneGeneration` | Individual scene generation tracking |
 
 No manual migration needed — just start the server and tables will be created/updated automatically.
 
@@ -259,6 +262,87 @@ Service berjalan di `http://localhost:8000`
 | ANY | `/api/ai/*` | Proxy to Python AI service |
 
 All AI gateway endpoints inject user context headers (`X-User-ID`, `X-User-Email`) automatically.
+
+## Video Generation System
+
+The backend includes a **scene-based video generation system** that creates 3 video variations from a single briefing:
+
+### Features
+- **3 Video Variants**: Automatically generates cinematic, vibrant, and professional variations
+- **Scene-Based**: Each video composed of 2-3 scenes (4-6 sec each), total 8-12 seconds
+- **Multiple Providers**: LTX-2-Fast, LTX-2-Pro, Runway, and open-source models
+- **Queue System**: Background workers process videos asynchronously
+- **Regeneration**: Regenerate full videos or individual scenes with new prompts
+- **Credit System**: Configurable costs per provider and operation type
+
+### Video Generation Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/videos/generate` | Generate 3 video variants from storyboard |
+| GET | `/api/videos/generation/:jobId` | Check generation job status |
+| GET | `/api/videos/storyboard/:storyboardId` | Get all 3 variants for storyboard |
+| GET | `/api/videos/:variantId` | Get single variant with all scenes |
+| POST | `/api/videos/:variantId/regenerate` | Regenerate video variant |
+| POST | `/api/videos/scene/:sceneId/regenerate` | Regenerate individual scene |
+| GET | `/api/videos/:variantId/download` | Get video download URL |
+
+### Quick Video Generation Flow
+
+```bash
+# 1. Generate 3 videos (default: LTX-2-Fast)
+curl -X POST http://localhost:3000/api/videos/generate \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_id": "{project_id}",
+    "storyboard_id": "{storyboard_id}"
+  }'
+# Returns: generation_job_id
+
+# 2. Poll status (videos being generated)
+curl http://localhost:3000/api/videos/generation/{generation_job_id} \
+  -H "Authorization: Bearer {token}"
+
+# 3. Get variants when ready (status: completed)
+curl http://localhost:3000/api/videos/storyboard/{storyboard_id} \
+  -H "Authorization: Bearer {token}"
+
+# 4. Download individual video
+curl http://localhost:3000/api/videos/{variant_id}/download \
+  -H "Authorization: Bearer {token}"
+```
+
+### Architecture
+
+**Component Stack:**
+- **Models**: GenerationJob, VideoVariant, SceneGeneration
+- **Repositories**: Full CRUD operations for all video models
+- **Service Layer**: Business logic for generation and regeneration
+- **Queue System**: Background workers with polling mechanism
+- **Providers**: Abstract interface supporting LTX, Runway, and open-source models
+
+**Job Lifecycle:**
+```
+queued → processing → completed/failed
+         ↓
+    Workers process scenes
+    ↓
+    Providers generate video
+    ↓
+    Polling tracks progress (60-sec intervals, 2-hour max)
+    ↓
+    Database updated with results
+```
+
+### Credit Costs
+
+- LTX-2-Fast: 2 credits/second (standard)
+- LTX-2-Pro: 3 credits/second (premium)
+- Runway: Variable by model
+- Open-source: 1 credit/second (internal)
+
+Example: 10-second video with 2 scenes × 3 variants = 120 credits
 
 ## Quick Copy-Paste Commands
 
