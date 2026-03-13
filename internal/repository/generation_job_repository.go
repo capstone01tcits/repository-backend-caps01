@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go-auth/internal/model"
 	"github.com/google/uuid"
@@ -123,12 +124,10 @@ func (r *generationJobRepository) UpdateStatus(ctx context.Context, id uuid.UUID
 		updates["error_message"] = errorMsg
 	}
 	if status == "completed" {
-		now := gorm.NowFunc()
-		updates["completed_at"] = now
+		updates["completed_at"] = time.Now()
 	}
 	if status == "processing" {
-		now := gorm.NowFunc()
-		updates["started_at"] = now
+		updates["started_at"] = time.Now()
 	}
 
 	result := r.db.WithContext(ctx).Model(&model.GenerationJob{}).Where("id = ?", id).Updates(updates)
@@ -139,8 +138,7 @@ func (r *generationJobRepository) UpdateStatus(ctx context.Context, id uuid.UUID
 }
 
 func (r *generationJobRepository) UpdateProgress(ctx context.Context, id uuid.UUID, notes map[string]interface{}) error {
-	data, _ := gorm.NowFunc().MarshalJSON()
-	notes["updated_at"] = data
+	notes["updated_at"] = time.Now()
 
 	result := r.db.WithContext(ctx).
 		Model(&model.GenerationJob{}).

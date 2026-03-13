@@ -48,7 +48,6 @@ func main() {
 	briefRepo := repository.NewBriefRepository(db)
 	contentRepo := repository.NewContentRepository(db)
 	storyboardRepo := repository.NewStoryboardRepository(db)
-	videoRepo := repository.NewVideoRepository(db)
 	jobRepo := repository.NewGenerationJobRepository(db)
 	variantRepo := repository.NewVideoVariantRepository(db)
 	sceneRepo := repository.NewSceneGenerationRepository(db)
@@ -149,11 +148,11 @@ func main() {
 
 	// ==================== Video Routes ====================
 	videos := api.Group("/videos", middleware.Protected())
-	videos.Post("/generate", videoHandler.GenerateVideo)
-	videos.Get("/", videoHandler.GetMyVideos)
-	videos.Get("/:id", videoHandler.GetVideo)
-	videos.Get("/:id/download", videoHandler.DownloadVideo)
-	projects.Get("/:id/videos", videoHandler.GetVideosByProject)
+	videos.Post("/generate", videoHandler.GenerateVideoVariants)
+	videos.Get("/generation/:jobId", videoHandler.GetGenerationJobStatus)
+	videos.Get("/storyboard/:storyboardId", videoHandler.GetVideoVariants)
+	videos.Get("/:variantId", videoHandler.GetVideoVariant)
+	videos.Get("/:variantId/download", videoHandler.DownloadVideo)
 
 	// ==================== Credit Routes ====================
 	credits := api.Group("/credits", middleware.Protected())

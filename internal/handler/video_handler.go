@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"net/http"
-
 	"go-auth/internal/model"
 	"go-auth/internal/service"
 	"go-auth/pkg/utils"
@@ -69,7 +67,7 @@ func (h *VideoHandler) GetGenerationJobStatus(c *fiber.Ctx) error {
 		return utils.NotFound(c, "Generation job not found")
 	}
 
-	return utils.Success(c, http.StatusOK, "Job status retrieved", job)
+	return utils.OK(c, "Job status retrieved", job)
 }
 
 // GetVideoVariants godoc
@@ -89,7 +87,7 @@ func (h *VideoHandler) GetVideoVariants(c *fiber.Ctx) error {
 	// Build response with variants and their scenes
 	response := make([]map[string]interface{}, len(variants))
 	for i, variant := range variants {
-		scenes, _ := h.videoGenService.GetVideoVariantWithScenes(c.Context(), variant.ID)
+		vari, scenes, _ := h.videoGenService.GetVideoVariantWithScenes(c.Context(), variant.ID)
 		
 		sceneResponses := make([]model.SceneStatusResponse, len(scenes))
 		for j, scene := range scenes {
@@ -105,22 +103,22 @@ func (h *VideoHandler) GetVideoVariants(c *fiber.Ctx) error {
 		}
 
 		response[i] = map[string]interface{}{
-			"id":              variant.ID.String(),
-			"variant_number":  variant.VariantNumber,
-			"status":          variant.Status,
-			"video_url":       variant.VideoURL,
-			"thumbnail_url":   variant.ThumbnailURL,
-			"prompt_used":     variant.PromptUsed,
-			"duration":        variant.Duration,
-			"provider":        variant.Provider,
-			"model":           variant.Model,
+			"id":              vari.ID.String(),
+			"variant_number":  vari.VariantNumber,
+			"status":          vari.Status,
+			"video_url":       vari.VideoURL,
+			"thumbnail_url":   vari.ThumbnailURL,
+			"prompt_used":     vari.PromptUsed,
+			"duration":        vari.Duration,
+			"provider":        vari.Provider,
+			"model":           vari.Model,
 			"scenes":          sceneResponses,
-			"created_at":      variant.CreatedAt,
-			"updated_at":      variant.UpdatedAt,
+			"created_at":      vari.CreatedAt,
+			"updated_at":      vari.UpdatedAt,
 		}
 	}
 
-	return utils.Success(c, http.StatusOK, "Video variants retrieved", response)
+	return utils.OK(c, "Video variants retrieved", response)
 }
 
 // GetVideoVariant godoc
@@ -150,7 +148,7 @@ func (h *VideoHandler) GetVideoVariant(c *fiber.Ctx) error {
 		}
 	}
 
-	return utils.Success(c, http.StatusOK, "Video variant retrieved", map[string]interface{}{
+	return utils.OK(c, "Video variant retrieved", map[string]interface{}{
 		"id":              variant.ID.String(),
 		"variant_number":  variant.VariantNumber,
 		"status":          variant.Status,
@@ -230,7 +228,7 @@ func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
 		return utils.NotFound(c, "Video variant not found")
 	}
 
-	scenes, _ := h.videoGenService.GetVideoVariantWithScenes(c.Context(), videoID)
+	_, scenes, _ := h.videoGenService.GetVideoVariantWithScenes(c.Context(), videoID)
 	
 	sceneResponses := make([]model.SceneStatusResponse, len(scenes))
 	for i, scene := range scenes {
@@ -245,7 +243,7 @@ func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
 		}
 	}
 
-	return utils.Success(c, http.StatusOK, "Video retrieved", map[string]interface{}{
+	return utils.OK(c, "Video retrieved", map[string]interface{}{
 		"id":              variant.ID.String(),
 		"variant_number":  variant.VariantNumber,
 		"status":          variant.Status,
@@ -280,12 +278,11 @@ func (h *VideoHandler) DownloadVideo(c *fiber.Ctx) error {
 	}
 
 	// Return download info with signed URL
-	return utils.Success(c, http.StatusOK, "Video download ready", map[string]interface{}{
+	return utils.OK(c, "Video download ready", map[string]interface{}{
 		"variant_id":   variant.ID.String(),
 		"download_url": variant.VideoURL,
 		"file_size":    variant.FileSize,
 		"format":       "mp4",
 		"resolution":   variant.Resolution,
 	})
-}
 }
