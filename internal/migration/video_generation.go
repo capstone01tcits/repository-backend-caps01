@@ -3,86 +3,12 @@ package migrations
 import "gorm.io/gorm"
 
 // MigrateVideoGeneration creates tables for video generation system
+// Note: Models are now defined in internal/model and handled via AutoMigrate in main.go
+// This function is kept for backward compatibility
 func MigrateVideoGeneration(db *gorm.DB) error {
-	return db.AutoMigrate(
-		&GenerationJob{},
-		&VideoVariant{},
-		&SceneGeneration{},
-	)
-}
-
-// ============================================================================
-// Models for migration (duplicated from internal/model for migration context)
-// ============================================================================
-
-type GenerationJob struct {
-	ID              string `gorm:"type:uuid;primary_key"`
-	UserID          string `gorm:"type:uuid;not null;index"`
-	ProjectID       string `gorm:"type:uuid;not null;index"`
-	StoryboardID    string `gorm:"type:uuid;not null;index"`
-	VideoID         string `gorm:"type:uuid;index"`
-	JobType         string `gorm:"not null;index"` // generate, regenerate, regenerate_scene
-	Status          string `gorm:"default:'queued';index"` // queued, processing, completed, failed
-	Priority        int    `gorm:"default:0"`
-	Prompt          interface{} `gorm:"type:jsonb"`
-	SceneCount      int    `gorm:"default:2"`
-	VideoDuration   int    `gorm:"default:10"` // in seconds
-	Provider        string // ltx, runway, wan, open_source
-	Model           string // specific model name
-	Resolution      string `gorm:"default:'1080p'"`
-	ProcessingNotes interface{} `gorm:"type:jsonb"`
-	ErrorMessage    string `gorm:"type:text"`
-	CreditsRequired int
-	CreditsUsed     int
-	RetryCount      int `gorm:"default:0"`
-	MaxRetries      int `gorm:"default:3"`
-	StartedAt       *int64
-	CompletedAt     *int64
-	CreatedAt       int64
-	UpdatedAt       int64
-	DeletedAt       *int64 `gorm:"index"`
-}
-
-type VideoVariant struct {
-	ID               string `gorm:"type:uuid;primary_key"`
-	UserID           string `gorm:"type:uuid;not null;index"`
-	ProjectID        string `gorm:"type:uuid;not null;index"`
-	StoryboardID     string `gorm:"type:uuid;not null;index"`
-	VariantNumber    int    `gorm:"not null"` // 1, 2, or 3
-	ScenePlan        interface{} `gorm:"type:jsonb"`
-	PromptUsed       string `gorm:"type:text"`
-	Provider         string
-	Model            string
-	Duration         int    `json:"duration"`
-	Resolution       string `gorm:"default:'1080p'"`
-	Status           string `gorm:"default:'pending'"` // pending, processing, completed, failed
-	VideoURL         string
-	ThumbnailURL     string
-	FileSize         int64
-	CreditsUsed      int
-	ErrorMessage     string `gorm:"type:text"`
-	RevisionOf       *string // uuid reference
-	ExternalJobID    string
-	CreatedAt        int64
-	UpdatedAt        int64
-	DeletedAt        *int64 `gorm:"index"`
-}
-
-type SceneGeneration struct {
-	ID               string `gorm:"type:uuid;primary_key"`
-	VariantID        string `gorm:"type:uuid;not null;index"`
-	SceneNumber      int
-	SceneIndex       int
-	Prompt           string `gorm:"type:text"`
-	Duration         int
-	Status           string `gorm:"default:'pending'"` // pending, processing, completed, failed
-	ExternalJobID    string
-	VideoURL         string
-	ErrorMessage     string `gorm:"type:text"`
-	ProcessingNotes  interface{} `gorm:"type:jsonb"`
-	CreatedAt        int64
-	UpdatedAt        int64
-	DeletedAt        *int64 `gorm:"index"`
+	// Migration is now handled by GORM's AutoMigrate in cmd/main.go
+	// with models from internal/model package
+	return nil
 }
 
 // ============================================================================
