@@ -59,6 +59,13 @@ Content-Type: application/json
 -  `user.id` → User ID
 -  `user.credits` → 10 credits (default new user)
 
+### Credits Tracking
+**Starting Balance: 10 credits**
+```
+Initial Credits: 10
+Available for use: 10
+```
+
 ---
 
 ## STEP 2: Login
@@ -103,6 +110,7 @@ Authorization: Bearer {access_token}
 ```
 access_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 user_id = 550e8400-e29b-41d4-a716-446655440000
+credits_balance = 10
 ```
 
 ---
@@ -137,6 +145,10 @@ Content-Type: application/json
   }
 }
 ```
+
+### Credits Used
+- Cost: 0 credits
+- Current Balance: 10 credits
 
 ### Save Variable
 ```
@@ -188,6 +200,10 @@ Content-Type: application/json
   }
 }
 ```
+
+### Credits Used
+- Cost: 0 credits
+- Current Balance: 10 credits
 
 ### Save Variable
 ```
@@ -271,8 +287,15 @@ Content-Type: application/json
 ```
 
 ### Credits Used
-- Cost: 1 credit
-- User now has: 9 credits
+- Cost: 1 credit per pillar
+- Previous Balance: 10 credits
+- Current Balance: 9 credits
+
+```
+Credit Breakdown:
+Generate Content Pillars: -1 credit
+Remaining: 9 credits
+```
 
 ### Save Variables
 ```
@@ -406,8 +429,15 @@ Content-Type: application/json
 ```
 
 ### Credits Used
-- Cost: 1 credit
-- User now has: 8 credits
+- Cost: 1 credit per storyboard set
+- Previous Balance: 9 credits
+- Current Balance: 8 credits
+
+```
+Credit Breakdown:
+Generate Storyboards: -1 credit
+Remaining: 8 credits
+```
 
 ### Save Variables
 ```
@@ -416,7 +446,70 @@ storyboard_id = 5ja7b810-9dad-11d1-80b4-00c04fd430c8
 
 ---
 
+## STEP 7.5: Check Credits & Top-up if Needed
+
+### Current Status
+```
+Current Balance: 8 credits
+Required for Video Generation (3 variants): 120 credits
+Deficit: -112 credits
+status: INSUFFICIENT CREDITS
+```
+
+### Top-up Credits - Admin Request
+
+#### Request
+```bash
+POST /api/admin/credits
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "amount": 150
+}
+```
+
+#### Response (200 OK)
+```json
+{
+  "success": true,
+  "message": "Credits added successfully",
+  "data": {
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "previous_balance": 8,
+    "amount_added": 150,
+    "new_balance": 158,
+    "transaction_id": "topup-20260313-001",
+    "created_at": "2026-03-13T10:28:00Z"
+  }
+}
+```
+
+### Credits After Top-up
+```
+Previous Balance: 8 credits
+Top-up Amount: +150 credits
+New Balance: 158 credits
+Ready for: Video Generation
+```
+
+### Save Variable
+```
+credits_balance = 158
+```
+
+---
+
 ## STEP 8: Generate Videos (3 Variants)
+
+#### Pre-Flight Check
+```
+Current Credits: 158
+Video Generation Cost: 120 credits (40 per variant x 3)
+After Generation: 38 credits
+Check: APPROVED - Sufficient credits
+```
 
 #### Request (User)
 ```bash
@@ -427,9 +520,9 @@ Content-Type: application/json
 {
   "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
   "storyboard_id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
-  "custom_prompt": "Fokus pada inovasi produk, profesional namun modern",
-  "scene_count": 3,
-  "video_duration": 12
+  "title": "Kampanye Q2 - Storyboard 1",
+  "format": "mp4",
+  "resolution": "1080p"
 }
 ```
 
@@ -446,10 +539,23 @@ Content-Type: application/json
     "total_variants": 3,
     "provider": "ltx",
     "model": "ltx-2-fast",
+    "credits_to_deduct": 120,
     "created_at": "2026-03-13T10:30:00Z",
     "estimated_completion": "2026-03-13T11:00:00Z"
   }
 }
+```
+
+### Credits Deducted
+```
+Previous Balance: 158 credits
+Cost Breakdown:
+  - Variant 1 (Cinematic): 40 credits
+  - Variant 2 (Vibrant): 40 credits
+  - Variant 3 (Professional): 40 credits
+Total Deducted: -120 credits
+
+Current Balance: 38 credits
 ```
 
 ### What Happens Behind the Scenes
@@ -742,7 +848,9 @@ T=0:15     Create Business Brief
            └─ Company: PT Teknologi Indonesia
 
 T=0:20     Generate Content Pillars (1 credit)
-           ├─ Credits: 10 to 9
+           ├─ Starting: 10 credits
+           ├─ Cost: 1 credit
+           ├─ Balance: 9 credits
            ├─ Pillars: 3 variants
            │  ├─ Inovasi Produk
            │  ├─ Kepercayaan & Kredibilitas
@@ -750,12 +858,16 @@ T=0:20     Generate Content Pillars (1 credit)
            └─ Themes: 3-4 per pillar
 
 T=0:30     Select Content Pillar & Theme (0 credits)
+           ├─ Starting: 9 credits
+           ├─ Cost: 0 credits
+           ├─ Balance: 9 credits
            ├─ Selected: Inovasi Produk
-           ├─ Theme: Product Features Showcase
-           └─ Credits: 9 (no change)
+           └─ Theme: Product Features Showcase
 
 T=0:40     Generate Storyboards (1 credit)
-           ├─ Credits: 9 to 8
+           ├─ Starting: 9 credits
+           ├─ Cost: 1 credit
+           ├─ Balance: 8 credits
            ├─ Storyboards: 3 variations
            │  ├─ Cinematic
            │  ├─ Vibrant
@@ -763,12 +875,16 @@ T=0:40     Generate Storyboards (1 credit)
            ├─ Scenes per storyboard: 3
            └─ Total duration per SB: 12 seconds
 
-T=0:50     Admin Top-up Credits (0 credits)
-           ├─ Added: 150 credits
-           └─ Credits: 8 to 158
+T=0:50     Check & Top-up Credits (0 credits)
+           ├─ Previous: 8 credits
+           ├─ Required: 120 credits
+           ├─ Top-up: +150 credits
+           └─ New Balance: 158 credits
 
 T=1:00     Generate Videos (120 credits)
-           ├─ Credits: 158 to 38
+           ├─ Starting: 158 credits
+           ├─ Cost: 40 credits/variant x 3 = 120 credits
+           ├─ Balance: 38 credits
            ├─ Job started: queued
            ├─ 3 Variants x 3 Scenes = 9 scenes total
            ├─ Provider: LTX-2-Fast
@@ -779,23 +895,25 @@ T=1:05     Poll Status (Every 5 sec)
            └─ Updated at each poll
 
 T=1:30     [ VIDEO GENERATION IN PROGRESS ]
-           ├─ Variant 1 (Cinematic): 50% complete
+           ├─ Variant 1 (Cinematic): 50% complete (40 credits used)
            ├─ Variant 2 (Vibrant): 20% complete
            ├─ Variant 3 (Professional): queued
-           └─ Credits Used: 80/120
+           └─ Credits Allocated: 120/120
 
 T=1:60     [ VIDEOS NEARLY COMPLETE ]
-           ├─ Variant 1 & 2: DONE
+           ├─ Variant 1 & 2: DONE (80 credits used)
            ├─ Variant 3: 80% complete
-           └─ Credits Used: 110/120
+           ├─ Credits Allocated: 120/120
+           └─ Remaining Balance: 38 credits (after generation)
 
 T=1:90     VIDEOS COMPLETE
            ├─ Status: completed
            ├─ 3 Full Videos Ready
-           │  ├─ Cinematic (52 MB)
-           │  ├─ Vibrant (52 MB)
-           │  └─ Professional (52 MB)
-           └─ Credits Final: 38
+           │  ├─ Cinematic (52 MB) - 40 credits
+           │  ├─ Vibrant (52 MB) - 40 credits
+           │  └─ Professional (52 MB) - 40 credits
+           ├─ Total Used: 120 credits
+           └─ Current Balance: 38 credits
 
 T=2:00     Get All Variants
            ├─ Endpoint: /api/videos/storyboard/{id}
