@@ -422,6 +422,48 @@ Authorization: Bearer {access_token}
 ```http
 PUT /api/briefs/business/{brief_id}
 Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "project_name": "Updated Brand Video Q3",
+  "company_name": "Updated Company Name",
+  "industry": "Updated Industry",
+  "target_audience": "Updated audience",
+  "project_objective": "Updated objective",
+  "key_message": "Updated message",
+  "budget": "75000000",
+  "timeline": "6 weeks",
+  "status": "submitted"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Business brief updated successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "project_name": "Updated Brand Video Q3",
+    "status": "submitted",
+    "updated_at": "2024-01-15T11:00:00Z"
+  }
+}
+```
+
+#### Delete Business Brief
+
+```http
+DELETE /api/briefs/business/{brief_id}
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Business brief deleted successfully"
+}
 ```
 
 ---
@@ -437,13 +479,131 @@ Content-Type: application/json
 
 {
   "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
-  "tone": "Professional",
-  "style": "Modern",
-  "key_scenes": "Office, team collaboration, product demo"
+  "title": "Product Launch Video",
+  "video_type": "promotional",
+  "duration": 60,
+  "style": "cinematic",
+  "tone": "professional",
+  "script": "Opening shot: wide aerial view...",
+  "call_to_action": "Visit our website",
+  "output_format": "mp4",
+  "resolution": "1080p"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "status": "success",
+  "message": "Creative brief created successfully",
+  "data": {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "Product Launch Video",
+    "duration": 60,
+    "created_at": "2024-01-15T10:40:00Z"
+  }
 }
 ```
 
 #### List Creative Briefs
+
+```http
+GET /api/briefs/creative
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Product Launch Video",
+      "video_type": "promotional",
+      "duration": 60,
+      "created_at": "2024-01-15T10:40:00Z"
+    }
+  ]
+}
+```
+
+#### Get Single Creative Brief
+
+```http
+GET /api/briefs/creative/{creative_brief_id}
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "Product Launch Video",
+    "video_type": "promotional",
+    "duration": 60,
+    "style": "cinematic",
+    "tone": "professional",
+    "script": "Opening shot: wide aerial view...",
+    "call_to_action": "Visit our website",
+    "output_format": "mp4",
+    "resolution": "1080p",
+    "created_at": "2024-01-15T10:40:00Z"
+  }
+}
+```
+
+#### Update Creative Brief
+
+```http
+PUT /api/briefs/creative/{creative_brief_id}
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "title": "Updated Product Launch Video",
+  "duration": 90,
+  "tone": "uplifting",
+  "status": "submitted"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Creative brief updated successfully",
+  "data": {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "title": "Updated Product Launch Video",
+    "duration": 90,
+    "tone": "uplifting",
+    "status": "submitted"
+  }
+}
+```
+
+####Delete Creative Brief
+
+```http
+DELETE /api/briefs/creative/{creative_brief_id}
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Creative brief deleted successfully"
+}
+```
+
+#### List Creative Briefs by Business Brief
 
 ```http
 GET /api/briefs/business/{business_brief_id}/creative
@@ -519,6 +679,54 @@ Content-Type: application/json
 
 Cost: 1 credit per generation
 
+#### List Storyboards
+
+```http
+GET /api/projects/{project_id}/storyboards
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
+      "project_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Storyboard 1 - Premium Cinematic",
+      "description": "Professional product showcase",
+      "version": 1,
+      "total_duration": 12,
+      "created_at": "2024-01-15T10:45:00Z"
+    }
+  ]
+}
+```
+
+#### Get Single Storyboard
+
+```http
+GET /api/storyboards/{storyboard_id}
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "Storyboard 1 - Premium Cinematic",
+    "description": "Professional product showcase",
+    "version": 1,
+    "total_duration": 12,
+    "created_at": "2024-01-15T10:45:00Z"
+  }
+}
+```
+
 #### Select Storyboard
 
 ```http
@@ -591,7 +799,7 @@ The video generation system creates **3 automatic variations** of videos from a 
 
 ### Video Generation Endpoints
 
-#### Generate Video Variants
+#### Generate Video
 
 ```http
 POST /api/videos/generate
@@ -601,18 +809,18 @@ Content-Type: application/json
 {
   "project_id": "550e8400-e29b-41d4-a716-446655440000",
   "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-  "custom_prompt": "Focus on campus beauty and student life",
-  "scene_count": 2,
-  "video_duration": 10
+  "title": "My Brand Video",
+  "format": "mp4",
+  "resolution": "1080p"
 }
 ```
 
 **Parameters:**
 - `project_id` (required): UUID of project
-- `storyboard_id` (required): UUID of storyboard
-- `custom_prompt` (optional): Custom direction for generation
-- `scene_count` (optional): 2-3 scenes (default: 2)
-- `video_duration` (optional): 8-12 seconds (default: 10)
+- `storyboard_id` (required): UUID of storyboard  
+- `title` (required): Video title
+- `format` (optional): Video format (default: "mp4")
+- `resolution` (optional): Video resolution (default: "1080p")
 
 **Response (201 Created):**
 ```json
@@ -622,12 +830,15 @@ Content-Type: application/json
   "data": {
     "generation_job_id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
     "status": "queued",
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "title": "My Brand Video",
+    "format": "mp4",
+    "resolution": "1080p",
     "created_at": "2024-01-15T10:30:00Z"
   }
 }
 ```
-
-**Cost**: ~120 credits (10 sec × 2 scenes × 3 videos × 2 multiplier for standard tier)
 
 ---
 
@@ -733,7 +944,53 @@ Returns variant details with all scenes.
 
 ---
 
-#### Regenerate Video Variant
+#### List My Videos
+
+```http
+GET /api/videos
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "video_1",
+      "project_id": "550e8400-e29b-41d4-a716-446655440000",
+      "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "title": "My Brand Video",
+      "status": "completed",
+      "format": "mp4",
+      "resolution": "1080p",
+      "created_at": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+---
+
+#### Get Single Video
+
+```http
+GET /api/videos/{video_id}
+Authorization: Bearer {access_token}
+```
+
+---
+
+#### Get Videos by Project
+
+```http
+GET /api/projects/{project_id}/videos
+Authorization: Bearer {access_token}
+```
+
+---
+
+#### Download Video
 
 ```http
 POST /api/videos/{variant_id}/regenerate
