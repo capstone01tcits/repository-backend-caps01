@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	"go-auth/internal/model"
-	"go-auth/internal/repository"
+	"Sevima-AI-Content-Creator/internal/model"
+	"Sevima-AI-Content-Creator/internal/repository"
 )
 
 type VideoService interface {

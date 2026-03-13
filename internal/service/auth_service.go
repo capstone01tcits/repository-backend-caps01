@@ -3,9 +3,9 @@ package service
 import (
 	"errors"
 
-	"go-auth/internal/model"
-	"go-auth/internal/repository"
-	"go-auth/pkg/utils"
+	"Sevima-AI-Content-Creator/internal/model"
+	"Sevima-AI-Content-Creator/internal/repository"
+	"Sevima-AI-Content-Creator/pkg/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )

@@ -1,4 +1,4 @@
-module go-auth
+module Sevima-AI-Content-Creator
 
 go 1.21
 

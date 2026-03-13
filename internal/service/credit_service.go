@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"go-auth/internal/repository"
+	"Sevima-AI-Content-Creator/internal/repository"
 )
 
 type CreditService interface {

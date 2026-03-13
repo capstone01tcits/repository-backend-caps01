@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"go-auth/config"
+	"Sevima-AI-Content-Creator/config"
 
 	"github.com/golang-jwt/jwt/v5"
 )

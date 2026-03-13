@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"go-auth/internal/model"
+	"Sevima-AI-Content-Creator/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

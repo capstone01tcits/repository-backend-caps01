@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"go-auth/config"
-	"go-auth/pkg/utils"
+	"Sevima-AI-Content-Creator/config"
+	"Sevima-AI-Content-Creator/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 )

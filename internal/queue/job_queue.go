@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"go-auth/internal/model"
-	"go-auth/internal/repository"
-	"go-auth/internal/service"
+	"Sevima-AI-Content-Creator/internal/model"
+	"Sevima-AI-Content-Creator/internal/repository"
+	"Sevima-AI-Content-Creator/internal/service"
 )
 
 // JobQueue manages the video generation job queue

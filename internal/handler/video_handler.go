@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"go-auth/internal/model"
-	"go-auth/internal/service"
-	"go-auth/pkg/utils"
+	"Sevima-AI-Content-Creator/internal/model"
+	"Sevima-AI-Content-Creator/internal/service"
+	"Sevima-AI-Content-Creator/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"

@@ -3,7 +3,7 @@ package middleware
 import (
 	"strings"
 
-	"go-auth/pkg/utils"
+	"Sevima-AI-Content-Creator/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 )

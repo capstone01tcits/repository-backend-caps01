@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"go-auth/internal/ai"
-	"go-auth/internal/model"
-	"go-auth/internal/repository"
+	"Sevima-AI-Content-Creator/internal/ai"
+	"Sevima-AI-Content-Creator/internal/model"
+	"Sevima-AI-Content-Creator/internal/repository"
 	"github.com/google/uuid"
 )
 

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 
-	"go-auth/config"
-	"go-auth/internal/handler"
-	"go-auth/internal/middleware"
-	"go-auth/internal/model"
-	"go-auth/internal/repository"
-	"go-auth/internal/service"
+	"Sevima-AI-Content-Creator/config"
+	"Sevima-AI-Content-Creator/internal/handler"
+	"Sevima-AI-Content-Creator/internal/middleware"
+	"Sevima-AI-Content-Creator/internal/model"
+	"Sevima-AI-Content-Creator/internal/repository"
+	"Sevima-AI-Content-Creator/internal/service"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
