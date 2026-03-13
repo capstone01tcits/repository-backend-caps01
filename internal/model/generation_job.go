@@ -18,7 +18,7 @@ type GenerationJob struct {
 	UserID          uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	ProjectID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
 	StoryboardID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
-	VideoID         uuid.UUID      `gorm:"type:uuid;index" json:"video_id"`
+	VideoID         *uuid.UUID     `gorm:"type:uuid;index" json:"video_id,omitempty"`
 	JobType         string         `gorm:"not null;index" json:"job_type"` // generate, regenerate, regenerate_scene
 	Status          string         `gorm:"default:'queued';index" json:"status"` // queued, processing, completed, failed
 	Priority        int            `gorm:"default:0" json:"priority"`
