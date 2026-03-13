@@ -14,7 +14,7 @@ import (
 // Represents a video generation task in the queue
 
 type GenerationJob struct {
-	ID              uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID              uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID          uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	ProjectID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
 	StoryboardID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
@@ -57,7 +57,7 @@ func (gj *GenerationJob) BeforeCreate(tx *gorm.DB) error {
 // Represents one of 3 video variants generated from a briefing
 
 type VideoVariant struct {
-	ID             uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID             uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID         uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	ProjectID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
 	StoryboardID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
@@ -95,7 +95,7 @@ func (vv *VideoVariant) BeforeCreate(tx *gorm.DB) error {
 // Tracks individual scene generation within a video
 
 type SceneGeneration struct {
-	ID              uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID              uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	VariantID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"variant_id"`
 	SceneNumber     int            `json:"scene_number"`
 	SceneIndex      int            `json:"scene_index"`

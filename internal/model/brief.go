@@ -10,7 +10,7 @@ import (
 // ==================== Business Brief ====================
 
 type BusinessBrief struct {
-	ID               uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID               uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID           uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	ProjectID        uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
 	ProjectName      string         `gorm:"not null" json:"project_name"`
@@ -42,7 +42,7 @@ func (b *BusinessBrief) BeforeCreate(tx *gorm.DB) error {
 // ==================== Creative Brief ====================
 
 type CreativeBrief struct {
-	ID               uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID               uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID           uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	BusinessBriefID  uuid.UUID      `gorm:"type:uuid;not null;index" json:"business_brief_id"`
 	Title            string         `gorm:"not null" json:"title"`

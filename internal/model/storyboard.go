@@ -10,7 +10,7 @@ import (
 // ==================== Storyboard ====================
 
 type Storyboard struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID          uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	ProjectID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
 	UserID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	Title       string         `gorm:"not null" json:"title"`
@@ -34,7 +34,7 @@ func (s *Storyboard) BeforeCreate(tx *gorm.DB) error {
 // ==================== Scene ====================
 
 type Scene struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID           uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	StoryboardID uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
 	UserID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	SceneNumber  int            `gorm:"not null" json:"scene_number"`

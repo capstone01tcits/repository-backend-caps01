@@ -10,7 +10,7 @@ import (
 // ==================== Content Pillar ====================
 
 type ContentPillar struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID          uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	ProjectID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
 	UserID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	Title       string         `gorm:"not null" json:"title"`
@@ -34,7 +34,7 @@ func (cp *ContentPillar) BeforeCreate(tx *gorm.DB) error {
 // ==================== Content Theme ====================
 
 type ContentTheme struct {
-	ID              uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID              uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	ContentPillarID uuid.UUID      `gorm:"type:uuid;not null;index" json:"content_pillar_id"`
 	UserID          uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	Title           string         `gorm:"not null" json:"title"`

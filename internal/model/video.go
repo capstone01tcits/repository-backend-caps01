@@ -8,7 +8,7 @@ import (
 )
 
 type Video struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID           uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	ProjectID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
 	UserID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	StoryboardID uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`

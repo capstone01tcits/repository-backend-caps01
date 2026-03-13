@@ -9,6 +9,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 )
 
 type Config struct {
@@ -35,7 +36,6 @@ func Load() {
 	jwtSecret := getEnv("JWT_SECRET", "")
 	jwtRefreshSecret := getEnv("JWT_REFRESH_SECRET", "")
 
-	// Validate JWT secrets
 	if jwtSecret == "" {
 		if appEnv == "production" {
 			log.Fatal("ERROR: JWT_SECRET must be set in production environment. Please set JWT_SECRET in .env")
@@ -81,8 +81,15 @@ func ConnectDB() *gorm.DB {
 		logLevel = logger.Info
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logLevel),
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true, // disables implicit prepared statement usage
+	}), &gorm.Config{
+		Logger:                                   logger.Default.LogMode(logLevel),
+		DisableForeignKeyConstraintWhenMigrating: true,
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: false,
+		},
 	})
 	if err != nil {
 		panic("Failed to connect to database: " + err.Error())
