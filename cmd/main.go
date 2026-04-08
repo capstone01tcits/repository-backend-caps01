@@ -132,6 +132,7 @@ func main() {
 	contentPillars := api.Group("/content-pillars", middleware.Protected())
 	contentPillars.Get("/:id", contentHandler.GetContentPillar)
 	contentPillars.Post("/:id/select", contentHandler.SelectContentPillar)
+	contentPillars.Put("/:id", contentHandler.UpdateContentPillar)
 	contentPillars.Get("/:id/themes", contentHandler.GetContentThemes)
 
 	// ==================== Content Theme Routes ====================
@@ -144,6 +145,7 @@ func main() {
 	storyboards := api.Group("/storyboards", middleware.Protected())
 	storyboards.Get("/:id", storyboardHandler.GetStoryboard)
 	storyboards.Post("/:id/select", storyboardHandler.SelectStoryboard)
+	storyboards.Put("/:id", storyboardHandler.UpdateStoryboard)
 	storyboards.Get("/:id/scenes", storyboardHandler.GetScenes)
 
 	// ==================== Video Routes ====================
@@ -153,6 +155,8 @@ func main() {
 	videos.Get("/storyboard/:storyboardId", videoHandler.GetVideoVariants)
 	videos.Get("/:variantId", videoHandler.GetVideoVariant)
 	videos.Get("/:variantId/download", videoHandler.DownloadVideo)
+	videos.Post("/:variantId/regenerate", videoHandler.RegenerateVideoVariant)
+	videos.Post("/scene/:sceneId/regenerate", videoHandler.RegenerateScene)
 
 	// ==================== Credit Routes ====================
 	credits := api.Group("/credits", middleware.Protected())

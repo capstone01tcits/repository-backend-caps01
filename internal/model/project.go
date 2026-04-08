@@ -12,6 +12,7 @@ type Project struct {
 	UserID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	Name        string         `gorm:"not null" json:"name"`
 	Description string         `gorm:"type:text" json:"description"`
+	Theme       string         `json:"theme"` // new theme field
 	Status      string         `gorm:"default:draft" json:"status"` // draft, in_progress, completed
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
@@ -35,10 +36,12 @@ func (p *Project) BeforeCreate(tx *gorm.DB) error {
 type CreateProjectRequest struct {
 	Name        string `json:"name" validate:"required"`
 	Description string `json:"description"`
+	Theme       string `json:"theme"` // new theme field
 }
 
 type UpdateProjectRequest struct {
 	Name        *string `json:"name"`
+	Theme       *string `json:"theme"` // new theme field
 	Description *string `json:"description"`
 	Status      *string `json:"status"`
 }

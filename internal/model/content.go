@@ -15,6 +15,8 @@ type ContentPillar struct {
 	UserID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	Title       string         `gorm:"not null" json:"title"`
 	Description string         `gorm:"type:text" json:"description"`
+	Prompt      string         `gorm:"type:text" json:"prompt"` // optional AI prompt for video generation
+	VideoURL    string         `json:"video_url"`               // output video from AI
 	IsSelected  bool           `gorm:"default:false" json:"is_selected"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
@@ -66,4 +68,9 @@ type SelectContentPillarRequest struct {
 
 type SelectContentThemeRequest struct {
 	ContentThemeID string `json:"content_theme_id" validate:"required"`
+}
+
+type UpdateContentPillarRequest struct {
+	Prompt   *string `json:"prompt"`
+	VideoURL *string `json:"video_url"`
 }

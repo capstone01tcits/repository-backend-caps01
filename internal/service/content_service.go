@@ -15,6 +15,7 @@ type ContentService interface {
 	GetContentPillars(userID, projectID string) ([]model.ContentPillar, error)
 	GetContentPillar(userID, pillarID string) (*model.ContentPillar, error)
 	SelectContentPillar(userID, pillarID string) (*model.ContentPillar, error)
+	UpdateContentPillar(userID, pillarID string, req *model.UpdateContentPillarRequest) (*model.ContentPillar, error)
 
 	// Content Theme
 	GetContentThemes(userID, pillarID string) ([]model.ContentTheme, error)
@@ -164,4 +165,30 @@ func (s *contentService) SelectContentTheme(userID, themeID string) (*model.Cont
 	}
 
 	return theme, nil
+}
+
+// UpdateContentPillar godoc
+// Updates prompt and/or video_url for a content pillar (Sprint 3)
+func (s *contentService) UpdateContentPillar(userID, pillarID string, req *model.UpdateContentPillarRequest) (*model.ContentPillar, error) {
+	pillar, err := s.contentRepo.FindContentPillarByID(pillarID)
+	if err != nil {
+		return nil, errors.New("content pillar not found")
+	}
+
+	if pillar.UserID.String() != userID {
+		return nil, errors.New("unauthorized access")
+	}
+
+	if req.Prompt != nil {
+		pillar.Prompt = *req.Prompt
+	}
+	if req.VideoURL != nil {
+		pillar.VideoURL = *req.VideoURL
+	}
+
+	if err := s.contentRepo.UpdateContentPillar(pillar); err != nil {
+		return nil, errors.New("failed to update content pillar")
+	}
+
+	return pillar, nil
 }

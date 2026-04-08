@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/service"
 	"Sevima-AI-Content-Creator/pkg/utils"
 
@@ -97,4 +98,28 @@ func (h *ContentHandler) SelectContentTheme(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Content theme selected", theme)
+}
+
+// UpdateContentPillar godoc
+// PUT /api/content-pillars/:id
+func (h *ContentHandler) UpdateContentPillar(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	pillarID := c.Params("id")
+
+	var req model.UpdateContentPillarRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	// Validate prompt length (max 1000 characters)
+	if req.Prompt != nil && len(*req.Prompt) > 1000 {
+		return utils.BadRequest(c, "Prompt must be less than 1000 characters")
+	}
+
+	pillar, err := h.contentService.UpdateContentPillar(userID, pillarID, &req)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Content pillar updated", pillar)
 }

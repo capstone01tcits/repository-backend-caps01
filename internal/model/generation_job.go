@@ -57,28 +57,29 @@ func (gj *GenerationJob) BeforeCreate(tx *gorm.DB) error {
 // Represents one of 3 video variants generated from a briefing
 
 type VideoVariant struct {
-	ID             uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
-	UserID         uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
-	ProjectID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
-	StoryboardID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
-	VariantNumber  int            `gorm:"not null" json:"variant_number"` // 1, 2, or 3
-	ScenePlan      datatypes.JSON `gorm:"type:jsonb" json:"scene_plan"`
-	PromptUsed     string         `gorm:"type:text" json:"prompt_used"`
-	Provider       string         `json:"provider"`    // ltx, runway, wan, open_source
-	Model          string         `json:"model"`       // specific model name
-	Duration       int            `json:"duration"`    // in seconds
-	Resolution     string         `gorm:"default:1080p" json:"resolution"`
-	Status         string         `gorm:"default:pending" json:"status"` // pending, processing, completed, failed
-	VideoURL       string         `json:"video_url"`
-	ThumbnailURL   string         `json:"thumbnail_url"`
-	FileSize       int64          `json:"file_size"`
-	CreditsUsed    int            `json:"credits_used"`
-	ErrorMessage   string         `gorm:"type:text" json:"error_message,omitempty"`
-	RevisionOf     *uuid.UUID     `gorm:"type:uuid" json:"revision_of,omitempty"` // if this is a regenerated version
-	ExternalJobID  string         `json:"external_job_id"`        // job ID from provider (LTX, Runway, etc)
-	CreatedAt      time.Time      `json:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	ID              uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID          uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
+	ProjectID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
+	StoryboardID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
+	VariantNumber   int            `gorm:"not null" json:"variant_number"` // 1, 2, or 3
+	ScenePlan       datatypes.JSON `gorm:"type:jsonb" json:"scene_plan"`
+	PromptUsed      string         `gorm:"type:text" json:"prompt_used"`
+	Provider        string         `json:"provider"`    // ltx, runway, wan, open_source
+	Model           string         `json:"model"`       // specific model name
+	Duration        int            `json:"duration"`    // in seconds
+	Resolution      string         `gorm:"default:1080p" json:"resolution"`
+	Status          string         `gorm:"default:pending" json:"status"` // pending, processing, completed, failed
+	VideoURL        string         `json:"video_url"`
+	ThumbnailURL    string         `json:"thumbnail_url"`
+	FileSize        int64          `json:"file_size"`
+	CreditsUsed     int            `json:"credits_used"`
+	RegenerateCount int            `gorm:"default:0" json:"regenerate_count"` // max 3
+	ErrorMessage    string         `gorm:"type:text" json:"error_message,omitempty"`
+	RevisionOf      *uuid.UUID     `gorm:"type:uuid" json:"revision_of,omitempty"` // if this is a regenerated version
+	ExternalJobID   string         `json:"external_job_id"`        // job ID from provider (LTX, Runway, etc)
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
 	User       User       `gorm:"foreignKey:UserID" json:"-"`

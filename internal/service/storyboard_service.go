@@ -14,6 +14,7 @@ type StoryboardService interface {
 	GetStoryboards(userID, projectID string) ([]model.Storyboard, error)
 	GetStoryboard(userID, storyboardID string) (*model.Storyboard, error)
 	SelectStoryboard(userID, storyboardID string) (*model.Storyboard, error)
+	UpdateStoryboard(userID, storyboardID string, req *model.UpdateStoryboardRequest) (*model.Storyboard, error)
 	GetScenes(userID, storyboardID string) ([]model.Scene, error)
 }
 
@@ -63,11 +64,11 @@ func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeI
 		title  string
 		desc   string
 		scenes []struct {
-			num  int
-			t    string
-			d    string
-			v    string
-			dur  int
+			num int
+			t   string
+			d   string
+			v   string
+			dur int
 		}
 	}{
 		{
@@ -201,4 +202,27 @@ func (s *storyboardService) GetScenes(userID, storyboardID string) ([]model.Scen
 	}
 
 	return s.storyboardRepo.FindScenesByStoryboardID(storyboardID)
+}
+
+// UpdateStoryboard godoc
+// Updates prompt for a storyboard (Sprint 3)
+func (s *storyboardService) UpdateStoryboard(userID, storyboardID string, req *model.UpdateStoryboardRequest) (*model.Storyboard, error) {
+	storyboard, err := s.storyboardRepo.FindByID(storyboardID)
+	if err != nil {
+		return nil, errors.New("storyboard not found")
+	}
+
+	if storyboard.UserID.String() != userID {
+		return nil, errors.New("unauthorized access")
+	}
+
+	if req.Prompt != nil {
+		storyboard.Prompt = *req.Prompt
+	}
+
+	if err := s.storyboardRepo.Update(storyboard); err != nil {
+		return nil, errors.New("failed to update storyboard")
+	}
+
+	return storyboard, nil
 }

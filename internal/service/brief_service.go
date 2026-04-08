@@ -52,12 +52,15 @@ func (s *briefService) CreateBusinessBrief(userID string, req *model.CreateBusin
 		ProjectID:        projectID,
 		ProjectName:      req.ProjectName,
 		CompanyName:      req.CompanyName,
+		InstituteName:    req.InstituteName,
+		Education:        req.Education,
 		Industry:         req.Industry,
 		TargetAudience:   req.TargetAudience,
 		ProjectObjective: req.ProjectObjective,
 		KeyMessage:       req.KeyMessage,
 		Budget:           req.Budget,
 		Timeline:         req.Timeline,
+		Deadline:         req.Deadline,
 		Competitors:      req.Competitors,
 		AdditionalNotes:  req.AdditionalNotes,
 		Status:           "draft",
@@ -103,6 +106,12 @@ func (s *briefService) UpdateBusinessBrief(userID, briefID string, req *model.Up
 	if req.CompanyName != nil {
 		brief.CompanyName = *req.CompanyName
 	}
+	if req.InstituteName != nil {
+		brief.InstituteName = *req.InstituteName
+	}
+	if req.Education != nil {
+		brief.Education = *req.Education
+	}
 	if req.Industry != nil {
 		brief.Industry = *req.Industry
 	}
@@ -120,6 +129,9 @@ func (s *briefService) UpdateBusinessBrief(userID, briefID string, req *model.Up
 	}
 	if req.Timeline != nil {
 		brief.Timeline = *req.Timeline
+	}
+	if req.Deadline != nil {
+		brief.Deadline = *req.Deadline
 	}
 	if req.Competitors != nil {
 		brief.Competitors = *req.Competitors

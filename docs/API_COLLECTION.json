@@ -1,0 +1,1573 @@
+{
+  "info": {
+    "name": "AI Video Generation Platform API - Postman Collection",
+    "description": "Complete API collection for Sevima AI Video Generation Platform Backend.\n\nVersion: 2.1.0 (Updated Sprint 3 - April 2026)\nBase URL: http://localhost:3000\nAI Service: http://localhost:8000\n\nWorkflow: Register → Login → Create Project → Business Brief → Content Pillars → Storyboard → Video Generation\n\nSprint 3 Updates (April 2026):\n✓ Field changes: CompanyName→InstituteName, Industry→Education, TargetAudience (string→bool), Budget+Timeline→Deadline\n✓ New fields: Theme (Project), Prompt+VideoURL (ContentPillar), Prompt (Storyboard), Caption+RegenerateCount (Scene)\n✓ Regenerate limits: max 3 attempts per video/scene with independent tracking\n✓ Credit system: 40 credits for full video regenerate, 15 credits for scene regenerate",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "ai-video-gen-platform-v2-sprint3"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "business_brief_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "content_pillar_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "storyboard_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "video_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "variant_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "scene_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Backend Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "AI Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ai/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('access_token', jsonData.data.access_token);",
+                  "    bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"secure123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login (User)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('access_token', jsonData.data.access_token);",
+                  "    bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                  "    if (jsonData.data.user && jsonData.data.user.id) {",
+                  "        bru.setVar('target_user_id', jsonData.data.user.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"secure123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('access_token', jsonData.data.access_token);",
+                  "    bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('access_token', jsonData.data.access_token);",
+                  "    bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"secure123\",\n  \"new_password\": \"newSecure456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/account",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "account"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Restore Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/restore",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "restore"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('project_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kampanye Brand Video Q2 2026\",\n  \"description\": \"A promotional video campaign for Q2 2026\",\n  \"theme\": \"Corporate Branding\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{project_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Project Name\",\n  \"theme\": \"Modern & Dynamic\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{project_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{project_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Briefs",
+      "item": [
+        {
+          "name": "Create Business Brief",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('business_brief_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"project_name\": \"AI Video Generation Platform\",\n  \"institute_name\": \"PT Teknologi Indonesia\",\n  \"education\": \"Higher Education\",\n  \"target_audience\": \"Yes\",\n  \"project_objective\": \"Showcase innovation dalam teknologi AI untuk video generation\",\n  \"key_message\": \"Inovasi Teknologi untuk Masa Depan Digital\",\n  \"deadline\": \"2026-05-15T00:00:00Z\",\n  \"competitors\": \"Runway AI, Synthesia, HeyGen\",\n  \"additional_notes\": \"Platform untuk generate video otomatis dengan AI\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/briefs/business",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "business"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Business Briefs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/briefs/business",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "business"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Business Brief",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/briefs/business/{{business_brief_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "business",
+                "{{business_brief_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Business Brief",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"institute_name\": \"PT Teknologi Maju\",\n  \"education\": \"Professional Development\",\n  \"target_audience\": true,\n  \"deadline\": \"2026-06-15T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/briefs/business/{{business_brief_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "business",
+                "{{business_brief_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Business Brief",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/briefs/business/{{business_brief_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "business",
+                "{{business_brief_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Creative Briefs by Business Brief",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/briefs/business/{{business_brief_id}}/creative",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "business",
+                "{{business_brief_id}}",
+                "creative"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Creative Briefs",
+      "item": [
+        {
+          "name": "Create Creative Brief",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('creative_brief_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_brief_id\": \"{{business_brief_id}}\",\n  \"title\": \"Product Launch Video\",\n  \"video_type\": \"promotional\",\n  \"duration\": 60,\n  \"style\": \"cinematic\",\n  \"tone\": \"professional\",\n  \"script\": \"Opening shot: wide aerial...\",\n  \"call_to_action\": \"Visit our website\",\n  \"output_format\": \"mp4\",\n  \"resolution\": \"1080p\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/briefs/creative",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "creative"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Creative Briefs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/briefs/creative",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "creative"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Creative Brief",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/briefs/creative/{{creative_brief_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "creative",
+                "{{creative_brief_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Creative Brief",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Product Launch Video\",\n  \"duration\": 90,\n  \"status\": \"submitted\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/briefs/creative/{{creative_brief_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "creative",
+                "{{creative_brief_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Creative Brief",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/briefs/creative/{{creative_brief_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "briefs",
+                "creative",
+                "{{creative_brief_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Content Pillars",
+      "item": [
+        {
+          "name": "Generate Content Pillars",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
+                  "    bru.setVar('content_pillar_id', jsonData.data[0].id);",
+                  "    if (jsonData.data[0].content_themes && jsonData.data[0].content_themes.length > 0) {",
+                  "        bru.setVar('content_theme_id', jsonData.data[0].content_themes[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{project_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/content-pillars/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{project_id}}",
+                "content-pillars",
+                "generate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Content Pillars",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/content-pillars",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{project_id}}",
+                "content-pillars"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Content Pillar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/content-pillars/{{content_pillar_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "content-pillars",
+                "{{content_pillar_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Select Content Pillar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/content-pillars/{{content_pillar_id}}/select",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "content-pillars",
+                "{{content_pillar_id}}",
+                "select"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Content Pillar (Sprint 3 ✓ NEW)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Custom AI prompt untuk video generation\",\n  \"video_url\": \"https://storage.example.com/videos/generated_video.mp4\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/content-pillars/{{content_pillar_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "content-pillars",
+                "{{content_pillar_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Content Themes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/content-pillars/{{content_pillar_id}}/themes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "content-pillars",
+                "{{content_pillar_id}}",
+                "themes"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Content Themes",
+      "item": [
+        {
+          "name": "Select Content Theme",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/content-themes/{{content_theme_id}}/select",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "content-themes",
+                "{{content_theme_id}}",
+                "select"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Storyboards",
+      "item": [
+        {
+          "name": "Generate Storyboards",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
+                  "    bru.setVar('storyboard_id', jsonData.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"content_theme_id\": \"{{content_theme_id}}\",\n  \"prompt\": \"Tampilkan produk dengan gaya sinematik, fokus pada inovasi\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/storyboards/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{project_id}}",
+                "storyboards",
+                "generate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Storyboards",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/storyboards",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{project_id}}",
+                "storyboards"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Storyboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/storyboards/{{storyboard_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "storyboards",
+                "{{storyboard_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Select Storyboard",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/storyboards/{{storyboard_id}}/select",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "storyboards",
+                "{{storyboard_id}}",
+                "select"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Storyboard (Sprint 3 ✓ NEW)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Updated prompt dengan fokus lebih pada interaksi user\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/storyboards/{{storyboard_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "storyboards",
+                "{{storyboard_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Scenes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/storyboards/{{storyboard_id}}/scenes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "storyboards",
+                "{{storyboard_id}}",
+                "scenes"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Videos",
+      "item": [
+        {
+          "name": "Generate Video",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('video_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"storyboard_id\": \"{{storyboard_id}}\",\n  \"title\": \"My Brand Video\",\n  \"format\": \"mp4\",\n  \"resolution\": \"1080p\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/videos/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "generate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List My Videos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/videos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "videos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Video",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/videos/{{video_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "{{video_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download Video",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/videos/{{video_id}}/download",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "{{video_id}}",
+                "download"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Videos by Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/videos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "{{project_id}}",
+                "videos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Regenerate Video (Sprint 3 ✓ NEW)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"Runway-Gen3\",\n  \"regenerate_all_scenes\": true,\n  \"new_prompt\": \"Lebih vibrant dengan warna-warna cerah dan energi tinggi\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/videos/{{video_id}}/regenerate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "{{video_id}}",
+                "regenerate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Regenerate Scene (Sprint 3 ✓ NEW)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_prompt\": \"Fokus pada fitur produk dengan close-up detail\",\n  \"update_caption\": true,\n  \"provider\": \"LTX-2-Fast\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/videos/scene/{{scene_id}}/regenerate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "scene",
+                "{{scene_id}}",
+                "regenerate"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Credits",
+      "item": [
+        {
+          "name": "Get My Credits",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/credits",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "credits"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Add Credits to User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{target_user_id}}\",\n  \"amount\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/credits",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "credits"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Gateway",
+      "item": [
+        {
+          "name": "AI Generate (Proxy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Create a video about AI technology\",\n  \"duration\": 30,\n  \"style\": \"professional\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "generate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "AI Status (Proxy)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ai/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

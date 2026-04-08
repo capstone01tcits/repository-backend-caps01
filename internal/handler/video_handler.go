@@ -88,7 +88,7 @@ func (h *VideoHandler) GetVideoVariants(c *fiber.Ctx) error {
 	response := make([]map[string]interface{}, len(variants))
 	for i, variant := range variants {
 		vari, scenes, _ := h.videoGenService.GetVideoVariantWithScenes(c.Context(), variant.ID)
-		
+
 		sceneResponses := make([]model.SceneStatusResponse, len(scenes))
 		for j, scene := range scenes {
 			sceneResponses[j] = model.SceneStatusResponse{
@@ -103,18 +103,18 @@ func (h *VideoHandler) GetVideoVariants(c *fiber.Ctx) error {
 		}
 
 		response[i] = map[string]interface{}{
-			"id":              vari.ID.String(),
-			"variant_number":  vari.VariantNumber,
-			"status":          vari.Status,
-			"video_url":       vari.VideoURL,
-			"thumbnail_url":   vari.ThumbnailURL,
-			"prompt_used":     vari.PromptUsed,
-			"duration":        vari.Duration,
-			"provider":        vari.Provider,
-			"model":           vari.Model,
-			"scenes":          sceneResponses,
-			"created_at":      vari.CreatedAt,
-			"updated_at":      vari.UpdatedAt,
+			"id":             vari.ID.String(),
+			"variant_number": vari.VariantNumber,
+			"status":         vari.Status,
+			"video_url":      vari.VideoURL,
+			"thumbnail_url":  vari.ThumbnailURL,
+			"prompt_used":    vari.PromptUsed,
+			"duration":       vari.Duration,
+			"provider":       vari.Provider,
+			"model":          vari.Model,
+			"scenes":         sceneResponses,
+			"created_at":     vari.CreatedAt,
+			"updated_at":     vari.UpdatedAt,
 		}
 	}
 
@@ -149,18 +149,18 @@ func (h *VideoHandler) GetVideoVariant(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Video variant retrieved", map[string]interface{}{
-		"id":              variant.ID.String(),
-		"variant_number":  variant.VariantNumber,
-		"status":          variant.Status,
-		"video_url":       variant.VideoURL,
-		"thumbnail_url":   variant.ThumbnailURL,
-		"prompt_used":     variant.PromptUsed,
-		"duration":        variant.Duration,
-		"provider":        variant.Provider,
-		"model":           variant.Model,
-		"scenes":          sceneResponses,
-		"created_at":      variant.CreatedAt,
-		"updated_at":      variant.UpdatedAt,
+		"id":             variant.ID.String(),
+		"variant_number": variant.VariantNumber,
+		"status":         variant.Status,
+		"video_url":      variant.VideoURL,
+		"thumbnail_url":  variant.ThumbnailURL,
+		"prompt_used":    variant.PromptUsed,
+		"duration":       variant.Duration,
+		"provider":       variant.Provider,
+		"model":          variant.Model,
+		"scenes":         sceneResponses,
+		"created_at":     variant.CreatedAt,
+		"updated_at":     variant.UpdatedAt,
 	})
 }
 
@@ -229,7 +229,7 @@ func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
 	}
 
 	_, scenes, _ := h.videoGenService.GetVideoVariantWithScenes(c.Context(), videoID)
-	
+
 	sceneResponses := make([]model.SceneStatusResponse, len(scenes))
 	for i, scene := range scenes {
 		sceneResponses[i] = model.SceneStatusResponse{
@@ -244,18 +244,18 @@ func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Video retrieved", map[string]interface{}{
-		"id":              variant.ID.String(),
-		"variant_number":  variant.VariantNumber,
-		"status":          variant.Status,
-		"video_url":       variant.VideoURL,
-		"thumbnail_url":   variant.ThumbnailURL,
-		"prompt_used":     variant.PromptUsed,
-		"duration":        variant.Duration,
-		"provider":        variant.Provider,
-		"model":           variant.Model,
-		"scenes":          sceneResponses,
-		"created_at":      variant.CreatedAt,
-		"updated_at":      variant.UpdatedAt,
+		"id":             variant.ID.String(),
+		"variant_number": variant.VariantNumber,
+		"status":         variant.Status,
+		"video_url":      variant.VideoURL,
+		"thumbnail_url":  variant.ThumbnailURL,
+		"prompt_used":    variant.PromptUsed,
+		"duration":       variant.Duration,
+		"provider":       variant.Provider,
+		"model":          variant.Model,
+		"scenes":         sceneResponses,
+		"created_at":     variant.CreatedAt,
+		"updated_at":     variant.UpdatedAt,
 	})
 }
 
@@ -275,6 +275,11 @@ func (h *VideoHandler) DownloadVideo(c *fiber.Ctx) error {
 
 	if variant.Status != "completed" {
 		return utils.BadRequest(c, "Video is not ready for download")
+	}
+
+	// Validate video URL exists (file existence check)
+	if variant.VideoURL == "" {
+		return utils.InternalError(c, "Video file not available - URL missing")
 	}
 
 	// Return download info with signed URL

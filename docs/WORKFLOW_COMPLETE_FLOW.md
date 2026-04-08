@@ -131,7 +131,8 @@ Content-Type: application/json
 
 {
   "name": "Kampanye Brand Video Q2 2026",
-  "description": "Video promosi produk terbaru untuk Q2 2026"
+  "description": "Video promosi produk terbaru untuk Q2 2026",
+  "theme": "Corporate Branding"
 }
 ```
 
@@ -145,6 +146,7 @@ Content-Type: application/json
     "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "name": "Kampanye Brand Video Q2 2026",
     "description": "Video promosi produk terbaru untuk Q2 2026",
+    "theme": "Corporate Branding",
     "status": "draft",
     "created_at": "2026-03-13T10:05:00Z",
     "updated_at": "2026-03-13T10:05:00Z"
@@ -161,6 +163,8 @@ Content-Type: application/json
 project_id = 6ba7b810-9dad-11d1-80b4-00c04fd430c8
 ```
 
+**✓ NEW in Sprint 3:** Theme field added for project theme
+
 ---
 
 ## STEP 4: Create Business Brief
@@ -174,13 +178,14 @@ Content-Type: application/json
 {
   "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
   "project_name": "Kampanye Brand Video Q2 2026",
-  "company_name": "PT Teknologi Indonesia",
-  "industry": "Technology",
-  "target_audience": "Profesional muda 25-40 tahun, tech-savvy, urban",
+  "institute_name": "PT Teknologi Indonesia",
+  "education": "Higher Education",
+  "target_audience": true,
   "project_objective": "Meningkatkan brand awareness sebesar 50% dan lead generation",
   "key_message": "Inovasi teknologi untuk masa depan yang lebih cerah",
-  "budget": "500000000",
-  "timeline": "8 minggu"
+  "deadline": "2026-05-15T00:00:00Z",
+  "competitors": "Kompetitor lainnya",
+  "additional_notes": "Catatan tambahan"
 }
 ```
 
@@ -194,10 +199,26 @@ Content-Type: application/json
     "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
     "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "project_name": "Kampanye Brand Video Q2 2026",
-    "company_name": "PT Teknologi Indonesia",
-    "industry": "Technology",
-    "target_audience": "Profesional muda 25-40 tahun, tech-savvy, urban",
+    "institute_name": "PT Teknologi Indonesia",
+    "education": "Higher Education",
+    "target_audience": true,
     "project_objective": "Meningkatkan brand awareness sebesar 50% dan lead generation",
+    "key_message": "Inovasi teknologi untuk masa depan yang lebih cerah",
+    "deadline": "2026-05-15T00:00:00Z",
+    "competitors": "Kompetitor lainnya",
+    "additional_notes": "Catatan tambahan",
+    "status": "draft",
+    "created_at": "2026-03-13T10:10:00Z",
+    "updated_at": "2026-03-13T10:10:00Z"
+  }
+}
+```
+
+### Field Updates (Sprint 3)
+- ✓ `company_name` changed to `institute_name`
+- ✓ `industry` changed to `education`
+- ✓ `target_audience` is now boolean (true/false instead of string)
+- ✓ `budget` + `timeline` merged into `deadline` (time.Time format: ISO 8601)
     "key_message": "Inovasi teknologi untuk masa depan yang lebih cerah",
     "budget": "500000000",
     "timeline": "8 minggu",
@@ -243,6 +264,8 @@ Content-Type: application/json
       "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
       "title": "Inovasi Produk",
       "description": "Menghadirkan fitur-fitur revolusioner yang mengubah industri",
+      "prompt": "Custom AI prompt untuk video generation (optional)",
+      "video_url": "https://..../generated_video.mp4",
       "is_selected": false,
       "content_themes": [
         {
@@ -379,6 +402,7 @@ Content-Type: application/json
       "content_theme_id": "9da7b810-9dad-11d1-80b4-00c04fd430c8",
       "title": "Storyboard 1 - Premium Cinematic",
       "description": "Professional product showcase dengan gaya cinematic",
+      "prompt": "Custom AI prompt untuk caption generation (optional)",
       "is_selected": false,
       "scenes": [
         {
@@ -387,7 +411,9 @@ Content-Type: application/json
           "title": "Pembukaan - Introduksi Produk",
           "description": "Wide shot dari kantor modern dengan produk di tengah",
           "duration": 5,
-          "visual_style": "cinematic"
+          "visual_style": "cinematic",
+          "caption": "Memperkenalkan solusi inovatif untuk kebutuhan bisnis modern",
+          "regenerate_count": 0
         },
         {
           "id": "7la7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -395,7 +421,9 @@ Content-Type: application/json
           "title": "Demo Fitur Utama",
           "description": "Close-up product in action, menunjukkan UI dan features",
           "duration": 4,
-          "visual_style": "cinematic"
+          "visual_style": "cinematic",
+          "caption": "Fitur-fitur unggulan dirancang khusus untuk kemudahan penggunaan",
+          "regenerate_count": 0
         },
         {
           "id": "8ma7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -403,7 +431,9 @@ Content-Type: application/json
           "title": "Call to Action",
           "description": "Website dan CTA button dengan text 'Kunjungi Sekarang'",
           "duration": 3,
-          "visual_style": "cinematic"
+          "visual_style": "cinematic",
+          "caption": "Bergabunglah dengan ribuan pengguna puas hari ini",
+          "regenerate_count": 0
         }
       ],
       "total_duration": 12,
@@ -945,18 +975,24 @@ T=2:20     [COMPLETE - READY TO USE]
 
 ---
 
-## Optional: Regenerate Single Scene
+## Step 11: Regenerate Video with Limit Tracking (SPRINT 3 ✓ NEW)
 
-Jika ingin edit hanya satu scene:
+### Video Regenerate Limit Rules
+- **✓ NEW in Sprint 3:** RegenerateCount field added to Video model
+- **Max Regenerate:** 3 times per video (after regenerate_count reaches 3, no more regeneration allowed)
+- **Cost:** Same as original (40 credits per variant)
+- **Use Case:** Update style, fix quality issues, apply different AI provider
 
-### Request
+### Request: Regenerate Full Video
 ```bash
-POST /api/videos/scene/4sa7b810-9dad-11d1-80b4-00c04fd430c8/regenerate
+POST /api/videos/3ra7b810-9dad-11d1-80b4-00c04fd430c8/regenerate
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "new_prompt": "Fokus pada layar produk dengan close-up yang lebih detail"
+  "provider": "Runway-Gen3",
+  "regenerate_all_scenes": true,
+  "new_prompt": "Lebih vibrant dengan warna-warna cerah dan energi tinggi"
 }
 ```
 
@@ -964,12 +1000,230 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "message": "Scene regeneration job created",
+  "message": "Video regeneration job created",
   "data": {
-    "generation_job_id": "4ga7b810-9dad-11d1-80b4-00c04fd430c8",
-    "status": "queued"
+    "generation_job_id": "11ga7b810-new-job-id-12345678",
+    "status": "queued",
+    "regenerate_count": 1,
+    "max_regenerate": 3,
+    "remaining_attempts": 2,
+    "credit_cost": 40,
+    "current_balance": 0
   }
 }
+```
+
+### Status Tracking (Regenerate)
+```bash
+GET /api/videos/3ra7b810-9dad-11d1-80b4-00c04fd430c8
+Authorization: Bearer {access_token}
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "3ra7b810-9dad-11d1-80b4-00c04fd430c8",
+    "title": "Cinematic Version v2",
+    "status": "completed",
+    "regenerate_count": 1,
+    "max_regenerate": 3,
+    "video_url": "https://storage.example.com/videos/3ra7b810-cinematic-v2.mp4",
+    "variant_number": 1,
+    "updated_at": "2026-03-13T11:00:00Z",
+    "scenes": [
+      {
+        "id": "4sa7b810-9dad-11d1-80b4-00c04fd430c8",
+        "scene_number": 1,
+        "status": "completed",
+        "caption": "Tampilan produk dengan cahaya sinematik",
+        "regenerate_count": 1,
+        "max_regenerate": 3,
+        "updated_at": "2026-03-13T11:00:30Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Step 12: Regenerate Single Scene with Limit Tracking (SPRINT 3 ✓ NEW)
+
+### Scene Regenerate Limit Rules
+- **✓ NEW in Sprint 3:** RegenerateCount & Caption fields added to Scene model
+- **Max Regenerate:** 3 times per scene (independent from video limit)
+- **Cost:** 15 credits per scene
+- **Use Case:** Fix specific scene, update caption, improve specific part
+
+### Request: Regenerate Scene Only
+```bash
+POST /api/videos/scene/4sa7b810-9dad-11d1-80b4-00c04fd430c8/regenerate
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "new_prompt": "Fokus pada fitur produk dengan close-up detail dan pencahayaan lebih terang",
+  "update_caption": true,
+  "provider": "LTX-2-Fast"
+}
+```
+
+### Response (201 Created) - Scene Regenerate
+```json
+{
+  "success": true,
+  "message": "Scene regeneration job created",
+  "data": {
+    "generation_job_id": "12ha7b810-new-scene-regen-56789",
+    "scene_id": "4sa7b810-9dad-11d1-80b4-00c04fd430c8",
+    "status": "queued",
+    "regenerate_count": 1,
+    "max_regenerate": 3,
+    "remaining_attempts": 2,
+    "credit_cost": 15,
+    "current_balance": 25,
+    "estimated_time": "30 seconds"
+  }
+}
+```
+
+### Scene After Regeneration
+```bash
+GET /api/storyboards/2ba7b810-9dad-11d1-80b4-00c04fd430c8
+Authorization: Bearer {access_token}
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "2ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "scenes": [
+      {
+        "id": "4sa7b810-9dad-11d1-80b4-00c04fd430c8",
+        "scene_number": 1,
+        "status": "completed",
+        "caption": "Tampilan close-up produk dengan detail fitur utama",
+        "regenerate_count": 1,
+        "max_regenerate": 3,
+        "video_url": "https://storage.example.com/scenes/scene-1-cinematic-v2.mp4",
+        "duration": 5,
+        "updated_at": "2026-03-13T11:05:00Z"
+      }
+    ]
+  }
+}
+```
+
+### Regenerate Limit Exceeded
+```json
+{
+  "success": false,
+  "error": "REGENERATE_LIMIT_EXCEEDED",
+  "message": "Scene has reached maximum regenerate attempts (3/3). Cannot regenerate further.",
+  "data": {
+    "scene_id": "4sa7b810-9dad-11d1-80b4-00c04fd430c8",
+    "regenerate_count": 3,
+    "max_regenerate": 3
+  }
+}
+```
+
+---
+
+## Regenerate Tracking Summary
+
+| Entity | Field | Current | Max | Increment On |
+|--------|-------|---------|-----|--------------|
+| Video | `regenerate_count` | 0-3 | 3 | Each full video regenerate |
+| Scene | `regenerate_count` | 0-3 | 3 | Each scene regenerate |
+| VideoVariant | `regenerate_count` | 0-3 | 3 | Each variant regenerate |
+
+**✓ NEW in Sprint 3:** All regenerate counts now tracked independently
+
+---
+
+## Complete Regenerate Credit Costs
+
+| Action | Credit Cost | Limit | Notes |
+|--------|-------------|-------|-------|
+| Generate Video (full) | 40 | Unlimited | Initial generation |
+| Regenerate Video (full) | 40 | 3x | Entire video with all scenes |
+| Regenerate Scene | 15 | 3x per scene | Single scene in storyboard |
+| Change Variant Style | 40 | 3x per variant | Different AI provider/prompt |
+
+**Total Credits Available:** 10 (new user) + top-ups
+**Smart Decision:** Choose top-up carefully based on regenerate needs
+
+---
+
+## Error Handling: Regenerate Scenarios
+
+### Scenario 1: Insufficient Credits
+```json
+{
+  "success": false,
+  "error": "INSUFFICIENT_CREDITS",
+  "message": "Not enough credits. Required: 40, Available: 25",
+  "data": {
+    "required_credits": 40,
+    "available_credits": 25,
+    "shortfall": 15
+  }
+}
+```
+
+### Scenario 2: Multiple Regenerate Attempts Exceeded
+```json
+{
+  "success": false,
+  "error": "REGENERATE_LIMIT_EXCEEDED",
+  "message": "Cannot regenerate. Maximum attempts reached (3/3)",
+  "data": {
+    "entity_id": "video-id-here",
+    "regenerate_count": 3,
+    "max_regenerate": 3,
+    "solutions": ["Create new video variant", "Start new project"]
+  }
+}
+```
+
+### Scenario 3: Video Still Processing
+```json
+{
+  "success": false,
+  "error": "VIDEO_PROCESSING",
+  "message": "Video is currently being regenerated. Try again in 60 seconds.",
+  "data": {
+    "current_status": "processing",
+    "estimated_completion": "2026-03-13T11:35:00Z"
+  }
+}
+```
+
+---
+
+## Recommended Workflow with Regenerate
+
+```
+START
+  │
+  ├─→ Generate Initial Video (40 credits)
+  │     │
+  │     ├─→ Not satisfied?
+  │     │     ├─→ Regenerate Full Video (40 credits, regenerate_count=1)
+  │     │     │
+  │     │     └─→ Still not satisfied?
+  │     │           ├─→ Regenerate Specific Scene (15 credits, regenerate_count=1)
+  │     │           │
+  │     │           └─→ Repeat until satisfied (max 3 per scene/video)
+  │     │
+  │     └─→ Satisfied!
+  │           ├─→ Download Video
+  │           └─→ Ready for use
+  │
+  └─→ Create New Project (For different campaign)
 ```
 
 ---
@@ -983,7 +1237,7 @@ Videos ready to use for:
 - Advertisements
 
 Other options:
-- Regenerate full video with different prompt
-- Regenerate individual scene
+- **✓ NEW:** Regenerate with max 3 attempts per video/scene
 - Create additional storyboards
 - Start new project for different campaign
+- Top-up credits for more generation/regenerate cycles

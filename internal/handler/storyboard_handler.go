@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/service"
 	"Sevima-AI-Content-Creator/pkg/utils"
 
@@ -23,6 +24,7 @@ func (h *StoryboardHandler) GenerateStoryboards(c *fiber.Ctx) error {
 
 	var body struct {
 		ContentThemeID string `json:"content_theme_id"`
+		Prompt         string `json:"prompt"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return utils.BadRequest(c, "Invalid request body")
@@ -30,6 +32,11 @@ func (h *StoryboardHandler) GenerateStoryboards(c *fiber.Ctx) error {
 
 	if body.ContentThemeID == "" {
 		return utils.BadRequest(c, "content_theme_id is required")
+	}
+
+	// Validate prompt length (max 1000 characters)
+	if body.Prompt != "" && len(body.Prompt) > 1000 {
+		return utils.BadRequest(c, "Prompt must be less than 1000 characters")
 	}
 
 	storyboards, err := h.storyboardService.GenerateStoryboards(userID, projectID, body.ContentThemeID)
@@ -94,4 +101,28 @@ func (h *StoryboardHandler) GetScenes(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Scenes retrieved", scenes)
+}
+
+// UpdateStoryboard godoc
+// PUT /api/storyboards/:id
+func (h *StoryboardHandler) UpdateStoryboard(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	storyboardID := c.Params("id")
+
+	var req model.UpdateStoryboardRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	// Validate prompt length (max 1000 characters)
+	if req.Prompt != nil && len(*req.Prompt) > 1000 {
+		return utils.BadRequest(c, "Prompt must be less than 1000 characters")
+	}
+
+	storyboard, err := h.storyboardService.UpdateStoryboard(userID, storyboardID, &req)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Storyboard updated", storyboard)
 }

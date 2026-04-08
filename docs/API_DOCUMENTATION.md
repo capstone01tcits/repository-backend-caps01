@@ -1,8 +1,31 @@
 # API Documentation — AI Video Generation Platform
 
-> **Version:** 2.0.0  
+> **Version:** 2.1.0 (Updated Sprint 3 - April 2026)
 > **Base URL:** `http://localhost:3000`  
 > **AI Service URL:** `http://localhost:8000`
+> **Collection Format:** Bruno API Collection (docs/bruno_api_collection.json)
+
+---
+
+## Sprint 3 Updates (April 2026) ✓
+
+**Field Changes in Business Brief:**
+- ✓ `company_name` → `institute_name` (for educational institutions)
+- ✓ `industry` → `education` (changed semantics for education domain)
+- ✓ `target_audience` string → boolean (yes/no representation)
+- ✓ `budget` + `timeline` → `deadline` (merged into single datetime field)
+
+**New Fields Added:**
+- ✓ `theme` field in Project model
+- ✓ `prompt` & `video_url` fields in ContentPillar
+- ✓ `prompt` field in Storyboard
+- ✓ `caption` field in Scene (for generated captions)
+- ✓ `regenerate_count` in Video, VideoVariant, Scene (max 3 times)
+
+**Regenerate Limits:**
+- ✓ Max 3 regenerate attempts per video
+- ✓ Max 3 regenerate attempts per scene
+- ✗ Error returned when limit exceeded
 
 ---
 
@@ -397,7 +420,8 @@ Content-Type: application/json
 
 {
   "name": "Brand Campaign Q1 2026",
-  "description": "Marketing video campaign for Q1"
+  "description": "Marketing video campaign for Q1",
+  "theme": "Corporate Branding"
 }
 ```
 
@@ -411,12 +435,15 @@ Content-Type: application/json
     "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "name": "Brand Campaign Q1 2026",
     "description": "Marketing video campaign for Q1",
+    "theme": "Corporate Branding",
     "status": "draft",
     "created_at": "2026-03-13T10:05:00Z",
     "updated_at": "2026-03-13T10:05:00Z"
   }
 }
 ```
+
+**✓ NEW in Sprint 3:** Added `theme` field to projects for storing theme information
 
 #### List Projects
 
@@ -441,9 +468,12 @@ Content-Type: application/json
 
 {
   "name": "Updated Project Name",
-  "description": "Updated description"
+  "description": "Updated description",
+  "theme": "Updated Theme"
 }
 ```
+
+**✓ NEW in Sprint 3:** `theme` field can be updated
 
 #### Delete Project
 
@@ -472,16 +502,14 @@ POST /api/briefs/business
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
-{
-  "project_id": "550e8400-e29b-41d4-a716-446655440000",
-  "project_name": "Q1 Campaign",
-  "company_name": "Tech Corp",
-  "industry": "Technology",
-  "target_audience": "Developers 25-40",
+{institute_name": "Universitas XYZ",
+  "education": "Higher Education",
+  "target_audience": true,
   "project_objective": "Increase awareness",
   "key_message": "Innovation",
-  "budget": "50000000",
-  "timeline": "4 weeks"
+  "deadline": "2026-05-15T00:00:00Z",
+  "competitors": "Kompetitor lainnya",
+  "additional_notes": "Catatan tambahan"
 }
 ```
 
@@ -493,6 +521,12 @@ Content-Type: application/json
   "data": {
     "id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
     "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "project_name": "Q1 Campaign",
+    "institute_name": "Universitas XYZ",
+    "education": "Higher Education",
+    "target_audience": true,
+    "deadline": "2026-05-15T00:00:00Z41d4-a716-446655440000",
     "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
     "project_name": "Q1 Campaign",
     "company_name": "Tech Corp",
@@ -1070,7 +1104,9 @@ Returns variant details with all scenes.
 
 ---
 
-#### Regenerate Video Variant
+#### Regenerate Video Variant (Sprint 3 ✓ NEW)
+
+✓ **NEW in Sprint 3** – Regenerate with `regenerate_count` tracking and max 3 limit
 
 ```http
 POST /api/videos/{variant_id}/regenerate
@@ -1078,7 +1114,9 @@ Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "new_prompt": "More emphasis on campus facilities"
+  "provider": "Runway-Gen3",
+  "regenerate_all_scenes": true,
+  "new_prompt": "More emphasis on campus facilities with modern aesthetic"
 }
 ```
 
@@ -1089,14 +1127,35 @@ Content-Type: application/json
   "message": "Video regeneration job created",
   "data": {
     "generation_job_id": "3fa7b810-9dad-11d1-80b4-00c04fd430c8",
-    "status": "queued"
+    "status": "queued",
+    "variant_id": "{variant_id}",
+    "regenerate_count": 1,
+    "max_regenerate": 3,
+    "remaining_attempts": 2,
+    "credit_cost": 40,
+    "current_balance": 120
+  }
+}
+```
+
+**Regenerate Limit Exceeded (400):**
+```json
+{
+  "success": false,
+  "error": "REGENERATE_LIMIT_EXCEEDED",
+  "message": "Video has reached maximum regenerate attempts (3/3)",
+  "data": {
+    "regenerate_count": 3,
+    "max_regenerate": 3
   }
 }
 ```
 
 ---
 
-#### Regenerate Single Scene
+#### Regenerate Single Scene (Sprint 3 ✓ NEW)
+
+✓ **NEW in Sprint 3** – Scene regenerate with independent `regenerate_count` tracking (max 3 per scene)
 
 ```http
 POST /api/videos/scene/{scene_id}/regenerate
@@ -1104,7 +1163,9 @@ Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "new_prompt": "Show aerial campus views"
+  "new_prompt": "Show aerial campus views with dynamic panning",
+  "update_caption": true,
+  "provider": "LTX-2-Fast"
 }
 ```
 
@@ -1115,10 +1176,35 @@ Content-Type: application/json
   "message": "Scene regeneration job created",
   "data": {
     "generation_job_id": "4ga7b810-9dad-11d1-80b4-00c04fd430c8",
-    "status": "queued"
+    "scene_id": "{scene_id}",
+    "status": "queued",
+    "regenerate_count": 1,
+    "max_regenerate": 3,
+    "remaining_attempts": 2,
+    "credit_cost": 15,
+    "current_balance": 105,
+    "estimated_time": "30 seconds"
   }
 }
 ```
+
+**Scene Regenerate Limit Exceeded (400):**
+```json
+{
+  "success": false,
+  "error": "REGENERATE_LIMIT_EXCEEDED",
+  "message": "Scene has reached maximum regenerate attempts (3/3)",
+  "data": {
+    "scene_id": "{scene_id}",
+    "regenerate_count": 3,
+    "max_regenerate": 3
+  }
+}
+```
+
+**Credit Cost for Regenerate:**
+- Full video regenerate: 40 credits (same as initial generation)
+- Scene regenerate: 15 credits per scene
 
 ---
 

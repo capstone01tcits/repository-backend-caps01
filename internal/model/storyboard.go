@@ -15,6 +15,7 @@ type Storyboard struct {
 	UserID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	Title       string         `gorm:"not null" json:"title"`
 	Description string         `gorm:"type:text" json:"description"`
+	Prompt      string         `gorm:"type:text" json:"prompt"` // AI prompt for caption generation
 	IsSelected  bool           `gorm:"default:false" json:"is_selected"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
@@ -34,17 +35,19 @@ func (s *Storyboard) BeforeCreate(tx *gorm.DB) error {
 // ==================== Scene ====================
 
 type Scene struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
-	StoryboardID uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
-	UserID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
-	SceneNumber  int            `gorm:"not null" json:"scene_number"`
-	Title        string         `json:"title"`
-	Description  string         `gorm:"type:text" json:"description"`
-	VisualDesc   string         `gorm:"type:text" json:"visual_description"`
-	Duration     int            `json:"duration"` // in seconds
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	ID              uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	StoryboardID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"storyboard_id"`
+	UserID          uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
+	SceneNumber     int            `gorm:"not null" json:"scene_number"`
+	Title           string         `json:"title"`
+	Description     string         `gorm:"type:text" json:"description"`
+	VisualDesc      string         `gorm:"type:text" json:"visual_description"`
+	Duration        int            `json:"duration"`                          // in seconds
+	Caption         string         `gorm:"type:text" json:"caption"`          // generated caption output
+	RegenerateCount int            `gorm:"default:0" json:"regenerate_count"` // max 3
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
 	User       User       `gorm:"foreignKey:UserID" json:"-"`
@@ -65,4 +68,14 @@ type GenerateStoryboardRequest struct {
 
 type SelectStoryboardRequest struct {
 	StoryboardID string `json:"storyboard_id" validate:"required"`
+}
+
+type UpdateStoryboardRequest struct {
+	Prompt *string `json:"prompt"`
+}
+
+type GenerateStoryboardWithPromptRequest struct {
+	ProjectID      string `json:"project_id" validate:"required"`
+	ContentThemeID string `json:"content_theme_id" validate:"required"`
+	Prompt         string `json:"prompt"`
 }
