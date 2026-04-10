@@ -13,13 +13,16 @@ import (
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
-	Role   string `json:"role"`      // user, admin
-	Type   string `json:"type"`      // "access" or "refresh"
+	Role   string `json:"role"` // user, admin
+	Type   string `json:"type"` // "access" or "refresh"
 	jwt.RegisteredClaims
 }
 
 func GenerateAccessToken(userID, email, role string) (string, int64, error) {
-	hours, _ := strconv.Atoi(config.Cfg.JWTExpireHours)
+	hours, err := strconv.Atoi(config.Cfg.JWTExpireHours)
+	if err != nil || hours <= 0 {
+		hours = 24 // fallback default
+	}
 	expireTime := time.Now().Add(time.Duration(hours) * time.Hour)
 
 	claims := &Claims{
@@ -39,7 +42,10 @@ func GenerateAccessToken(userID, email, role string) (string, int64, error) {
 }
 
 func GenerateRefreshToken(userID, email, role string) (string, error) {
-	hours, _ := strconv.Atoi(config.Cfg.JWTRefreshExpireHours)
+	hours, err := strconv.Atoi(config.Cfg.JWTRefreshExpireHours)
+	if err != nil || hours <= 0 {
+		hours = 168 // fallback default (7 days)
+	}
 	expireTime := time.Now().Add(time.Duration(hours) * time.Hour)
 
 	claims := &Claims{

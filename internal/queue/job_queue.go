@@ -7,10 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/repository"
 	"Sevima-AI-Content-Creator/internal/service"
+
+	"github.com/google/uuid"
 )
 
 // JobQueue manages the video generation job queue
@@ -42,14 +43,15 @@ type JobQueue interface {
 
 // SimpleJobQueue is a memory-backed job queue implementation
 type SimpleJobQueue struct {
-	jobRepo          repository.GenerationJobRepository
-	videoGenService  service.VideoGenerationService
-	maxRetries       int
-	pollInterval     time.Duration
+	jobRepo           repository.GenerationJobRepository
+	videoGenService   service.VideoGenerationService
+	maxRetries        int
+	pollInterval      time.Duration
 	processingWorkers int
-	stopChan         chan bool
-	mu               sync.RWMutex
-	isRunning        bool
+	stopChan          chan bool
+	mu                sync.RWMutex
+	wg                sync.WaitGroup
+	isRunning         bool
 }
 
 // NewJobQueue creates a new job queue
@@ -135,21 +137,28 @@ func (q *SimpleJobQueue) Start(ctx context.Context, workerCount int) error {
 
 func (q *SimpleJobQueue) Stop() error {
 	q.mu.Lock()
-	defer q.mu.Unlock()
-
 	if !q.isRunning {
+		q.mu.Unlock()
 		return fmt.Errorf("queue is not running")
 	}
-
 	q.isRunning = false
 	close(q.stopChan)
-	// Reset channel for potential future Start() calls
-	q.stopChan = make(chan bool)
+	q.mu.Unlock()
+
+	q.wg.Wait() // Wait for all workers to finish
+
+	q.mu.Lock()
+	q.stopChan = make(chan bool) // Reset channel for potential future Start() calls
+	q.mu.Unlock()
+
 	log.Println("Stopped job queue")
 	return nil
 }
 
 func (q *SimpleJobQueue) worker(ctx context.Context, workerID int) {
+	q.wg.Add(1)
+	defer q.wg.Done()
+
 	log.Printf("Worker %d started", workerID)
 	ticker := time.NewTicker(q.pollInterval)
 	defer ticker.Stop()
@@ -176,7 +185,7 @@ func (q *SimpleJobQueue) worker(ctx context.Context, workerID int) {
 			// Process the job
 			if err := q.videoGenService.ProcessGenerationJob(ctx, job.ID); err != nil {
 				log.Printf("Worker %d error processing job %s: %v", workerID, job.ID, err)
-				
+
 				// Retry logic
 				if job.RetryCount < job.MaxRetries {
 					job.RetryCount++

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -8,6 +9,7 @@ import (
 	"Sevima-AI-Content-Creator/internal/handler"
 	"Sevima-AI-Content-Creator/internal/middleware"
 	"Sevima-AI-Content-Creator/internal/model"
+	"Sevima-AI-Content-Creator/internal/queue"
 	"Sevima-AI-Content-Creator/internal/repository"
 	"Sevima-AI-Content-Creator/internal/service"
 
@@ -170,6 +172,15 @@ func main() {
 	ai := api.Group("/ai")
 	ai.Get("/health", aiHandler.HealthCheck)
 	ai.All("/*", middleware.Protected(), aiHandler.Proxy)
+
+	// ==================== Job Queue ====================
+	// Initialize and start job queue for async video generation
+	jobQueue := queue.NewJobQueue(jobRepo, videoGenSvc)
+	go func() {
+		if err := jobQueue.Start(context.Background(), 3); err != nil {
+			log.Printf("Job queue start error: %v", err)
+		}
+	}()
 
 	// Start server
 	addr := fmt.Sprintf(":%s", config.Cfg.AppPort)

@@ -426,6 +426,19 @@
         },
         {
           "name": "List Projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data && Array.isArray(jsonData.data)) {",
+                  "    bru.setVar('project_id', jsonData.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -448,6 +461,19 @@
         },
         {
           "name": "Get Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('project_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -574,6 +600,19 @@
         },
         {
           "name": "List Business Briefs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data && Array.isArray(jsonData.data)) {",
+                  "    bru.setVar('business_brief_id', jsonData.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -597,6 +636,19 @@
         },
         {
           "name": "Get Business Brief",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('business_brief_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -751,6 +803,19 @@
         },
         {
           "name": "List Creative Briefs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data && Array.isArray(jsonData.data)) {",
+                  "    bru.setVar('creative_brief_id', jsonData.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -774,6 +839,19 @@
         },
         {
           "name": "Get Creative Brief",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('creative_brief_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -908,6 +986,22 @@
         },
         {
           "name": "List Content Pillars",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data && Array.isArray(jsonData.data)) {",
+                  "    bru.setVar('content_pillar_id', jsonData.data[0].id);",
+                  "    if (jsonData.data[0].content_themes && jsonData.data[0].content_themes.length > 0) {",
+                  "        bru.setVar('content_theme_id', jsonData.data[0].content_themes[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -932,6 +1026,22 @@
         },
         {
           "name": "Get Content Pillar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('content_pillar_id', jsonData.data.id);",
+                  "    if (jsonData.data.content_themes && jsonData.data.content_themes.length > 0) {",
+                  "        bru.setVar('content_theme_id', jsonData.data.content_themes[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -978,7 +1088,7 @@
           }
         },
         {
-          "name": "Update Content Pillar (Sprint 3 ✓ NEW)",
+          "name": "Update Content Pillar",
           "request": {
             "method": "PUT",
             "header": [
@@ -1138,6 +1248,19 @@
         },
         {
           "name": "Get Storyboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('storyboard_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -1184,7 +1307,7 @@
           }
         },
         {
-          "name": "Update Storyboard (Sprint 3 ✓ NEW)",
+          "name": "Update Storyboard",
           "request": {
             "method": "PUT",
             "header": [
@@ -1216,6 +1339,19 @@
         },
         {
           "name": "Get Scenes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data && Array.isArray(jsonData.data) && jsonData.data.length > 0) {",
+                  "    bru.setVar('scene_id', jsonData.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -1253,6 +1389,9 @@
                   "var jsonData = res.body;",
                   "if (jsonData.success && jsonData.data) {",
                   "    bru.setVar('video_id', jsonData.data.id);",
+                  "    if (jsonData.data.variants && Array.isArray(jsonData.data.variants) && jsonData.data.variants.length > 0) {",
+                  "        bru.setVar('variant_id', jsonData.data.variants[0].id);",
+                  "    }",
                   "}"
                 ]
               }
@@ -1288,29 +1427,23 @@
           }
         },
         {
-          "name": "List My Videos",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
+          "name": "Get Video Variants by Storyboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data && Array.isArray(jsonData.data) && jsonData.data.length > 0) {",
+                  "    bru.setVar('variant_id', jsonData.data[0].id);",
+                  "    if (jsonData.data[0].scenes && Array.isArray(jsonData.data[0].scenes) && jsonData.data[0].scenes.length > 0) {",
+                  "        bru.setVar('scene_id', jsonData.data[0].scenes[0].id);",
+                  "    }",
+                  "}"
+                ]
               }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/videos",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "videos"
-              ]
             }
-          }
-        },
-        {
-          "name": "Get Video",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -1320,14 +1453,54 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/videos/{{video_id}}",
+              "raw": "{{base_url}}/api/videos/storyboard/{{storyboard_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "videos",
-                "{{video_id}}"
+                "storyboard",
+                "{{storyboard_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Video",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    bru.setVar('variant_id', jsonData.data.id);",
+                  "    if (jsonData.data.scenes && Array.isArray(jsonData.data.scenes) && jsonData.data.scenes.length > 0) {",
+                  "        bru.setVar('scene_id', jsonData.data.scenes[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/videos/{{variant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "{{variant_id}}"
               ]
             }
           }
@@ -1343,45 +1516,21 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/videos/{{video_id}}/download",
+              "raw": "{{base_url}}/api/videos/{{variant_id}}/download",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "videos",
-                "{{video_id}}",
+                "{{variant_id}}",
                 "download"
               ]
             }
           }
         },
         {
-          "name": "Get Videos by Project",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/projects/{{project_id}}/videos",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "projects",
-                "{{project_id}}",
-                "videos"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Regenerate Video (Sprint 3 ✓ NEW)",
+          "name": "Regenerate Video",
           "request": {
             "method": "POST",
             "header": [
@@ -1399,21 +1548,21 @@
               "raw": "{\n  \"provider\": \"Runway-Gen3\",\n  \"regenerate_all_scenes\": true,\n  \"new_prompt\": \"Lebih vibrant dengan warna-warna cerah dan energi tinggi\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/videos/{{video_id}}/regenerate",
+              "raw": "{{base_url}}/api/videos/{{variant_id}}/regenerate",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "videos",
-                "{{video_id}}",
+                "{{variant_id}}",
                 "regenerate"
               ]
             }
           }
         },
         {
-          "name": "Regenerate Scene (Sprint 3 ✓ NEW)",
+          "name": "Regenerate Scene",
           "request": {
             "method": "POST",
             "header": [

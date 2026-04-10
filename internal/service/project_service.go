@@ -35,6 +35,7 @@ func (s *projectService) CreateProject(userID string, req *model.CreateProjectRe
 		UserID:      uid,
 		Name:        req.Name,
 		Description: req.Description,
+		Theme:       req.Theme,
 		Status:      "draft",
 	}
 
@@ -74,6 +75,9 @@ func (s *projectService) UpdateProject(userID, projectID string, req *model.Upda
 
 	if req.Name != nil {
 		project.Name = *req.Name
+	}
+	if req.Theme != nil {
+		project.Theme = *req.Theme
 	}
 	if req.Description != nil {
 		project.Description = *req.Description

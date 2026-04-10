@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -16,7 +17,7 @@ type LTXStandardProvider struct {
 
 func NewLTXStandardProvider() VideoProvider {
 	return &LTXStandardProvider{
-		apiKey: "ltx-key-standard",
+		apiKey: os.Getenv("LTX_API_KEY"),
 		model:  "ltx-2-fast",
 	}
 }
@@ -24,10 +25,10 @@ func NewLTXStandardProvider() VideoProvider {
 func (p *LTXStandardProvider) GenerateScene(ctx context.Context, req VideoGenerationRequest) (*VideoGenerationResponse, error) {
 	// Simulate API call to LTX
 	jobID := fmt.Sprintf("ltx-job-%d", rand.Int63())
-	
+
 	// Simulate processing time
 	time.Sleep(500 * time.Millisecond)
-	
+
 	return &VideoGenerationResponse{
 		JobID:   jobID,
 		Status:  "processing",
@@ -40,7 +41,7 @@ func (p *LTXStandardProvider) GetJobStatus(ctx context.Context, jobID string) (*
 	// Simulate polling - in real implementation, would call LTX API
 	// For now, randomly transition between states
 	randomStatus := rand.Intn(100)
-	
+
 	if randomStatus < 50 {
 		return &VideoGenerationResponse{
 			JobID:   jobID,
@@ -92,7 +93,7 @@ type LTXPremiumProvider struct {
 
 func NewLTXPremiumProvider() VideoProvider {
 	return &LTXPremiumProvider{
-		apiKey: "ltx-key-premium",
+		apiKey: os.Getenv("LTX_API_KEY"),
 		model:  "ltx-2-pro",
 	}
 }
@@ -100,7 +101,7 @@ func NewLTXPremiumProvider() VideoProvider {
 func (p *LTXPremiumProvider) GenerateScene(ctx context.Context, req VideoGenerationRequest) (*VideoGenerationResponse, error) {
 	jobID := fmt.Sprintf("ltx-pro-job-%d", rand.Int63())
 	time.Sleep(500 * time.Millisecond)
-	
+
 	return &VideoGenerationResponse{
 		JobID:   jobID,
 		Status:  "processing",
@@ -111,7 +112,7 @@ func (p *LTXPremiumProvider) GenerateScene(ctx context.Context, req VideoGenerat
 
 func (p *LTXPremiumProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
 	randomStatus := rand.Intn(100)
-	
+
 	if randomStatus < 40 {
 		return &VideoGenerationResponse{
 			JobID:   jobID,
@@ -159,7 +160,7 @@ type RunwayProvider struct {
 
 func NewRunwayProvider() VideoProvider {
 	return &RunwayProvider{
-		apiKey: "runway-key",
+		apiKey: os.Getenv("RUNWAY_API_KEY"),
 		model:  "gen4.5",
 	}
 }
@@ -167,7 +168,7 @@ func NewRunwayProvider() VideoProvider {
 func (p *RunwayProvider) GenerateScene(ctx context.Context, req VideoGenerationRequest) (*VideoGenerationResponse, error) {
 	jobID := fmt.Sprintf("runway-job-%d", rand.Int63())
 	time.Sleep(600 * time.Millisecond)
-	
+
 	return &VideoGenerationResponse{
 		JobID:   jobID,
 		Status:  "processing",
@@ -179,7 +180,7 @@ func (p *RunwayProvider) GenerateScene(ctx context.Context, req VideoGenerationR
 func (p *RunwayProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
 
 	randomStatus := rand.Intn(100)
-	
+
 	if randomStatus < 45 {
 		return &VideoGenerationResponse{
 			JobID:   jobID,
@@ -227,7 +228,7 @@ type RunwayTurboProvider struct {
 
 func NewRunwayTurboProvider() VideoProvider {
 	return &RunwayTurboProvider{
-		apiKey: "runway-key",
+		apiKey: os.Getenv("RUNWAY_API_KEY"),
 		model:  "gen4_turbo",
 	}
 }
@@ -235,7 +236,7 @@ func NewRunwayTurboProvider() VideoProvider {
 func (p *RunwayTurboProvider) GenerateScene(ctx context.Context, req VideoGenerationRequest) (*VideoGenerationResponse, error) {
 	jobID := fmt.Sprintf("runway-turbo-job-%d", rand.Int63())
 	time.Sleep(400 * time.Millisecond)
-	
+
 	return &VideoGenerationResponse{
 		JobID:   jobID,
 		Status:  "processing",
@@ -247,7 +248,7 @@ func (p *RunwayTurboProvider) GenerateScene(ctx context.Context, req VideoGenera
 func (p *RunwayTurboProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
 
 	randomStatus := rand.Intn(100)
-	
+
 	if randomStatus < 35 {
 		return &VideoGenerationResponse{
 			JobID:   jobID,
@@ -295,7 +296,7 @@ type Wan2Provider struct {
 
 func NewWan2Provider() VideoProvider {
 	return &Wan2Provider{
-		apiKey: "wan2-key",
+		apiKey: os.Getenv("WAN2_API_KEY"),
 		model:  "wan2.1",
 	}
 }
@@ -303,7 +304,7 @@ func NewWan2Provider() VideoProvider {
 func (p *Wan2Provider) GenerateScene(ctx context.Context, req VideoGenerationRequest) (*VideoGenerationResponse, error) {
 	jobID := fmt.Sprintf("wan2-job-%d", rand.Int63())
 	time.Sleep(800 * time.Millisecond)
-	
+
 	return &VideoGenerationResponse{
 		JobID:   jobID,
 		Status:  "processing",
@@ -314,7 +315,7 @@ func (p *Wan2Provider) GenerateScene(ctx context.Context, req VideoGenerationReq
 
 func (p *Wan2Provider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
 	randomStatus := rand.Intn(100)
-	
+
 	if randomStatus < 60 {
 		return &VideoGenerationResponse{
 			JobID:   jobID,
@@ -368,7 +369,7 @@ func NewLTXOpenSourceProvider() VideoProvider {
 func (p *LTXOpenSourceProvider) GenerateScene(ctx context.Context, req VideoGenerationRequest) (*VideoGenerationResponse, error) {
 	jobID := fmt.Sprintf("ltx-open-job-%d", rand.Int63())
 	time.Sleep(1000 * time.Millisecond)
-	
+
 	return &VideoGenerationResponse{
 		JobID:   jobID,
 		Status:  "processing",
@@ -379,7 +380,7 @@ func (p *LTXOpenSourceProvider) GenerateScene(ctx context.Context, req VideoGene
 
 func (p *LTXOpenSourceProvider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
 	randomStatus := rand.Intn(100)
-	
+
 	if randomStatus < 65 {
 		return &VideoGenerationResponse{
 			JobID:   jobID,

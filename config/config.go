@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -67,6 +68,14 @@ func Load() {
 		JWTRefreshSecret:      jwtRefreshSecret,
 		JWTRefreshExpireHours: getEnv("JWT_REFRESH_EXPIRE_HOURS", "168"),
 		AIServiceURL:          getEnv("AI_SERVICE_URL", "http://localhost:8000"),
+	}
+
+	// Validate JWT expire hours
+	if _, err := strconv.Atoi(Cfg.JWTExpireHours); err != nil {
+		log.Fatal("ERROR: JWT_EXPIRE_HOURS must be a valid integer")
+	}
+	if _, err := strconv.Atoi(Cfg.JWTRefreshExpireHours); err != nil {
+		log.Fatal("ERROR: JWT_REFRESH_EXPIRE_HOURS must be a valid integer")
 	}
 }
 

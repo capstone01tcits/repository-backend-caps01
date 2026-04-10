@@ -18,7 +18,10 @@ func NewCreditHandler(creditService service.CreditService) *CreditHandler {
 // GetMyCredits godoc
 // GET /api/credits
 func (h *CreditHandler) GetMyCredits(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	credits, err := h.creditService.GetCredits(userID)
 	if err != nil {
@@ -33,7 +36,10 @@ func (h *CreditHandler) GetMyCredits(c *fiber.Ctx) error {
 // AddCredits godoc
 // POST /api/admin/credits
 func (h *CreditHandler) AddCredits(c *fiber.Ctx) error {
-	adminUserID := c.Locals("userID").(string)
+	adminUserID, ok := c.Locals("userID").(string)
+	if !ok || adminUserID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	var body struct {
 		UserID string `json:"user_id"`
@@ -56,7 +62,7 @@ func (h *CreditHandler) AddCredits(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Credits added successfully", fiber.Map{
-		"user_id":     body.UserID,
+		"user_id":       body.UserID,
 		"credits_added": body.Amount,
 		"total_credits": newCredits,
 	})

@@ -21,7 +21,10 @@ func NewBriefHandler(briefService service.BriefService) *BriefHandler {
 // CreateBusinessBrief godoc
 // POST /api/briefs/business
 func (h *BriefHandler) CreateBusinessBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	var req model.CreateBusinessBriefRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -43,7 +46,10 @@ func (h *BriefHandler) CreateBusinessBrief(c *fiber.Ctx) error {
 // GetBusinessBriefs godoc
 // GET /api/briefs/business
 func (h *BriefHandler) GetBusinessBriefs(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	briefs, err := h.briefService.GetBusinessBriefs(userID)
 	if err != nil {
@@ -56,7 +62,10 @@ func (h *BriefHandler) GetBusinessBriefs(c *fiber.Ctx) error {
 // GetBusinessBrief godoc
 // GET /api/briefs/business/:id
 func (h *BriefHandler) GetBusinessBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	briefID := c.Params("id")
 
 	brief, err := h.briefService.GetBusinessBrief(userID, briefID)
@@ -70,7 +79,10 @@ func (h *BriefHandler) GetBusinessBrief(c *fiber.Ctx) error {
 // UpdateBusinessBrief godoc
 // PUT /api/briefs/business/:id
 func (h *BriefHandler) UpdateBusinessBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	briefID := c.Params("id")
 
 	var req model.UpdateBusinessBriefRequest
@@ -89,7 +101,10 @@ func (h *BriefHandler) UpdateBusinessBrief(c *fiber.Ctx) error {
 // DeleteBusinessBrief godoc
 // DELETE /api/briefs/business/:id
 func (h *BriefHandler) DeleteBusinessBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	briefID := c.Params("id")
 
 	err := h.briefService.DeleteBusinessBrief(userID, briefID)
@@ -105,7 +120,10 @@ func (h *BriefHandler) DeleteBusinessBrief(c *fiber.Ctx) error {
 // CreateCreativeBrief godoc
 // POST /api/briefs/creative
 func (h *BriefHandler) CreateCreativeBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	var req model.CreateCreativeBriefRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -131,7 +149,10 @@ func (h *BriefHandler) CreateCreativeBrief(c *fiber.Ctx) error {
 // GetCreativeBriefs godoc
 // GET /api/briefs/creative
 func (h *BriefHandler) GetCreativeBriefs(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	briefs, err := h.briefService.GetCreativeBriefs(userID)
 	if err != nil {
@@ -144,7 +165,10 @@ func (h *BriefHandler) GetCreativeBriefs(c *fiber.Ctx) error {
 // GetCreativeBriefsByBusinessBrief godoc
 // GET /api/briefs/business/:id/creative
 func (h *BriefHandler) GetCreativeBriefsByBusinessBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	businessBriefID := c.Params("id")
 
 	briefs, err := h.briefService.GetCreativeBriefsByBusinessBrief(userID, businessBriefID)
@@ -158,7 +182,10 @@ func (h *BriefHandler) GetCreativeBriefsByBusinessBrief(c *fiber.Ctx) error {
 // GetCreativeBrief godoc
 // GET /api/briefs/creative/:id
 func (h *BriefHandler) GetCreativeBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	briefID := c.Params("id")
 
 	brief, err := h.briefService.GetCreativeBrief(userID, briefID)
@@ -172,7 +199,10 @@ func (h *BriefHandler) GetCreativeBrief(c *fiber.Ctx) error {
 // UpdateCreativeBrief godoc
 // PUT /api/briefs/creative/:id
 func (h *BriefHandler) UpdateCreativeBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	briefID := c.Params("id")
 
 	var req model.UpdateCreativeBriefRequest
@@ -191,7 +221,10 @@ func (h *BriefHandler) UpdateCreativeBrief(c *fiber.Ctx) error {
 // DeleteCreativeBrief godoc
 // DELETE /api/briefs/creative/:id
 func (h *BriefHandler) DeleteCreativeBrief(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	briefID := c.Params("id")
 
 	err := h.briefService.DeleteCreativeBrief(userID, briefID)

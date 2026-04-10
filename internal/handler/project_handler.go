@@ -19,7 +19,10 @@ func NewProjectHandler(projectService service.ProjectService) *ProjectHandler {
 // CreateProject godoc
 // POST /api/projects
 func (h *ProjectHandler) CreateProject(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	var req model.CreateProjectRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -41,7 +44,10 @@ func (h *ProjectHandler) CreateProject(c *fiber.Ctx) error {
 // GetProjects godoc
 // GET /api/projects
 func (h *ProjectHandler) GetProjects(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	projects, err := h.projectService.GetProjects(userID)
 	if err != nil {
@@ -54,7 +60,10 @@ func (h *ProjectHandler) GetProjects(c *fiber.Ctx) error {
 // GetProject godoc
 // GET /api/projects/:id
 func (h *ProjectHandler) GetProject(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	projectID := c.Params("id")
 
 	project, err := h.projectService.GetProject(userID, projectID)
@@ -68,7 +77,10 @@ func (h *ProjectHandler) GetProject(c *fiber.Ctx) error {
 // UpdateProject godoc
 // PUT /api/projects/:id
 func (h *ProjectHandler) UpdateProject(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	projectID := c.Params("id")
 
 	var req model.UpdateProjectRequest
@@ -87,7 +99,10 @@ func (h *ProjectHandler) UpdateProject(c *fiber.Ctx) error {
 // DeleteProject godoc
 // DELETE /api/projects/:id
 func (h *ProjectHandler) DeleteProject(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	projectID := c.Params("id")
 
 	err := h.projectService.DeleteProject(userID, projectID)

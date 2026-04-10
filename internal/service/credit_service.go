@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"Sevima-AI-Content-Creator/internal/repository"
+
+	"github.com/google/uuid"
 )
 
 type CreditService interface {
@@ -68,12 +69,5 @@ func (s *creditService) GetUserCredits(ctx context.Context, userID uuid.UUID) (i
 }
 
 func (s *creditService) DeductCredits(ctx context.Context, userID uuid.UUID, amount int, reason string) error {
-	user, err := s.userRepo.FindByID(userID.String())
-	if err != nil {
-		return errors.New("user not found")
-	}
-	if user.Credits < amount {
-		return errors.New("insufficient credits")
-	}
-	return s.userRepo.UpdateCredits(userID.String(), user.Credits-amount)
+	return s.userRepo.DeductCredits(userID.String(), amount)
 }

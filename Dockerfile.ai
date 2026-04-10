@@ -1,0 +1,17 @@
+# Dockerfile for Python AI Service
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY ai-service/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy AI service code
+COPY ai-service/ .
+
+# Expose port
+EXPOSE 8000
+
+# Run the AI service
+CMD ["python", "main.py"]

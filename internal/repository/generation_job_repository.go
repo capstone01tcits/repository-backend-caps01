@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
 	"Sevima-AI-Content-Creator/internal/model"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -140,10 +142,15 @@ func (r *generationJobRepository) UpdateStatus(ctx context.Context, id uuid.UUID
 func (r *generationJobRepository) UpdateProgress(ctx context.Context, id uuid.UUID, notes map[string]interface{}) error {
 	notes["updated_at"] = time.Now()
 
+	notesJSON, err := json.Marshal(notes)
+	if err != nil {
+		return err
+	}
+
 	result := r.db.WithContext(ctx).
 		Model(&model.GenerationJob{}).
 		Where("id = ?", id).
-		Update("processing_notes", gorm.Expr("jsonb_set(COALESCE(processing_notes, '{}'), '{0}', ?)", notes))
+		Update("processing_notes", gorm.Expr("COALESCE(processing_notes, '{}') || ?::jsonb", string(notesJSON)))
 	if result.Error != nil {
 		return result.Error
 	}

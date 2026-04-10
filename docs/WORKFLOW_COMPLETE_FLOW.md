@@ -2,6 +2,8 @@
 
 Complete flow from start (Register) until video ready for download.
 
+**Note:** Use Bruno API Collection (`docs/API_COLLECTION.json`) for automatic variable population. Variables (access_token, project_id, etc.) auto-set after each Create/Generate/List/Get endpoint—no manual copy-paste needed!
+
 ---
 
 ## Table of Contents

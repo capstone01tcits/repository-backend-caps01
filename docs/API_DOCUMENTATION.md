@@ -3,7 +3,8 @@
 > **Version:** 2.1.0 (Updated Sprint 3 - April 2026)
 > **Base URL:** `http://localhost:3000`  
 > **AI Service URL:** `http://localhost:8000`
-> **Collection Format:** Bruno API Collection (docs/bruno_api_collection.json)
+> **Collection Format:** Bruno API Collection (`docs/API_COLLECTION.json`)
+> **Auto-Set Feature:** Variables automatically populate during workflow execution via test scripts
 
 ---
 
@@ -26,6 +27,14 @@
 - ✓ Max 3 regenerate attempts per video
 - ✓ Max 3 regenerate attempts per scene
 - ✗ Error returned when limit exceeded
+
+**Auto-Set Feature (Bruno Collection):**
+- ✓ 24 endpoints with automatic variable population via test scripts
+- ✓ Create/Generate endpoints auto-set resource IDs (project_id, business_brief_id, etc.)
+- ✓ List endpoints auto-set first item's ID from response array
+- ✓ Get endpoints auto-refresh variable values for current resource
+- ✓ Workflow: Each step automatically populates variables for next step
+- ✓ Zero manual variable management needed
 
 ---
 

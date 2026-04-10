@@ -1,5 +1,10 @@
 package service
 
+// DEPRECATED: This service is not currently used in the application.
+// All video generation functionality is handled by VideoGenerationService.
+// This file is retained for potential future use or can be safely removed.
+// Consider using VideoGenerationService instead for any video-related operations.
+
 import (
 	"errors"
 

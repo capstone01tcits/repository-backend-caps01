@@ -23,7 +23,10 @@ func NewVideoHandler(videoGenService service.VideoGenerationService) *VideoHandl
 // POST /api/videos/generate
 // Generates 3 video variants from a storyboard
 func (h *VideoHandler) GenerateVideoVariants(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	var req model.GenerateVideoRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -37,9 +40,18 @@ func (h *VideoHandler) GenerateVideoVariants(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "storyboard_id is required")
 	}
 
-	userUUID, _ := uuid.Parse(userID)
-	projectUUID, _ := uuid.Parse(req.ProjectID)
-	storyboardUUID, _ := uuid.Parse(req.StoryboardID)
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid user ID format")
+	}
+	projectUUID, err := uuid.Parse(req.ProjectID)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid project_id format")
+	}
+	storyboardUUID, err := uuid.Parse(req.StoryboardID)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid storyboard_id format")
+	}
 
 	job, err := h.videoGenService.GenerateVideoVariants(c.Context(), userUUID, projectUUID, storyboardUUID, req.CustomPrompt)
 	if err != nil {
@@ -211,51 +223,6 @@ func (h *VideoHandler) RegenerateScene(c *fiber.Ctx) error {
 	return utils.Created(c, "Scene regeneration job created", map[string]interface{}{
 		"generation_job_id": job.ID,
 		"status":            job.Status,
-	})
-}
-
-// GetVideo godoc
-// GET /api/videos/:id
-func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
-	videoIDStr := c.Params("id")
-	videoID, err := uuid.Parse(videoIDStr)
-	if err != nil {
-		return utils.BadRequest(c, "Invalid video ID format")
-	}
-
-	variant, err := h.videoGenService.GetVideoVariant(c.Context(), videoID)
-	if err != nil {
-		return utils.NotFound(c, "Video variant not found")
-	}
-
-	_, scenes, _ := h.videoGenService.GetVideoVariantWithScenes(c.Context(), videoID)
-
-	sceneResponses := make([]model.SceneStatusResponse, len(scenes))
-	for i, scene := range scenes {
-		sceneResponses[i] = model.SceneStatusResponse{
-			ID:           scene.ID.String(),
-			SceneNumber:  scene.SceneNumber,
-			Status:       scene.Status,
-			VideoURL:     scene.VideoURL,
-			Duration:     scene.Duration,
-			ErrorMessage: scene.ErrorMessage,
-			UpdatedAt:    scene.UpdatedAt,
-		}
-	}
-
-	return utils.OK(c, "Video retrieved", map[string]interface{}{
-		"id":             variant.ID.String(),
-		"variant_number": variant.VariantNumber,
-		"status":         variant.Status,
-		"video_url":      variant.VideoURL,
-		"thumbnail_url":  variant.ThumbnailURL,
-		"prompt_used":    variant.PromptUsed,
-		"duration":       variant.Duration,
-		"provider":       variant.Provider,
-		"model":          variant.Model,
-		"scenes":         sceneResponses,
-		"created_at":     variant.CreatedAt,
-		"updated_at":     variant.UpdatedAt,
 	})
 }
 

@@ -83,7 +83,10 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 // GetProfile godoc
 // GET /api/auth/me (Protected)
 func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	profile, err := h.authService.GetProfile(userID)
 	if err != nil {
@@ -96,7 +99,10 @@ func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
 // GetUserProfile godoc
 // GET /api/auth/users/:user_id (Protected)
 func (h *AuthHandler) GetUserProfile(c *fiber.Ctx) error {
-	requestingUserID := c.Locals("userID").(string)
+	requestingUserID, ok := c.Locals("userID").(string)
+	if !ok || requestingUserID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	requestingRole, _ := c.Locals("role").(string)
 	targetUserID := c.Params("user_id")
 
@@ -120,7 +126,10 @@ func (h *AuthHandler) GetUserProfile(c *fiber.Ctx) error {
 // ChangePassword godoc
 // POST /api/auth/change-password (Protected)
 func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	var req model.ChangePasswordRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -150,7 +159,10 @@ func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
 // DeleteAccount godoc
 // DELETE /api/auth/account (Protected)
 func (h *AuthHandler) DeleteAccount(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 
 	err := h.authService.DeleteAccount(userID)
 	if err != nil {

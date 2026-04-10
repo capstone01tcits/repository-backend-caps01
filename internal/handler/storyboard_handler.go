@@ -19,7 +19,10 @@ func NewStoryboardHandler(storyboardService service.StoryboardService) *Storyboa
 // GenerateStoryboards godoc
 // POST /api/projects/:id/storyboards/generate
 func (h *StoryboardHandler) GenerateStoryboards(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	projectID := c.Params("id")
 
 	var body struct {
@@ -50,7 +53,10 @@ func (h *StoryboardHandler) GenerateStoryboards(c *fiber.Ctx) error {
 // GetStoryboards godoc
 // GET /api/projects/:id/storyboards
 func (h *StoryboardHandler) GetStoryboards(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	projectID := c.Params("id")
 
 	storyboards, err := h.storyboardService.GetStoryboards(userID, projectID)
@@ -64,7 +70,10 @@ func (h *StoryboardHandler) GetStoryboards(c *fiber.Ctx) error {
 // GetStoryboard godoc
 // GET /api/storyboards/:id
 func (h *StoryboardHandler) GetStoryboard(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	storyboardID := c.Params("id")
 
 	storyboard, err := h.storyboardService.GetStoryboard(userID, storyboardID)
@@ -78,7 +87,10 @@ func (h *StoryboardHandler) GetStoryboard(c *fiber.Ctx) error {
 // SelectStoryboard godoc
 // POST /api/storyboards/:id/select
 func (h *StoryboardHandler) SelectStoryboard(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	storyboardID := c.Params("id")
 
 	storyboard, err := h.storyboardService.SelectStoryboard(userID, storyboardID)
@@ -92,7 +104,10 @@ func (h *StoryboardHandler) SelectStoryboard(c *fiber.Ctx) error {
 // GetScenes godoc
 // GET /api/storyboards/:id/scenes
 func (h *StoryboardHandler) GetScenes(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	storyboardID := c.Params("id")
 
 	scenes, err := h.storyboardService.GetScenes(userID, storyboardID)
@@ -106,7 +121,10 @@ func (h *StoryboardHandler) GetScenes(c *fiber.Ctx) error {
 // UpdateStoryboard godoc
 // PUT /api/storyboards/:id
 func (h *StoryboardHandler) UpdateStoryboard(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
 	storyboardID := c.Params("id")
 
 	var req model.UpdateStoryboardRequest

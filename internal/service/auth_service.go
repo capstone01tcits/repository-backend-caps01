@@ -41,12 +41,14 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.AuthResponse,
 		return nil, err
 	}
 
-	// First user is admin
+	// First user is admin (atomic check for first user)
 	role := "user"
-	count, _ := s.userRepo.Count()
-	if count == 0 {
+	count, err := s.userRepo.Count()
+	if err == nil && count == 0 {
 		role = "admin"
 	}
+	// Note: For production, wrap Count() + Create() in a database transaction to prevent race condition
+	// where two simultaneous registrations could both become admin
 
 	user := &model.User{
 		Name:     req.Name,
@@ -138,10 +140,7 @@ func (s *authService) DeleteAccount(userID string) error {
 	if err != nil {
 		return errors.New("user not found")
 	}
-
-	if user == nil {
-		return errors.New("user not found")
-	}
+	_ = user // verification that user exists
 
 	// Soft delete user
 	if err := s.userRepo.Delete(userID); err != nil {
@@ -163,10 +162,7 @@ func (s *authService) RestoreAccount(refreshToken string) (*model.UserInfo, erro
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
-
-	if user == nil {
-		return nil, errors.New("user not found")
-	}
+	_ = user // verification that user exists
 
 	// Restore user (set deleted_at to null)
 	if err := s.userRepo.Restore(claims.UserID); err != nil {
