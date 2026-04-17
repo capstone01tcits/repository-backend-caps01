@@ -1,0 +1,34 @@
+[
+  {
+    "status": "success",
+    "route_used": "ltx:ltx-2-pro",
+    "result": {
+      "output_path": "outputs/videos\\its_informatics_01__ltx_ltx-2-pro.mp4",
+      "model": "ltx-2-pro",
+      "duration": 10,
+      "resolution": "1920x1080",
+      "fps": 25,
+      "audio": false,
+      "audio_note": "LTX tidak generate audio. Gunakan TTS pipeline terpisah.",
+      "file_size_bytes": 11213041
+    },
+    "prompt_id": "its_informatics_01",
+    "prompt_preview": "A cinematic 10-second promotional video for Informatics Engineering at ITS Surabaya. The video featu...",
+    "request_payload": {
+      "instruction": "text_to_video",
+      "constraints": {
+        "duration": 10,
+        "ratio": "16:9",
+        "resolution": "1920x1080",
+        "fps": 25
+      },
+      "routing": {
+        "task_type": "text_to_video",
+        "fallback": "ltx:ltx-2-fast",
+        "resolved_provider": "ltx",
+        "resolved_model": "ltx-2-fast"
+      }
+    },
+    "created_at": "2026-04-10T11:50:56.413435+00:00"
+  }
+]
