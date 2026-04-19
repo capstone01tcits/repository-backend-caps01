@@ -145,3 +145,27 @@ type UpdateCreativeBriefRequest struct {
 	AdditionalNotes  *string `json:"additional_notes"`
 	Status           *string `json:"status"`
 }
+
+// ==================== Simplified FE Request (Matches Frontend Exactly) ====================
+
+type CreateProjectFromFERequest struct {
+	// Step 1: Business Brief
+	InstitutionName    string `json:"institution_name" validate:"required"`
+	InstitutionHistory string `json:"institution_history" validate:"required"`
+	SchoolLevel        string `json:"school_level" validate:"required"`
+	OfferedDegrees     string `json:"offered_degrees"` // optional
+
+	// Step 2: Creative Brief
+	EventContent       string `json:"event_content" validate:"required"`
+	ToneOfVoice        string `json:"tone_of_voice" validate:"required"`
+	SelectedKeyMessage string `json:"selected_key_message" validate:"required"`
+	VideoDuration      string `json:"video_duration" validate:"required"` // e.g., "15 detik", "30 detik", "60 detik"
+	Prompt             string `json:"prompt"`                             // optional
+
+	// Step 3: Theme
+	SelectedTheme string `json:"selected_theme" validate:"required"`
+
+	// Step 4: Summary
+	EditableCopywriting string `json:"editable_copywriting"`
+	EditableHashtags    string `json:"editable_hashtags"`
+}

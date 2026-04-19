@@ -74,3 +74,16 @@ type UpdateContentPillarRequest struct {
 	Prompt   *string `json:"prompt"`
 	VideoURL *string `json:"video_url"`
 }
+
+// ==================== Content Pillar Adjustment (New Workflow) ====================
+
+type ContentPillarAdjustmentResponse struct {
+	ContentPillars []ContentPillar `json:"content_pillars"`
+	BusinessBrief  *BusinessBrief  `json:"business_brief,omitempty"`
+	CreativeBrief  *CreativeBrief  `json:"creative_brief,omitempty"`
+}
+
+type SelectContentPillarAndCreateCreativeBriefRequest struct {
+	ContentPillarID string  `json:"content_pillar_id" validate:"required"`
+	ContentThemeID  *string `json:"content_theme_id"`
+}

@@ -190,3 +190,20 @@ def serve_video(filename: str):
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="File tidak ditemukan")
     return FileResponse(filepath, media_type="video/mp4")
+
+
+# ===== RUN SERVER =====
+if __name__ == "__main__":
+    import uvicorn
+    
+    host = os.getenv("AI_SERVICE_HOST", "127.0.0.1")
+    port = int(os.getenv("AI_SERVICE_PORT", "8000"))
+    
+    logger.info(f"Starting AI Video Service on {host}:{port}...")
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        reload=False,  # Disable reload for direct script execution
+        log_level="info",
+    )

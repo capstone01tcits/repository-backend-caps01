@@ -56,7 +56,7 @@ func Load() {
 	}
 
 	Cfg = Config{
-		AppPort:               getEnv("APP_PORT", "3000"),
+		AppPort:               getEnv("APP_PORT", "5000"),
 		AppEnv:                appEnv,
 		DBHost:                getEnv("DB_HOST", "localhost"),
 		DBPort:                getEnv("DB_PORT", "5432"),

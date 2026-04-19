@@ -12,6 +12,7 @@ type BriefRepository interface {
 	CreateBusinessBrief(brief *model.BusinessBrief) error
 	FindBusinessBriefByID(id string) (*model.BusinessBrief, error)
 	FindBusinessBriefsByUserID(userID string) ([]model.BusinessBrief, error)
+	FindBusinessBriefByProjectID(projectID string) (*model.BusinessBrief, error)
 	UpdateBusinessBrief(brief *model.BusinessBrief) error
 	DeleteBusinessBrief(id string) error
 
@@ -59,6 +60,19 @@ func (r *briefRepository) FindBusinessBriefsByUserID(userID string) ([]model.Bus
 	}
 	err = r.db.Where("user_id = ?", uid).Order("created_at DESC").Find(&briefs).Error
 	return briefs, err
+}
+
+func (r *briefRepository) FindBusinessBriefByProjectID(projectID string) (*model.BusinessBrief, error) {
+	var brief model.BusinessBrief
+	pid, err := uuid.Parse(projectID)
+	if err != nil {
+		return nil, err
+	}
+	err = r.db.Where("project_id = ?", pid).First(&brief).Error
+	if err != nil {
+		return nil, err
+	}
+	return &brief, nil
 }
 
 func (r *briefRepository) UpdateBusinessBrief(brief *model.BusinessBrief) error {

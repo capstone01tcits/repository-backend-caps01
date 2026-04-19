@@ -57,8 +57,7 @@ func main() {
 	// Init services
 	authSvc := service.NewAuthService(userRepo)
 	projectSvc := service.NewProjectService(projectRepo)
-	briefSvc := service.NewBriefService(briefRepo)
-	contentSvc := service.NewContentService(contentRepo, projectRepo)
+	briefSvc := service.NewBriefService(briefRepo, projectRepo, storyboardRepo)
 	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, contentRepo)
 	creditSvc := service.NewCreditService(userRepo)
 	videoGenSvc := service.NewVideoGenerationService(jobRepo, variantRepo, sceneRepo, creditSvc)
@@ -67,7 +66,6 @@ func main() {
 	authHandler := handler.NewAuthHandler(authSvc)
 	projectHandler := handler.NewProjectHandler(projectSvc)
 	briefHandler := handler.NewBriefHandler(briefSvc)
-	contentHandler := handler.NewContentHandler(contentSvc)
 	storyboardHandler := handler.NewStoryboardHandler(storyboardSvc)
 	videoHandler := handler.NewVideoHandler(videoGenSvc)
 	creditHandler := handler.NewCreditHandler(creditSvc)
@@ -100,65 +98,28 @@ func main() {
 	auth.Post("/register", authHandler.Register)
 	auth.Post("/login", authHandler.Login)
 	auth.Post("/refresh", authHandler.RefreshToken)
-	auth.Post("/restore", authHandler.RestoreAccount)
 	auth.Get("/me", middleware.Protected(), authHandler.GetProfile)
-	auth.Get("/users/:user_id", middleware.Protected(), authHandler.GetUserProfile)
 	auth.Post("/change-password", middleware.Protected(), authHandler.ChangePassword)
 	auth.Delete("/account", middleware.Protected(), authHandler.DeleteAccount)
 
-	// ==================== Project Routes (Dashboard) ====================
+	// ==================== Project Routes ====================
 	projects := api.Group("/projects", middleware.Protected())
-	projects.Post("/", projectHandler.CreateProject)
+	// Initialize project from FE wizard (atomically creates project + briefs)
+	projects.Post("/initialize", briefHandler.CreateProjectFromFE)
+	// List and get projects
 	projects.Get("/", projectHandler.GetProjects)
 	projects.Get("/:id", projectHandler.GetProject)
-	projects.Put("/:id", projectHandler.UpdateProject)
-	projects.Delete("/:id", projectHandler.DeleteProject)
-
-	// ==================== Brief Routes ====================
-	briefs := api.Group("/briefs", middleware.Protected())
-	briefs.Post("/business", briefHandler.CreateBusinessBrief)
-	briefs.Get("/business", briefHandler.GetBusinessBriefs)
-	briefs.Get("/business/:id", briefHandler.GetBusinessBrief)
-	briefs.Put("/business/:id", briefHandler.UpdateBusinessBrief)
-	briefs.Delete("/business/:id", briefHandler.DeleteBusinessBrief)
-	briefs.Get("/business/:id/creative", briefHandler.GetCreativeBriefsByBusinessBrief)
-	briefs.Post("/creative", briefHandler.CreateCreativeBrief)
-	briefs.Get("/creative", briefHandler.GetCreativeBriefs)
-	briefs.Get("/creative/:id", briefHandler.GetCreativeBrief)
-	briefs.Put("/creative/:id", briefHandler.UpdateCreativeBrief)
-	briefs.Delete("/creative/:id", briefHandler.DeleteCreativeBrief)
-
-	// ==================== Content Pillar Routes ====================
-	projects.Post("/:id/content-pillars/generate", contentHandler.GenerateContentPillars)
-	projects.Get("/:id/content-pillars", contentHandler.GetContentPillars)
-	contentPillars := api.Group("/content-pillars", middleware.Protected())
-	contentPillars.Get("/:id", contentHandler.GetContentPillar)
-	contentPillars.Post("/:id/select", contentHandler.SelectContentPillar)
-	contentPillars.Put("/:id", contentHandler.UpdateContentPillar)
-	contentPillars.Get("/:id/themes", contentHandler.GetContentThemes)
-
-	// ==================== Content Theme Routes ====================
-	contentThemes := api.Group("/content-themes", middleware.Protected())
-	contentThemes.Post("/:id/select", contentHandler.SelectContentTheme)
 
 	// ==================== Storyboard Routes ====================
-	projects.Post("/:id/storyboards/generate", storyboardHandler.GenerateStoryboards)
-	projects.Get("/:id/storyboards", storyboardHandler.GetStoryboards)
-	storyboards := api.Group("/storyboards", middleware.Protected())
-	storyboards.Get("/:id", storyboardHandler.GetStoryboard)
-	storyboards.Post("/:id/select", storyboardHandler.SelectStoryboard)
-	storyboards.Put("/:id", storyboardHandler.UpdateStoryboard)
-	storyboards.Get("/:id/scenes", storyboardHandler.GetScenes)
+	storyboard := api.Group("/storyboard", middleware.Protected())
+	storyboard.Post("/generate", storyboardHandler.GenerateStoryboard)
 
 	// ==================== Video Routes ====================
 	videos := api.Group("/videos", middleware.Protected())
-	videos.Post("/generate", videoHandler.GenerateVideoVariants)
-	videos.Get("/generation/:jobId", videoHandler.GetGenerationJobStatus)
-	videos.Get("/storyboard/:storyboardId", videoHandler.GetVideoVariants)
-	videos.Get("/:variantId", videoHandler.GetVideoVariant)
-	videos.Get("/:variantId/download", videoHandler.DownloadVideo)
-	videos.Post("/:variantId/regenerate", videoHandler.RegenerateVideoVariant)
-	videos.Post("/scene/:sceneId/regenerate", videoHandler.RegenerateScene)
+	videos.Post("/generate", videoHandler.GenerateVideo)
+	videos.Get("/:id", videoHandler.GetVideo)
+	videos.Get("/", videoHandler.ListVideos)
+	videos.Get("/download/:id", videoHandler.DownloadVideo)
 
 	// ==================== Credit Routes ====================
 	credits := api.Group("/credits", middleware.Protected())

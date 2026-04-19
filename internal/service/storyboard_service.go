@@ -47,13 +47,52 @@ func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeI
 		return nil, errors.New("unauthorized access to this project")
 	}
 
-	// Verify content theme exists and belongs to user
-	theme, err := s.contentRepo.FindContentThemeByID(contentThemeID)
-	if err != nil {
-		return nil, errors.New("content theme not found")
-	}
-	if theme.UserID.String() != userID {
-		return nil, errors.New("unauthorized access to this content theme")
+	// Handle content theme: use provided or auto-create/find default
+	var theme *model.ContentTheme
+	if contentThemeID != "" {
+		// Use provided theme
+		foundTheme, err := s.contentRepo.FindContentThemeByID(contentThemeID)
+		if err != nil {
+			return nil, errors.New("content theme not found")
+		}
+		if foundTheme.UserID.String() != userID {
+			return nil, errors.New("unauthorized access to this content theme")
+		}
+		theme = foundTheme
+	} else {
+		// Auto-create content theme for this project if not provided
+		// First try to find existing content pillar for this project
+		pillars, err := s.contentRepo.FindContentPillarsByProjectID(projectID)
+		if err == nil && len(pillars) > 0 && len(pillars[0].ContentThemes) > 0 {
+			// Use first theme from first pillar
+			theme = &pillars[0].ContentThemes[0]
+		} else {
+			// Create default content pillar and theme for this project
+			pillar := &model.ContentPillar{
+				ID:          uuid.New(),
+				ProjectID:   project.ID,
+				UserID:      uid,
+				Title:       project.Theme + " - Content Pillar",
+				Description: "Auto-created content pillar for storyboard generation",
+				IsSelected:  false,
+			}
+			if err := s.contentRepo.CreateContentPillar(pillar); err != nil {
+				return nil, errors.New("failed to create content pillar")
+			}
+
+			newTheme := &model.ContentTheme{
+				ID:              uuid.New(),
+				ContentPillarID: pillar.ID,
+				UserID:          uid,
+				Title:           project.Theme,
+				Description:     "Auto-created theme for " + project.Name,
+				IsSelected:      false,
+			}
+			if err := s.contentRepo.CreateContentTheme(newTheme); err != nil {
+				return nil, errors.New("failed to create content theme")
+			}
+			theme = newTheme
+		}
 	}
 
 	pid, _ := uuid.Parse(projectID)

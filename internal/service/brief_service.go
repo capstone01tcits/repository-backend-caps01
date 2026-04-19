@@ -2,9 +2,12 @@ package service
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 
 	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/repository"
+	"Sevima-AI-Content-Creator/pkg/utils"
 
 	"github.com/google/uuid"
 )
@@ -24,14 +27,19 @@ type BriefService interface {
 	GetCreativeBriefsByBusinessBrief(userID, businessBriefID string) ([]model.CreativeBrief, error)
 	UpdateCreativeBrief(userID, briefID string, req *model.UpdateCreativeBriefRequest) (*model.CreativeBrief, error)
 	DeleteCreativeBrief(userID, briefID string) error
+
+	// Unified FE Flow (matches frontend exactly)
+	CreateProjectFromFE(userID string, req *model.CreateProjectFromFERequest) (map[string]interface{}, error)
 }
 
 type briefService struct {
-	briefRepo repository.BriefRepository
+	briefRepo      repository.BriefRepository
+	projectRepo    repository.ProjectRepository
+	storyboardRepo repository.StoryboardRepository
 }
 
-func NewBriefService(briefRepo repository.BriefRepository) BriefService {
-	return &briefService{briefRepo}
+func NewBriefService(briefRepo repository.BriefRepository, projectRepo repository.ProjectRepository, storyboardRepo repository.StoryboardRepository) BriefService {
+	return &briefService{briefRepo, projectRepo, storyboardRepo}
 }
 
 // ==================== Business Brief ====================
@@ -312,4 +320,102 @@ func (s *briefService) DeleteCreativeBrief(userID, briefID string) error {
 	}
 
 	return s.briefRepo.DeleteCreativeBrief(briefID)
+}
+
+// ==================== Unified FE Flow (Matches Frontend Exactly) ====================
+
+func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProjectFromFERequest) (map[string]interface{}, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+
+	// Step 1: Create Project
+	projectName := req.EventContent + " for " + req.InstitutionName
+	project := &model.Project{
+		UserID:      uid,
+		Name:        projectName,
+		Description: req.InstitutionHistory,
+		Theme:       req.SelectedTheme,
+		Status:      "draft",
+	}
+	if err := s.projectRepo.Create(project); err != nil {
+		return nil, errors.New("failed to create project")
+	}
+
+	// Step 2: Create Business Brief (auto-fill missing fields)
+	businessBrief := &model.BusinessBrief{
+		ID:               uuid.New(),
+		UserID:           uid,
+		ProjectID:        project.ID,
+		ProjectName:      projectName,
+		CompanyName:      req.InstitutionName, // auto-fill
+		InstituteName:    req.InstitutionName,
+		Education:        req.SchoolLevel,
+		Industry:         "Education", // auto-fill default
+		TargetAudience:   "Students",  // auto-fill default
+		ProjectObjective: req.InstitutionHistory,
+		KeyMessage:       req.SelectedKeyMessage,
+		Budget:           "",                 // optional
+		Timeline:         "",                 // optional
+		Competitors:      "",                 // optional
+		AdditionalNotes:  req.OfferedDegrees, // map from offered degrees
+		Status:           "draft",
+	}
+	if err := s.briefRepo.CreateBusinessBrief(businessBrief); err != nil {
+		return nil, errors.New("failed to create business brief")
+	}
+
+	// Step 3: Create Creative Brief (auto-fill missing fields)
+	duration := parseDurationToInt(req.VideoDuration)
+	creativeBrief := &model.CreativeBrief{
+		ID:               uuid.New(),
+		UserID:           uid,
+		BusinessBriefID:  businessBrief.ID,
+		Title:            projectName,
+		VideoType:        utils.MapEventContentToVideoType(req.EventContent),
+		Duration:         duration,
+		Style:            utils.MapThemeToStyle(req.SelectedTheme),
+		Tone:             req.ToneOfVoice,
+		Script:           req.Prompt, // use custom prompt as script
+		VisualReferences: req.SelectedTheme,
+		MusicPreference:  utils.MapToneToMusicPreference(req.ToneOfVoice),
+		CallToAction:     req.SelectedKeyMessage,
+		OutputFormat:     "mp4",   // auto-fill default
+		Resolution:       "1080p", // auto-fill default
+		AdditionalNotes:  req.Prompt,
+		Status:           "draft",
+	}
+	if err := s.briefRepo.CreateCreativeBrief(creativeBrief); err != nil {
+		return nil, errors.New("failed to create creative brief")
+	}
+
+	// Return response with IDs for frontend
+	return map[string]interface{}{
+		"project_id":        project.ID.String(),
+		"business_brief_id": businessBrief.ID.String(),
+		"creative_brief_id": creativeBrief.ID.String(),
+		"project_name":      projectName,
+		"theme":             req.SelectedTheme,
+		"tone":              req.ToneOfVoice,
+		"duration":          duration,
+		"institution_name":  req.InstitutionName,
+		"event_content":     req.EventContent,
+		"key_message":       req.SelectedKeyMessage,
+		"copywriting":       req.EditableCopywriting,
+		"hashtags":          req.EditableHashtags,
+	}, nil
+}
+
+// Helper function to parse duration string to integer
+func parseDurationToInt(duration string) int {
+	cleaned := strings.TrimSpace(strings.ToLower(duration))
+	parts := strings.Fields(cleaned)
+	if len(parts) > 0 {
+		num, err := strconv.Atoi(parts[0])
+		if err == nil && num > 0 {
+			return num
+		}
+	}
+	return 30 // default
 }

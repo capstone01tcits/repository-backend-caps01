@@ -144,3 +144,49 @@ func (h *ContentHandler) UpdateContentPillar(c *fiber.Ctx) error {
 
 	return utils.OK(c, "Content pillar updated", pillar)
 }
+
+// ==================== Content Pillar Adjustment (New Workflow) ====================
+
+// AdjustContentPillar godoc
+// GET /api/projects/:id/content-pillars/adjustment
+// Retrieves business brief, content brief and generates/returns content pillars for selection
+func (h *ContentHandler) AdjustContentPillar(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+	projectID := c.Params("id")
+
+	adjustment, err := h.contentService.AdjustContentPillar(userID, projectID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Content pillar adjustment retrieved", adjustment)
+}
+
+// SelectContentPillarAndGenerateCreativeBrief godoc
+// POST /api/projects/:id/content-pillars/adjustment/select
+// Selects a content pillar and generates a creative brief
+func (h *ContentHandler) SelectContentPillarAndGenerateCreativeBrief(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+
+	var req model.SelectContentPillarAndCreateCreativeBriefRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	if req.ContentPillarID == "" {
+		return utils.BadRequest(c, "content_pillar_id is required")
+	}
+
+	creativeBrief, err := h.contentService.SelectContentPillarAndGenerateCreativeBrief(userID, req.ContentPillarID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.Created(c, "Content pillar selected and creative brief generated", creativeBrief)
+}

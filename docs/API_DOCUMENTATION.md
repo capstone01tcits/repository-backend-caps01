@@ -1,40 +1,44 @@
 # API Documentation — AI Video Generation Platform
 
-> **Version:** 2.1.0 (Updated Sprint 3 - April 2026)
-> **Base URL:** `http://localhost:3000`  
+> **Version:** 2.2.0 (Updated Sprint 4 - April 2026)
+> **Base URL:** `http://localhost:5000`  
 > **AI Service URL:** `http://localhost:8000`
 > **Collection Format:** Bruno API Collection (`docs/API_COLLECTION.json`)
 > **Auto-Set Feature:** Variables automatically populate during workflow execution via test scripts
 
 ---
 
-## Sprint 3 Updates (April 2026) ✓
+## Sprint 4 Updates (April 2026) ✓
 
-**Field Changes in Business Brief:**
-- ✓ `company_name` → `institute_name` (for educational institutions)
-- ✓ `industry` → `education` (changed semantics for education domain)
-- ✓ `target_audience` string → boolean (yes/no representation)
-- ✓ `budget` + `timeline` → `deadline` (merged into single datetime field)
+**Unified FE-BE Integration Endpoint:**
+- ✓ Endpoint: `POST /api/projects/initialize` (formerly `/api/projects/from-fe`)
+- ✓ Accepts 12 fields from FE wizard (9 required + 3 optional)
+- ✓ Atomically creates Project + Brief data in single call
+- ✓ Auto-fills 18+ missing backend fields with sensible defaults
+- ✓ Backend port: 5000
 
-**New Fields Added:**
-- ✓ `theme` field in Project model
-- ✓ `prompt` & `video_url` fields in ContentPillar
-- ✓ `prompt` field in Storyboard
-- ✓ `caption` field in Scene (for generated captions)
-- ✓ `regenerate_count` in Video, VideoVariant, Scene (max 3 times)
+**Auto-Fill Mappings (FE → BE):**
+- `institution_name` → `company_name`, `institute_name`
+- `event_content` → `video_type` (smart enum mapping)
+- `selected_theme` → `style` (theme → visual style mapping)
+- `tone_of_voice` → `music_preference` (tone → music mapping)
+- `video_duration` → integer duration (string parsing)
+- Auto-defaults: industry="Education", target_audience="Students", format="mp4", resolution="1080p"
 
-**Regenerate Limits:**
-- ✓ Max 3 regenerate attempts per video
-- ✓ Max 3 regenerate attempts per scene
-- ✗ Error returned when limit exceeded
+**Workflow Simplified:**
+- FE Wizard (4 steps) → Backend initialization → Storyboard generation → Video generation
+- Register → Login → Initialize Project (from FE) → Generate Storyboard → Generate Video (5 steps)
+- Briefs auto-created during project initialization
 
-**Auto-Set Feature (Bruno Collection):**
-- ✓ 24 endpoints with automatic variable population via test scripts
-- ✓ Create/Generate endpoints auto-set resource IDs (project_id, business_brief_id, etc.)
-- ✓ List endpoints auto-set first item's ID from response array
-- ✓ Get endpoints auto-refresh variable values for current resource
-- ✓ Workflow: Each step automatically populates variables for next step
-- ✓ Zero manual variable management needed
+**15 Total Endpoints (Simplified Core Workflow):**
+- 6 Auth endpoints (register, login, profile, change-password, refresh, delete account)
+- 3 Project endpoints (initialize with 12 fields, list, get)
+- 1 Storyboard endpoint (generate)
+- 4 Video endpoints (generate, get, list, download)
+- 1 Health check endpoint
+
+**Plus Support Endpoints:**
+- 2 Credit endpoints (get balance, admin add credits)
 
 ---
 
@@ -47,9 +51,6 @@
 5. [Error Handling](#error-handling)
 6. [Core API Endpoints](#core-api-endpoints)
 7. [Video Generation API](#video-generation-api)
-8. [Video Generation System Details](#video-generation-system-details)
-9. [Database Schema](#database-schema)
-10. [Setup & Configuration](#setup--configuration)
 
 ---
 
@@ -58,19 +59,17 @@
 The AI Video Generation Platform Backend provides RESTful APIs for:
 
 - **User authentication** with role-based access (user / admin)
-- **Project management** (dashboard for video projects)
-- **Brief management** (business briefs & creative briefs)
-- **AI content pillar generation** with selection workflow
-- **AI storyboard generation** with scene timeline
-- **AI video generation** (3 variations per briefing with scene-based generation)
+- **Project management** (unified initialization from FE wizard)
+- **AI storyboard generation** with automatic scene generation
+- **AI video generation** with provider routing (LTX, Runway)
 - **Credit management** (user balance & admin top-up)
-- **AI service gateway** (proxy to Python AI service)
+- **AI service gateway** (proxy to Python AI service at port 8000)
 
 ### Service Stack
 
 | Service | Port | Stack | Purpose |
 |---------|------|-------|---------|
-| Go Backend | 3000 | Fiber + GORM + PostgreSQL | Auth, Projects, Briefs, Video Generation |
+| Go Backend | 5000 | Fiber + GORM + PostgreSQL | Auth, Projects, Briefs, Video Generation |
 | Python AI Service | 8000 | FastAPI + Uvicorn | AI Processing |
 
 ---
@@ -78,11 +77,11 @@ The AI Video Generation Platform Backend provides RESTful APIs for:
 ## Architecture
 
 ```
-Frontend (Ember JS)
+Frontend (Next.js)
        │
        ▼
 ┌──────────────────────────────────────────┐
-│   Go Backend (Port 3000)                 │
+│   Go Backend (Port 5000)                 │
 │                                          │
 │  ┌──────────────────────────────────┐    │
 │  │  API Layer (Handlers)            │    │
@@ -388,71 +387,85 @@ Authorization: Bearer {access_token}
 }
 ```
 
-#### Restore Account
-
-```http
-POST /api/auth/restore
-Content-Type: application/json
-
-{
-  "refresh_token": "eyJhbGciOiJIUzI1NiIs..."
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Account restored successfully",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "user",
-    "credits": 10,
-    "created_at": "2026-03-13T10:00:00Z",
-    "updated_at": "2026-03-13T10:00:00Z"
-  }
-}
-```
-
 ---
 
 ### Project APIs
 
-#### Create Project
+#### Initialize Project (from FE Wizard)
+
+This endpoint accepts 12 fields from the frontend wizard (9 required + 3 optional) and atomically creates:
+- **Project** with metadata
+- **BusinessBrief** with 10 auto-filled fields
+- **CreativeBrief** with 8 auto-filled fields
 
 ```http
-POST /api/projects
+POST /api/projects/initialize
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "name": "Brand Campaign Q1 2026",
-  "description": "Marketing video campaign for Q1",
-  "theme": "Corporate Branding"
+  "institution_name": "SMA Negeri 1 Jakarta",
+  "institution_history": "Sekolah terkemuka dengan program pendidikan berkualitas tinggi",
+  "school_level": "Senior High School",
+  "offered_degrees": "",
+  "event_content": "Penerimaan Mahasiswa Baru",
+  "tone_of_voice": "Santai & Ramah",
+  "selected_key_message": "Bergabunglah dengan keluarga besar kami",
+  "video_duration": "15 detik",
+  "prompt": "",
+  "selected_theme": "Tur Kampus Sinematik",
+  "editable_copywriting": "Halo generasi masa depan! Bergabunglah dengan keluarga besar kami.",
+  "editable_hashtags": "#SMANegeri1Jakarta #PenerimaanMahasiswaBaru #Pendidikan"
 }
 ```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| institution_name | string | Yes | Name of institution |
+| institution_history | string | Yes | Background/history info |
+| school_level | string | Yes | Education level (e.g., "Senior High School") |
+| offered_degrees | string | No | Offered degree programs |
+| event_content | string | Yes | Event/program being promoted |
+| tone_of_voice | string | Yes | Tone style (Santai & Ramah, Profesional & Formal, etc.) |
+| selected_key_message | string | Yes | Main message for video |
+| video_duration | string | Yes | Duration (e.g., "15 detik", "30 detik") |
+| prompt | string | No | Additional custom prompt |
+| selected_theme | string | Yes | Visual theme (Tur Kampus Sinematik, etc.) |
+| editable_copywriting | string | No | Custom copywriting content |
+| editable_hashtags | string | No | Hashtags for promotion |
 
 **Response (201 Created):**
 ```json
 {
   "success": true,
-  "message": "Project created successfully",
+  "message": "Project created successfully with briefs",
   "data": {
-    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Brand Campaign Q1 2026",
-    "description": "Marketing video campaign for Q1",
-    "theme": "Corporate Branding",
-    "status": "draft",
-    "created_at": "2026-03-13T10:05:00Z",
-    "updated_at": "2026-03-13T10:05:00Z"
+    "project_id": "550e8400-e29b-41d4-a716-446655440001",
+    "business_brief_id": "550e8400-e29b-41d4-a716-446655440002",
+    "creative_brief_id": "550e8400-e29b-41d4-a716-446655440003",
+    "project_name": "Penerimaan Mahasiswa Baru for SMA Negeri 1 Jakarta",
+    "theme": "Tur Kampus Sinematik",
+    "tone": "Santai & Ramah",
+    "duration": 15,
+    "school_level": "Senior High School",
+    "institution_name": "SMA Negeri 1 Jakarta"
   }
 }
 ```
 
-**✓ NEW in Sprint 3:** Added `theme` field to projects for storing theme information
+**Auto-fill Behavior:**
+- `project_name` = `event_content` + " for " + `institution_name`
+- `company_name` = `institution_name`
+- `industry` = "Education" (default)
+- `target_audience` = "Students" (default)
+- `style` = Auto-mapped from `selected_theme`
+- `music_preference` = Auto-mapped from `tone_of_voice`
+- `video_type` = Auto-mapped from `event_content`
+- `output_format` = "mp4" (default)
+- `resolution` = "1080p" (default)
+- `status` = "draft" (all resources)
 
 #### List Projects
 
@@ -468,231 +481,14 @@ GET /api/projects/{project_id}
 Authorization: Bearer {access_token}
 ```
 
-#### Update Project
+
+
+### Storyboard API
+
+#### Generate Storyboard
 
 ```http
-PUT /api/projects/{project_id}
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "name": "Updated Project Name",
-  "description": "Updated description",
-  "theme": "Updated Theme"
-}
-```
-
-**✓ NEW in Sprint 3:** `theme` field can be updated
-
-#### Delete Project
-
-```http
-DELETE /api/projects/{project_id}
-Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Project deleted successfully",
-  "data": null
-}
-```
-
----
-
-### Business Brief APIs
-
-#### Create Business Brief
-
-```http
-POST /api/briefs/business
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{institute_name": "Universitas XYZ",
-  "education": "Higher Education",
-  "target_audience": true,
-  "project_objective": "Increase awareness",
-  "key_message": "Innovation",
-  "deadline": "2026-05-15T00:00:00Z",
-  "competitors": "Kompetitor lainnya",
-  "additional_notes": "Catatan tambahan"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Business brief created successfully",
-  "data": {
-    "id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "project_name": "Q1 Campaign",
-    "institute_name": "Universitas XYZ",
-    "education": "Higher Education",
-    "target_audience": true,
-    "deadline": "2026-05-15T00:00:00Z41d4-a716-446655440000",
-    "project_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "project_name": "Q1 Campaign",
-    "company_name": "Tech Corp",
-    "status": "draft",
-    "created_at": "2026-03-13T10:10:00Z",
-    "updated_at": "2026-03-13T10:10:00Z"
-  }
-}
-```
-
-#### List Business Briefs
-
-```http
-GET /api/briefs/business
-Authorization: Bearer {access_token}
-```
-
-#### Get Business Brief
-
-```http
-GET /api/briefs/business/{brief_id}
-Authorization: Bearer {access_token}
-```
-
-#### Update Business Brief
-
-```http
-PUT /api/briefs/business/{brief_id}
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "project_name": "Updated Brand Video Q3",
-  "company_name": "Updated Company Name",
-  "status": "submitted"
-}
-```
-
-#### Delete Business Brief
-
-```http
-DELETE /api/briefs/business/{brief_id}
-Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Business brief deleted successfully",
-  "data": null
-}
-```
-
-#### List Creative Briefs by Business Brief
-
-```http
-GET /api/briefs/business/{business_brief_id}/creative
-Authorization: Bearer {access_token}
-```
-
----
-
-### Creative Brief APIs
-
-#### Create Creative Brief
-
-```http
-POST /api/briefs/creative
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
-  "title": "Product Launch Video",
-  "video_type": "promotional",
-  "duration": 60,
-  "style": "cinematic",
-  "tone": "professional",
-  "script": "Opening shot: wide aerial view...",
-  "call_to_action": "Visit our website",
-  "output_format": "mp4",
-  "resolution": "1080p"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Creative brief created successfully",
-  "data": {
-    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "business_brief_id": "550e8400-e29b-41d4-a716-446655440000",
-    "title": "Product Launch Video",
-    "duration": 60,
-    "status": "draft",
-    "created_at": "2026-03-13T10:40:00Z",
-    "updated_at": "2026-03-13T10:40:00Z"
-  }
-}
-```
-
-#### List Creative Briefs
-
-```http
-GET /api/briefs/creative
-Authorization: Bearer {access_token}
-```
-
-#### Get Creative Brief
-
-```http
-GET /api/briefs/creative/{creative_brief_id}
-Authorization: Bearer {access_token}
-```
-
-#### Update Creative Brief
-
-```http
-PUT /api/briefs/creative/{creative_brief_id}
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "title": "Updated Product Launch Video",
-  "duration": 90,
-  "tone": "uplifting",
-  "status": "submitted"
-}
-```
-
-#### Delete Creative Brief
-
-```http
-DELETE /api/briefs/creative/{creative_brief_id}
-Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Creative brief deleted successfully",
-  "data": null
-}
-```
-
----
-
-### Content Pillar APIs
-
-#### Generate Content Pillars
-
-```http
-POST /api/projects/{project_id}/content-pillars/generate
+POST /api/storyboard/generate
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -701,216 +497,45 @@ Content-Type: application/json
 }
 ```
 
-Cost: 0 credits
-
 **Response (201 Created):**
 ```json
 {
   "success": true,
-  "message": "Content pillars generated successfully",
-  "data": [
-    {
-      "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
-      "project_id": "550e8400-e29b-41d4-a716-446655440000",
-      "title": "Brand Awareness",
-      "description": "Content focused on increasing brand visibility and recognition",
-      "is_selected": false,
-      "content_themes": [
-        {
-          "id": "9da7b810-9dad-11d1-80b4-00c04fd430c8",
-          "title": "Brand Awareness - Theme A",
-          "description": "First theme variation for Brand Awareness",
-          "is_selected": false
-        },
-        {
-          "id": "0ea7b810-9dad-11d1-80b4-00c04fd430c8",
-          "title": "Brand Awareness - Theme B",
-          "description": "Second theme variation for Brand Awareness",
-          "is_selected": false
-        }
-      ],
-      "created_at": "2026-03-13T10:20:00Z",
-      "updated_at": "2026-03-13T10:20:00Z"
-    }
-  ]
-}
-```
-
-#### List Content Pillars
-
-```http
-GET /api/projects/{project_id}/content-pillars
-Authorization: Bearer {access_token}
-```
-
-#### Get Content Pillar
-
-```http
-GET /api/content-pillars/{pillar_id}
-Authorization: Bearer {access_token}
-```
-
-#### Select Content Pillar
-
-```http
-POST /api/content-pillars/{pillar_id}/select
-Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Content pillar selected",
+  "message": "Storyboard generated successfully",
   "data": {
-    "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
-    "is_selected": true,
-    "updated_at": "2026-03-13T10:21:00Z"
+    "storyboard_id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "status": "ready",
+    "scenes": [
+      {
+        "scene_id": "6ka7b810-9dad-11d1-80b4-00c04fd430c8",
+        "scene_number": 1,
+        "title": "Opening Hook",
+        "narration": "Halo generasi masa depan!",
+        "visual_description": "Wide shot with dramatic lighting showing campus landmark",
+        "duration": 5
+      },
+      {
+        "scene_id": "7la7b810-9dad-11d1-80b4-00c04fd430c8",
+        "scene_number": 2,
+        "title": "Campus Life",
+        "narration": "Di sini, kami siap membantu mewujudkan impian Anda",
+        "visual_description": "Students in activities, modern facilities, interactive learning",
+        "duration": 8
+      },
+      {
+        "scene_id": "8ma7b810-9dad-11d1-80b4-00c04fd430c8",
+        "scene_number": 3,
+        "title": "Call to Action",
+        "narration": "Jangan lewatkan kesempatan ini. Raih mimpimu bersama kami!",
+        "visual_description": "Campus logo with CTA text and animated graphics",
+        "duration": 6
+      }
+    ],
+    "total_duration": 19,
+    "created_at": "2026-03-13T10:25:00Z"
   }
 }
-```
-
----
-
-### Content Theme APIs
-
-#### List Themes for Pillar
-
-```http
-GET /api/content-pillars/{pillar_id}/themes
-Authorization: Bearer {access_token}
-```
-
-#### Select Theme
-
-```http
-POST /api/content-themes/{theme_id}/select
-Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Content theme selected",
-  "data": {
-    "id": "9da7b810-9dad-11d1-80b4-00c04fd430c8",
-    "is_selected": true,
-    "updated_at": "2026-03-13T10:22:00Z"
-  }
-}
-```
-
----
-
-### Storyboard APIs
-
-#### Generate Storyboards
-
-```http
-POST /api/projects/{project_id}/storyboards/generate
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "content_theme_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-}
-```
-
-Cost: 0 credits
-
-**Response (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Storyboards generated successfully",
-  "data": [
-    {
-      "id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
-      "project_id": "550e8400-e29b-41d4-a716-446655440000",
-      "title": "Storyboard A - Dynamic",
-      "description": "A dynamic, fast-paced storyboard",
-      "is_selected": false,
-      "scenes": [
-        {
-          "id": "6ka7b810-9dad-11d1-80b4-00c04fd430c8",
-          "scene_number": 1,
-          "title": "Opening Hook",
-          "description": "Attention-grabbing opening sequence",
-          "visual_description": "Wide shot with dramatic lighting and motion graphics",
-          "duration": 5
-        },
-        {
-          "id": "7la7b810-9dad-11d1-80b4-00c04fd430c8",
-          "scene_number": 2,
-          "title": "Problem Statement",
-          "description": "Present the challenge or pain point",
-          "visual_description": "Close-up shots with text overlay",
-          "duration": 8
-        },
-        {
-          "id": "8ma7b810-9dad-11d1-80b4-00c04fd430c8",
-          "scene_number": 3,
-          "title": "Solution Reveal",
-          "description": "Introduce the product as solution",
-          "visual_description": "Product showcase with smooth transitions",
-          "duration": 10
-        },
-        {
-          "id": "9na7b810-9dad-11d1-80b4-00c04fd430c8",
-          "scene_number": 4,
-          "title": "Call to Action",
-          "description": "End with clear CTA",
-          "visual_description": "Logo animation with contact info",
-          "duration": 7
-        }
-      ],
-      "created_at": "2026-03-13T10:25:00Z",
-      "updated_at": "2026-03-13T10:25:00Z"
-    }
-  ]
-}
-```
-
-#### List Storyboards
-
-```http
-GET /api/projects/{project_id}/storyboards
-Authorization: Bearer {access_token}
-```
-
-#### Get Storyboard
-
-```http
-GET /api/storyboards/{storyboard_id}
-Authorization: Bearer {access_token}
-```
-
-#### Select Storyboard
-
-```http
-POST /api/storyboards/{storyboard_id}/select
-Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Storyboard selected",
-  "data": {
-    "id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
-    "is_selected": true,
-    "updated_at": "2026-03-13T10:26:00Z"
-  }
-}
-```
-
-#### Get Scenes
-
-```http
-GET /api/storyboards/{storyboard_id}/scenes
-Authorization: Bearer {access_token}
 ```
 
 ---
@@ -969,15 +594,7 @@ Content-Type: application/json
 
 ## Video Generation API
 
-The video generation system creates **3 automatic variations** of videos from a single briefing using **scene-based generation**.
-
-### Core Concept
-
-- **Input**: One project briefing with storyboard
-- **Output**: 3 video variations (cinematic, vibrant, professional)
-- **Composition**: 2-3 scenes per video, 4-6 seconds each = 8-12 seconds total
-- **Processing**: Asynchronous queue with background workers
-- **Cost**: Only charged for video generation, not for content pillar or storyboard generation
+The video generation system creates videos from storyboards in the background using the job queue system.
 
 ### Video Generation Endpoints
 
@@ -997,7 +614,6 @@ Content-Type: application/json
 **Parameters:**
 - `project_id` (required): UUID of project
 - `storyboard_id` (required): UUID of storyboard
-- `custom_prompt` (optional): Custom prompt override
 
 **Response (201 Created):**
 ```json
@@ -1005,7 +621,7 @@ Content-Type: application/json
   "success": true,
   "message": "Video generation job created",
   "data": {
-    "generation_job_id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
+    "job_id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
     "status": "queued",
     "created_at": "2026-03-13T10:30:00Z"
   }
@@ -1014,10 +630,10 @@ Content-Type: application/json
 
 ---
 
-#### Get Generation Job Status
+#### Get Video by ID
 
 ```http
-GET /api/videos/generation/{job_id}
+GET /api/videos/{id}
 Authorization: Bearer {access_token}
 ```
 
@@ -1025,37 +641,27 @@ Authorization: Bearer {access_token}
 ```json
 {
   "success": true,
-  "message": "Job status retrieved",
+  "message": "Video retrieved",
   "data": {
-    "id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
-    "job_type": "generate",
-    "status": "processing",
-    "scene_count": 2,
-    "video_duration": 10,
+    "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
+    "status": "completed",
+    "video_url": "https://storage.example.com/videos/8da7b810.mp4",
+    "thumbnail_url": "https://storage.example.com/thumbnails/8da7b810.jpg",
+    "duration": 10,
     "provider": "ltx",
     "model": "ltx-2-fast",
-    "credits_required": 120,
-    "credits_used": 0,
-    "retry_count": 0,
-    "started_at": "2026-03-13T10:30:15Z",
     "created_at": "2026-03-13T10:30:00Z",
-    "updated_at": "2026-03-13T10:30:15Z"
+    "updated_at": "2026-03-13T10:35:45Z"
   }
 }
 ```
 
-**Job Statuses:**
-- `queued`: Waiting for worker to process
-- `processing`: Currently generating videos
-- `completed`: All videos generated successfully
-- `failed`: Generation failed (see error_message)
-
 ---
 
-#### Get All Video Variants for Storyboard
+#### List User Videos
 
 ```http
-GET /api/videos/storyboard/{storyboard_id}
+GET /api/videos
 Authorization: Bearer {access_token}
 ```
 
@@ -1063,38 +669,14 @@ Authorization: Bearer {access_token}
 ```json
 {
   "success": true,
-  "message": "Video variants retrieved",
+  "message": "Videos retrieved",
   "data": [
     {
       "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
-      "variant_number": 1,
       "status": "completed",
       "video_url": "https://storage.example.com/videos/8da7b810.mp4",
-      "thumbnail_url": "https://storage.example.com/thumbnails/8da7b810.jpg",
-      "prompt_used": "Professional marketing video cinematic style",
       "duration": 10,
-      "provider": "ltx",
-      "model": "ltx-2-fast",
-      "scenes": [
-        {
-          "id": "9da7b810-9dad-11d1-80b4-00c04fd430c8",
-          "scene_number": 1,
-          "status": "completed",
-          "video_url": "https://storage.example.com/scenes/scene-1.mp4",
-          "duration": 5,
-          "updated_at": "2026-03-13T10:35:30Z"
-        },
-        {
-          "id": "0ea7b810-9dad-11d1-80b4-00c04fd430c8",
-          "scene_number": 2,
-          "status": "completed",
-          "video_url": "https://storage.example.com/scenes/scene-2.mp4",
-          "duration": 5,
-          "updated_at": "2026-03-13T10:35:45Z"
-        }
-      ],
-      "created_at": "2026-03-13T10:30:00Z",
-      "updated_at": "2026-03-13T10:35:45Z"
+      "created_at": "2026-03-13T10:30:00Z"
     }
   ]
 }
@@ -1102,47 +684,24 @@ Authorization: Bearer {access_token}
 
 ---
 
-#### Get Single Video Variant
+#### Download Video
 
 ```http
-GET /api/videos/{variant_id}
+GET /api/videos/download/{id}
 Authorization: Bearer {access_token}
 ```
 
-Returns variant details with all scenes.
-
----
-
-#### Regenerate Video Variant (Sprint 3 ✓ NEW)
-
-✓ **NEW in Sprint 3** – Regenerate with `regenerate_count` tracking and max 3 limit
-
-```http
-POST /api/videos/{variant_id}/regenerate
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "provider": "Runway-Gen3",
-  "regenerate_all_scenes": true,
-  "new_prompt": "More emphasis on campus facilities with modern aesthetic"
-}
-```
-
-**Response (201 Created):**
+**Response (200 OK):**
 ```json
 {
   "success": true,
-  "message": "Video regeneration job created",
+  "message": "Video download ready",
   "data": {
-    "generation_job_id": "3fa7b810-9dad-11d1-80b4-00c04fd430c8",
-    "status": "queued",
-    "variant_id": "{variant_id}",
-    "regenerate_count": 1,
-    "max_regenerate": 3,
-    "remaining_attempts": 2,
-    "credit_cost": 40,
-    "current_balance": 120
+    "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
+    "download_url": "https://storage.example.com/videos/8da7b810.mp4",
+    "file_size": 51234567,
+    "format": "mp4",
+    "resolution": "1920x1080"
   }
 }
 ```

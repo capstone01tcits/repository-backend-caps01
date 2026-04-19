@@ -234,3 +234,35 @@ func (h *BriefHandler) DeleteCreativeBrief(c *fiber.Ctx) error {
 
 	return utils.OK(c, "Creative brief deleted successfully", nil)
 }
+
+// ==================== Unified FE Flow Handler ====================
+
+// CreateProjectFromFE godoc
+// POST /api/projects/from-fe
+// This endpoint accepts all FE data and creates: Project → BusinessBrief → CreativeBrief
+func (h *BriefHandler) CreateProjectFromFE(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+
+	var req model.CreateProjectFromFERequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	// Validate required fields from FE
+	if req.InstitutionName == "" || req.InstitutionHistory == "" || req.SchoolLevel == "" {
+		return utils.BadRequest(c, "Institution name, history, and school level are required")
+	}
+	if req.EventContent == "" || req.ToneOfVoice == "" || req.SelectedKeyMessage == "" || req.VideoDuration == "" || req.SelectedTheme == "" {
+		return utils.BadRequest(c, "Event content, tone, key message, duration, and theme are required")
+	}
+
+	result, err := h.briefService.CreateProjectFromFE(userID, &req)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.Created(c, "Project created successfully with briefs", result)
+}

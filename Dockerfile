@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -11,9 +11,13 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/main.go
 
 # Run stage
-FROM alpine:latest
+FROM alpine:3.21
 
-RUN apk --no-cache add ca-certificates tzdata
+RUN apk update && \
+    apk upgrade && \
+    apk --no-cache add ca-certificates tzdata && \
+    rm -rf /var/cache/apk/*
+
 ENV TZ=Asia/Jakarta
 
 WORKDIR /app
@@ -21,6 +25,6 @@ WORKDIR /app
 COPY --from=builder /app/main .
 COPY --from=builder /app/.env.example .env
 
-EXPOSE 3000
+EXPOSE 5000
 
 CMD ["./main"]

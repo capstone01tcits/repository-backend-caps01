@@ -227,9 +227,9 @@ func (h *VideoHandler) RegenerateScene(c *fiber.Ctx) error {
 }
 
 // DownloadVideo godoc
-// GET /api/videos/:variantId/download
+// GET /api/videos/download/:id
 func (h *VideoHandler) DownloadVideo(c *fiber.Ctx) error {
-	variantIDStr := c.Params("variantId")
+	variantIDStr := c.Params("id")
 	variantID, err := uuid.Parse(variantIDStr)
 	if err != nil {
 		return utils.BadRequest(c, "Invalid variant ID format")
@@ -257,4 +257,73 @@ func (h *VideoHandler) DownloadVideo(c *fiber.Ctx) error {
 		"format":       "mp4",
 		"resolution":   variant.Resolution,
 	})
+}
+
+// GenerateVideo godoc
+// POST /api/videos/generate
+// Generates video from storyboard (wrapper for GenerateVideoVariants)
+func (h *VideoHandler) GenerateVideo(c *fiber.Ctx) error {
+	return h.GenerateVideoVariants(c)
+}
+
+// GetVideo godoc
+// GET /api/videos/:id
+// Gets single video by ID (wrapper for GetVideoVariant with id param)
+func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
+	// Convert :id param to :variantId for internal method
+	c.Locals("variantId", c.Params("id"))
+	variantIDStr := c.Params("id")
+	variantID, err := uuid.Parse(variantIDStr)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid video ID format")
+	}
+
+	variant, scenes, err := h.videoGenService.GetVideoVariantWithScenes(c.Context(), variantID)
+	if err != nil {
+		return utils.NotFound(c, "Video not found")
+	}
+
+	sceneResponses := make([]model.SceneStatusResponse, len(scenes))
+	for i, scene := range scenes {
+		sceneResponses[i] = model.SceneStatusResponse{
+			ID:           scene.ID.String(),
+			SceneNumber:  scene.SceneNumber,
+			Status:       scene.Status,
+			VideoURL:     scene.VideoURL,
+			Duration:     scene.Duration,
+			ErrorMessage: scene.ErrorMessage,
+			UpdatedAt:    scene.UpdatedAt,
+		}
+	}
+
+	return utils.OK(c, "Video retrieved", map[string]interface{}{
+		"id":             variant.ID.String(),
+		"variant_number": variant.VariantNumber,
+		"status":         variant.Status,
+		"video_url":      variant.VideoURL,
+		"thumbnail_url":  variant.ThumbnailURL,
+		"prompt_used":    variant.PromptUsed,
+		"duration":       variant.Duration,
+		"provider":       variant.Provider,
+		"model":          variant.Model,
+		"scenes":         sceneResponses,
+		"created_at":     variant.CreatedAt,
+		"updated_at":     variant.UpdatedAt,
+	})
+}
+
+// ListVideos godoc
+// GET /api/videos
+// Lists all videos for user
+func (h *VideoHandler) ListVideos(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+
+	// TODO: Implement video listing from database
+	// For now return empty list - this would query all VideoVariants owned by user
+	videos := make([]interface{}, 0)
+
+	return utils.OK(c, "Videos retrieved", videos)
 }

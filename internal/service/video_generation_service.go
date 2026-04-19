@@ -10,47 +10,48 @@ import (
 	"Sevima-AI-Content-Creator/internal/ai"
 	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/repository"
+
 	"github.com/google/uuid"
 )
 
 type VideoGenerationService interface {
 	// Generate 3 video variants from a storyboard
 	GenerateVideoVariants(ctx context.Context, userID, projectID, storyboardID uuid.UUID, customPrompt string) (*model.GenerationJob, error)
-	
+
 	// Regenerate a specific video variant
 	RegenerateVideoVariant(ctx context.Context, variantID uuid.UUID, newPrompt string) (*model.GenerationJob, error)
-	
+
 	// Regenerate a specific scene
 	RegenerateScene(ctx context.Context, sceneID uuid.UUID, newPrompt string) (*model.GenerationJob, error)
-	
+
 	// Get generation job status
 	GetJobStatus(ctx context.Context, jobID uuid.UUID) (*model.GenerationJob, error)
-	
+
 	// Get video variants for a storyboard
 	GetVideoVariants(ctx context.Context, storyboardID uuid.UUID) ([]model.VideoVariant, error)
-	
+
 	// Get single video variant
 	GetVideoVariant(ctx context.Context, variantID uuid.UUID) (*model.VideoVariant, error)
-	
+
 	// Get video variant with scenes
 	GetVideoVariantWithScenes(ctx context.Context, variantID uuid.UUID) (*model.VideoVariant, []model.SceneGeneration, error)
-	
+
 	// Calculate credits for generation
 	CalculateCreditsForGeneration(duration int, sceneCount int, videoCount int) int
-	
+
 	// Process generation job (called by worker)
 	ProcessGenerationJob(ctx context.Context, jobID uuid.UUID) error
-	
+
 	// Poll and update job status (called by worker)
 	PollJobStatus(ctx context.Context, jobID uuid.UUID) error
 }
 
 type videoGenerationService struct {
-	jobRepo          repository.GenerationJobRepository
-	variantRepo      repository.VideoVariantRepository
-	sceneRepo        repository.SceneGenerationRepository
-	creditService    CreditService
-	providerFactory  *ai.ProviderFactory
+	jobRepo         repository.GenerationJobRepository
+	variantRepo     repository.VideoVariantRepository
+	sceneRepo       repository.SceneGenerationRepository
+	creditService   CreditService
+	providerFactory *ai.ProviderFactory
 }
 
 func NewVideoGenerationService(
@@ -76,9 +77,9 @@ func (s *videoGenerationService) GenerateVideoVariants(ctx context.Context, user
 	}
 
 	// Calculate credits needed for 3 videos: 8-12 sec each, 2-3 scenes
-	sceneDuration := 5 // middle of 4-6 sec
+	sceneDuration := 5  // middle of 4-6 sec
 	videoDuration := 10 // middle of 8-12 sec
-	sceneCount := 2 // middle of 2-3
+	sceneCount := 2     // middle of 2-3
 	creditsNeeded := s.CalculateCreditsForGeneration(videoDuration, sceneCount, 3)
 
 	if credits < creditsNeeded {
@@ -119,19 +120,19 @@ func (s *videoGenerationService) GenerateVideoVariants(ctx context.Context, user
 	// Create 3 video variants
 	for i := 1; i <= 3; i++ {
 		variant := &model.VideoVariant{
-			UserID:       userID,
-			ProjectID:    projectID,
-			StoryboardID: storyboardID,
+			UserID:        userID,
+			ProjectID:     projectID,
+			StoryboardID:  storyboardID,
 			VariantNumber: i,
-			Status:       "pending",
-			Duration:     videoDuration,
-			Resolution:   "1080p",
-			Provider:     "ltx",
-			Model:        "ltx-2-fast",
+			Status:        "pending",
+			Duration:      videoDuration,
+			Resolution:    "1080p",
+			Provider:      "ltx",
+			Model:         "ltx-2-fast",
 		}
 
 		// Generate prompt based on variant
-		prompt := s.generatePromptForVariant(ctx, storyboardID, i, customPrompt)
+		prompt := s.generatePromptForVariant(i, customPrompt)
 		variant.PromptUsed = prompt
 
 		// Create scene plan (2-3 scenes)
@@ -468,7 +469,7 @@ func (s *videoGenerationService) PollJobStatus(ctx context.Context, jobID uuid.U
 
 // Helper functions
 
-func (s *videoGenerationService) generatePromptForVariant(ctx context.Context, storyboardID uuid.UUID, variantNumber int, customPrompt string) string {
+func (s *videoGenerationService) generatePromptForVariant(variantNumber int, customPrompt string) string {
 	variations := []string{
 		"cinematic",
 		"vibrant and dynamic",
