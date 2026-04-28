@@ -25,6 +25,7 @@ WORKDIR /app
 COPY --from=builder /app/main .
 COPY --from=builder /app/.env.example .env
 
-EXPOSE 5000
+# Railway sets PORT env var, app will use it
+EXPOSE 8080
 
 CMD ["./main"]
