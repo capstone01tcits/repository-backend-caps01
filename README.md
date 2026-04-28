@@ -8,12 +8,13 @@ Status: Clean & Optimized (April 2026) - Post-audit cleanup dengan removal unuse
 
 **Comprehensive API & Workflow References:**
 
-- **[API Documentation](docs/API_DOCUMENTATION.md)** — Complete API reference dengan 18 active endpoints dan usage examples
+- **[API Documentation](docs/API_DOCUMENTATION.md)** — Complete API reference dengan 20 active endpoints dan usage examples
 - **[Postman Collection](docs/API_COLLECTION.json)** — Import ke Postman untuk testing dengan pre-configured variables dan workflows
 - **[Complete Workflow](docs/WORKFLOW_COMPLETE_FLOW.md)** — End-to-end flow dari register hingga video download dengan HTTP requests dan timeline
 
 **Deployment & Production Setup:**
 
+- **[Docker Setup Guide](DOCKER_SETUP.md)** 🐳 — Local development dengan Docker, troubleshooting, commands reference
 - **[Quick Deploy Guide](QUICK_DEPLOY.md)** ⚡ — 5 langkah (30 min) setup Supabase + Railway untuk production
 - **[Full Deployment Guide](DEPLOYMENT_SETUP.md)** — Detailed guide dengan configuration, monitoring, troubleshooting, dan CI/CD
 

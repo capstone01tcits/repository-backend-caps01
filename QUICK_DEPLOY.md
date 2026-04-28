@@ -4,7 +4,7 @@ Panduan cepat dalam 5 langkah untuk deploy ke production.
 
 ---
 
-## ⚡ Quick Steps (30 menit)
+## Quick Steps (30 menit)
 
 ### Step 1: Create Supabase Database (5 min)
 
@@ -94,7 +94,7 @@ RUNWAY_API_KEY=your-key
 
 ---
 
-### Step 5: Deploy! 🚀 (5 min)
+### Step 5: Deploy! (5 min)
 
 ```bash
 # Railway auto-deploys ketika ada push ke main
@@ -129,7 +129,7 @@ curl https://[project-name].up.railway.app/health
 
 ---
 
-## 🔗 Update Frontend
+## Update Frontend
 
 Setelah backend live, update frontend `.env.local`:
 
@@ -141,7 +141,7 @@ Maka frontend akan connect ke backend production.
 
 ---
 
-## 📋 Environment Variables Reference
+## Environment Variables Reference
 
 | Variable | Nilai | Sumber |
 |----------|-------|--------|
@@ -155,41 +155,40 @@ Maka frontend akan connect ke backend production.
 
 ---
 
-## ⚠️ Common Mistakes
+## Common Mistakes
 
-❌ **DON'T:**
+**DON'T:**
 - Copy `.env` ke repo (secret exposed!)
 - Use default JWT secrets di production
 - Forget catat password Supabase
 
-✅ **DO:**
+**DO:**
 - Add environment variables di Railway Dashboard
 - Use strong random secrets (min 32 chars)
 - Test health check setelah deploy
 
 ---
 
-## 🆘 Troubleshooting
+## Troubleshooting
 
-### ❌ "Connection refused"
+###  "Connection refused"
 ```
-→ Check DB credentials di Railway Variables
+→ CheckDB credentials di Railway Variables
 → Verify Supabase project active
 ```
 
-### ❌ "SSL certificate error"
+### "SSL certificate error"
 ```
 → Supabase requires SSL
 → Credentials in Railway should auto-handle
 ```
-
-### ❌ "Port 5000: address already in use"
+### "Port 5000: address already in use"
 ```
 → Code updated untuk Railway PORT env
 → Rebuild Docker: railway trigger
 ```
 
-### ❌ Deployment stuck/failed
+### Deployment stuck/failed
 ```
 → Check Logs di Railway Dashboard
 → Recent logs akan show error
@@ -203,20 +202,20 @@ Maka frontend akan connect ke backend production.
 Setelah deploy:
 
 ```
-🔗 Backend API:  https://[project].up.railway.app
-🔗 Database:     PostgreSQL di Supabase
-🔗 Frontend:     Akan connect ke backend API
+Backend API:  https://[project].up.railway.app
+Database:     PostgreSQL di Supabase
+Frontend:     Akan connect ke backend API
 ```
 
 ---
 
-## 🎯 Next Steps
+## Next Steps
 
-1. ✅ Database live (Supabase)
-2. ✅ API live (Railway)
-3. 🔲 Deploy Frontend ke Vercel/Railway
-4. 🔲 Setup monitoring & alerts
-5. 🔲 Configure custom domain
+1. Database live (Supabase)
+2. API live (Railway)
+3. Deploy Frontend ke Vercel/Railway
+4. Setup monitoring & alerts
+5. Configure custom domain
 
 ---
 

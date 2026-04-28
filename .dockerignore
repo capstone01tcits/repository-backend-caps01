@@ -1,0 +1,90 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.env.local
+
+# Dependencies
+.venv
+venv
+env
+node_modules
+vendor
+
+# Build outputs
+bin
+dist
+build
+*.o
+*.a
+*.so
+*.dll
+*.exe
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.pytest_cache
+*.egg-info
+dist
+build
+
+# Testing
+reports/
+*.test
+coverage.out
+
+# Documentation
+README.md
+DOCKER_SETUP.md
+QUICK_DEPLOY.md
+DEPLOYMENT_SETUP.md
+WORKFLOW_COMPLETE_FLOW.md
+API_DOCUMENTATION.md
+docs/
+testing/
+
+# Docker
+Dockerfile.dev
+docker-compose.dev.yml
+.dockerignore
+
+# Configuration
+.env
+.env.example
+.env.*.local
+
+# OS
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+*.sublime-project
+*.sublime-workspace
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Misc
+.tmp
+tmp/
+temp/
+*.log
+*.bak

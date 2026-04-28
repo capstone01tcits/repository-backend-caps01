@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sevima-backend-dev
+    ports:
+      - "5000:8080"  # Map 8080 inside container to 5000 localhost
+    environment:
+      - PORT=8080                   # Container internal port
+      - APP_PORT=8080               # Fallback
+      - APP_ENV=development
+      - DB_HOST=postgres            # Service name in docker network
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      - DB_NAME=go_auth
+      - JWT_SECRET=dev-secret-change-in-production-min-32-chars
+      - JWT_EXPIRE_HOURS=24
+      - JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production-min-32-chars
+      - JWT_REFRESH_EXPIRE_HOURS=168
+      - AI_SERVICE_URL=http://ai-service:8000
+      - LTX_API_KEY=dev-key-placeholder
+      - RUNWAY_API_KEY=dev-key-placeholder
+      - WAN2_API_KEY=dev-key-placeholder
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - sevima-network
+    volumes:
+      # Optional: Mount source code for development
+      # - .:/app
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: sevima-postgres-dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: go_auth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - sevima-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.ai
+    container_name: sevima-ai-service-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - LTX_API_KEY=dev-key-placeholder
+      - RUNWAY_API_KEY=dev-key-placeholder
+      - WAN2_API_KEY=dev-key-placeholder
+    restart: unless-stopped
+    networks:
+      - sevima-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  sevima-network:
+    driver: bridge
