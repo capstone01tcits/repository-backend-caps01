@@ -1,44 +1,39 @@
-# API Documentation — AI Video Generation Platform
+# API Documentation - AI Video Generation Platform
 
-> **Version:** 2.2.0 (Updated Sprint 4 - April 2026)
-> **Base URL:** `http://localhost:5000`  
-> **AI Service URL:** `http://localhost:8000`
-> **Collection Format:** Bruno API Collection (`docs/API_COLLECTION.json`)
-> **Auto-Set Feature:** Variables automatically populate during workflow execution via test scripts
+Version: 3.0.0 (April 2026 - Post-Audit Cleanup)
+Base URL: http://localhost:5000
+AI Service URL: http://localhost:8000
+Collection Format: Bruno/Postman API Collection (docs/API_COLLECTION.json)
 
 ---
 
-## Sprint 4 Updates (April 2026) ✓
+## Backend Status - Cleaned & Optimized
 
-**Unified FE-BE Integration Endpoint:**
-- ✓ Endpoint: `POST /api/projects/initialize` (formerly `/api/projects/from-fe`)
-- ✓ Accepts 12 fields from FE wizard (9 required + 3 optional)
-- ✓ Atomically creates Project + Brief data in single call
-- ✓ Auto-fills 18+ missing backend fields with sensible defaults
-- ✓ Backend port: 5000
+AUDIT COMPLETED: April 2026
+- Removed: 3 files (video_service.go, content_handler.go, content_service.go)
+- Removed: 11+ unused handler methods across 4 handlers
+- Code Size: Reduced by approximately 800 lines
+- Build Status: Compiles successfully with zero errors
+- Ready for: Frontend integration and production deployment
 
-**Auto-Fill Mappings (FE → BE):**
-- `institution_name` → `company_name`, `institute_name`
-- `event_content` → `video_type` (smart enum mapping)
-- `selected_theme` → `style` (theme → visual style mapping)
-- `tone_of_voice` → `music_preference` (tone → music mapping)
-- `video_duration` → integer duration (string parsing)
-- Auto-defaults: industry="Education", target_audience="Students", format="mp4", resolution="1080p"
+Core Workflow (5 Steps):
+1. User Registration/Login
+2. Project Initialization (with briefs and images)
+3. Storyboard Generation
+4. Video Generation (3 variants)
+5. Video Retrieval and Download
 
-**Workflow Simplified:**
-- FE Wizard (4 steps) → Backend initialization → Storyboard generation → Video generation
-- Register → Login → Initialize Project (from FE) → Generate Storyboard → Generate Video (5 steps)
-- Briefs auto-created during project initialization
+Total Active Endpoints: 20
+- Authentication: 6 endpoints
+- Projects: 3 endpoints
+- Storyboard: 1 endpoint
+- Videos: 6 endpoints
+- Credits: 2 endpoints
+- Health/AI Gateway: 2 endpoints
 
-**15 Total Endpoints (Simplified Core Workflow):**
-- 6 Auth endpoints (register, login, profile, change-password, refresh, delete account)
-- 3 Project endpoints (initialize with 12 fields, list, get)
-- 1 Storyboard endpoint (generate)
-- 4 Video endpoints (generate, get, list, download)
-- 1 Health check endpoint
-
-**Plus Support Endpoints:**
-- 2 Credit endpoints (get balance, admin add credits)
+**Database Models Updated:**
+- BusinessBrief: Added `SchoolLevel`, `LogoPath`, `EnvironmentPath`, `DocumentPath`
+- CreativeBrief: Added `Copywriting`, `Hashtags` fields
 
 ---
 
@@ -406,16 +401,19 @@ Content-Type: application/json
 {
   "institution_name": "SMA Negeri 1 Jakarta",
   "institution_history": "Sekolah terkemuka dengan program pendidikan berkualitas tinggi",
-  "school_level": "Senior High School",
-  "offered_degrees": "",
+  "school_level": "SMA",
+  "offered_degrees": "IPA, IPS, Bahasa",
   "event_content": "Penerimaan Mahasiswa Baru",
   "tone_of_voice": "Santai & Ramah",
   "selected_key_message": "Bergabunglah dengan keluarga besar kami",
   "video_duration": "15 detik",
-  "prompt": "",
+  "prompt": "Buat video yang eye-catching dan engaging untuk Gen Z",
   "selected_theme": "Tur Kampus Sinematik",
   "editable_copywriting": "Halo generasi masa depan! Bergabunglah dengan keluarga besar kami.",
-  "editable_hashtags": "#SMANegeri1Jakarta #PenerimaanMahasiswaBaru #Pendidikan"
+  "editable_hashtags": "#SMANegeri1Jakarta #PenerimaanMahasiswaBaru #Pendidikan",
+  "logo_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  "env_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAAA//EAAUEAQEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k=",
+  "document_base64": ""
 }
 ```
 
@@ -424,17 +422,20 @@ Content-Type: application/json
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | institution_name | string | Yes | Name of institution |
-| institution_history | string | Yes | Background/history info |
-| school_level | string | Yes | Education level (e.g., "Senior High School") |
+| institution_history | string | No | Background/history info (auto-fills if empty) |
+| school_level | string | No | Education level (PreSchool, TK, SD, SMP, SMA, SMK, Perguruan Tinggi). Defaults to "Perguruan Tinggi" if not provided |
 | offered_degrees | string | No | Offered degree programs |
 | event_content | string | Yes | Event/program being promoted |
-| tone_of_voice | string | Yes | Tone style (Santai & Ramah, Profesional & Formal, etc.) |
+| tone_of_voice | string | Yes | Tone style (Santai & Ramah, Profesional & Formal, Kreatif & Inovatif, Berwibawa & Meyakinkan) |
 | selected_key_message | string | Yes | Main message for video |
-| video_duration | string | Yes | Duration (e.g., "15 detik", "30 detik") |
+| video_duration | string | No | Duration (e.g., "15 detik", "30 detik", "60 detik"). Defaults to 30 seconds if not provided |
 | prompt | string | No | Additional custom prompt |
-| selected_theme | string | Yes | Visual theme (Tur Kampus Sinematik, etc.) |
-| editable_copywriting | string | No | Custom copywriting content |
-| editable_hashtags | string | No | Hashtags for promotion |
+| selected_theme | string | Yes | Visual theme (Tur Kampus Sinematik, Cerita Kehidupan Mahasiswa, Keunggulan Akademik, Tren & Gaya Hidup Cepat) |
+| editable_copywriting | string | No | Custom copywriting content for social media caption |
+| editable_hashtags | string | No | Hashtags for social media promotion |
+| logo_base64 | string | No | Institution logo as base64 encoded image (PNG/JPEG) |
+| env_base64 | string | No | Environment photo as base64 encoded image (PNG/JPEG) |
+| document_base64 | string | No | Optional PDF/document about institution as base64 encoded string |
 
 **Response (201 Created):**
 ```json
@@ -449,23 +450,34 @@ Content-Type: application/json
     "theme": "Tur Kampus Sinematik",
     "tone": "Santai & Ramah",
     "duration": 15,
-    "school_level": "Senior High School",
-    "institution_name": "SMA Negeri 1 Jakarta"
+    "school_level": "SMA",
+    "institution_name": "SMA Negeri 1 Jakarta",
+    "event_content": "Penerimaan Mahasiswa Baru",
+    "key_message": "Bergabunglah dengan keluarga besar kami",
+    "copywriting": "Halo generasi masa depan! Bergabunglah dengan keluarga besar kami.",
+    "hashtags": "#SMANegeri1Jakarta #PenerimaanMahasiswaBaru #Pendidikan"
   }
 }
 ```
 
-**Auto-fill Behavior:**
-- `project_name` = `event_content` + " for " + `institution_name`
-- `company_name` = `institution_name`
-- `industry` = "Education" (default)
-- `target_audience` = "Students" (default)
-- `style` = Auto-mapped from `selected_theme`
-- `music_preference` = Auto-mapped from `tone_of_voice`
-- `video_type` = Auto-mapped from `event_content`
-- `output_format` = "mp4" (default)
-- `resolution` = "1080p" (default)
-- `status` = "draft" (all resources)
+**Auto-fill & Optional Field Behavior:**
+- Fields marked as optional will not cause validation errors if missing
+- `institution_history` - Auto-generates if empty: "Video production project for {institution_name}"
+- `school_level` - Defaults to "Perguruan Tinggi" if not provided
+- `video_duration` - Defaults to 30 seconds if not provided or invalid
+- `logo_base64`, `env_base64`, `document_base64` - Stored directly in database for future file storage implementation
+- `editable_hashtags` - Stored in creative brief for social media use
+- Auto-mapped fields:
+  - `project_name` = `event_content` + " for " + `institution_name`
+  - `company_name` = `institution_name`
+  - `industry` = "Education" (default)
+  - `target_audience` = "Students" (default)
+  - `style` = Auto-mapped from `selected_theme`
+  - `music_preference` = Auto-mapped from `tone_of_voice`
+  - `video_type` = Auto-mapped from `event_content`
+  - `output_format` = "mp4" (default)
+  - `resolution` = "1080p" (default)
+  - `status` = "draft" (all resources)
 
 #### List Projects
 
@@ -716,6 +728,46 @@ Authorization: Bearer {access_token}
     "regenerate_count": 3,
     "max_regenerate": 3
   }
+}
+```
+
+---
+
+#### Regenerate Video Variant
+
+```http
+POST /api/videos/{variantId}/regenerate
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "new_prompt": "Alternative video with different visual style"
+}
+```
+
+**Parameters:**
+- `variantId` (required): UUID of video variant to regenerate
+- `new_prompt` (optional): Custom prompt for regeneration
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Video regeneration job created",
+  "data": {
+    "generation_job_id": "3ca7b810-9dad-11d1-80b4-00c04fd430c8",
+    "status": "queued",
+    "created_at": "2026-03-13T10:40:00Z"
+  }
+}
+```
+
+**Insufficient Credits (400):**
+```json
+{
+  "success": false,
+  "message": "insufficient credits for regeneration",
+  "data": null
 }
 ```
 

@@ -47,54 +47,8 @@ func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeI
 		return nil, errors.New("unauthorized access to this project")
 	}
 
-	// Handle content theme: use provided or auto-create/find default
-	var theme *model.ContentTheme
-	if contentThemeID != "" {
-		// Use provided theme
-		foundTheme, err := s.contentRepo.FindContentThemeByID(contentThemeID)
-		if err != nil {
-			return nil, errors.New("content theme not found")
-		}
-		if foundTheme.UserID.String() != userID {
-			return nil, errors.New("unauthorized access to this content theme")
-		}
-		theme = foundTheme
-	} else {
-		// Auto-create content theme for this project if not provided
-		// First try to find existing content pillar for this project
-		pillars, err := s.contentRepo.FindContentPillarsByProjectID(projectID)
-		if err == nil && len(pillars) > 0 && len(pillars[0].ContentThemes) > 0 {
-			// Use first theme from first pillar
-			theme = &pillars[0].ContentThemes[0]
-		} else {
-			// Create default content pillar and theme for this project
-			pillar := &model.ContentPillar{
-				ID:          uuid.New(),
-				ProjectID:   project.ID,
-				UserID:      uid,
-				Title:       project.Theme + " - Content Pillar",
-				Description: "Auto-created content pillar for storyboard generation",
-				IsSelected:  false,
-			}
-			if err := s.contentRepo.CreateContentPillar(pillar); err != nil {
-				return nil, errors.New("failed to create content pillar")
-			}
-
-			newTheme := &model.ContentTheme{
-				ID:              uuid.New(),
-				ContentPillarID: pillar.ID,
-				UserID:          uid,
-				Title:           project.Theme,
-				Description:     "Auto-created theme for " + project.Name,
-				IsSelected:      false,
-			}
-			if err := s.contentRepo.CreateContentTheme(newTheme); err != nil {
-				return nil, errors.New("failed to create content theme")
-			}
-			theme = newTheme
-		}
-	}
-
+	// Simplified workflow: skip content pillar/theme (removed in April 2026 audit)
+	// Use project theme directly for storyboard generation
 	pid, _ := uuid.Parse(projectID)
 
 	// Stub: generate 2 storyboard variations with scenes
@@ -112,7 +66,7 @@ func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeI
 	}{
 		{
 			title: "Storyboard A - Dynamic",
-			desc:  "A dynamic, fast-paced storyboard based on theme: " + theme.Title,
+			desc:  "A dynamic, fast-paced storyboard based on theme: " + project.Theme,
 			scenes: []struct {
 				num int
 				t   string
@@ -128,7 +82,7 @@ func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeI
 		},
 		{
 			title: "Storyboard B - Narrative",
-			desc:  "A storytelling-driven storyboard based on theme: " + theme.Title,
+			desc:  "A storytelling-driven storyboard based on theme: " + project.Theme,
 			scenes: []struct {
 				num int
 				t   string

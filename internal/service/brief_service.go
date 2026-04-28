@@ -332,10 +332,15 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 
 	// Step 1: Create Project
 	projectName := req.EventContent + " for " + req.InstitutionName
+	description := req.InstitutionHistory
+	if description == "" {
+		description = "Video production project for " + req.InstitutionName
+	}
+
 	project := &model.Project{
 		UserID:      uid,
 		Name:        projectName,
-		Description: req.InstitutionHistory,
+		Description: description,
 		Theme:       req.SelectedTheme,
 		Status:      "draft",
 	}
@@ -344,22 +349,31 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 	}
 
 	// Step 2: Create Business Brief (auto-fill missing fields)
+	schoolLevel := req.SchoolLevel
+	if schoolLevel == "" {
+		schoolLevel = "Perguruan Tinggi" // default
+	}
+
 	businessBrief := &model.BusinessBrief{
 		ID:               uuid.New(),
 		UserID:           uid,
 		ProjectID:        project.ID,
 		ProjectName:      projectName,
-		CompanyName:      req.InstitutionName, // auto-fill
+		CompanyName:      req.InstitutionName,
 		InstituteName:    req.InstitutionName,
-		Education:        req.SchoolLevel,
+		SchoolLevel:      schoolLevel,
+		Education:        schoolLevel,
 		Industry:         "Education", // auto-fill default
 		TargetAudience:   "Students",  // auto-fill default
-		ProjectObjective: req.InstitutionHistory,
+		ProjectObjective: description,
 		KeyMessage:       req.SelectedKeyMessage,
 		Budget:           "",                 // optional
 		Timeline:         "",                 // optional
 		Competitors:      "",                 // optional
 		AdditionalNotes:  req.OfferedDegrees, // map from offered degrees
+		LogoPath:         req.LogoBase64,     // store base64 directly for now
+		EnvironmentPath:  req.EnvBase64,      // store base64 directly for now
+		DocumentPath:     req.DocumentBase64, // store base64 directly for now
 		Status:           "draft",
 	}
 	if err := s.briefRepo.CreateBusinessBrief(businessBrief); err != nil {
@@ -368,6 +382,10 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 
 	// Step 3: Create Creative Brief (auto-fill missing fields)
 	duration := parseDurationToInt(req.VideoDuration)
+	if duration == 0 {
+		duration = 30 // default to 30 seconds if not provided
+	}
+
 	creativeBrief := &model.CreativeBrief{
 		ID:               uuid.New(),
 		UserID:           uid,
@@ -381,8 +399,10 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		VisualReferences: req.SelectedTheme,
 		MusicPreference:  utils.MapToneToMusicPreference(req.ToneOfVoice),
 		CallToAction:     req.SelectedKeyMessage,
-		OutputFormat:     "mp4",   // auto-fill default
-		Resolution:       "1080p", // auto-fill default
+		Copywriting:      req.EditableCopywriting, // social media caption
+		Hashtags:         req.EditableHashtags,    // social media hashtags
+		OutputFormat:     "mp4",                   // auto-fill default
+		Resolution:       "1080p",                 // auto-fill default
 		AdditionalNotes:  req.Prompt,
 		Status:           "draft",
 	}
@@ -400,6 +420,7 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		"tone":              req.ToneOfVoice,
 		"duration":          duration,
 		"institution_name":  req.InstitutionName,
+		"school_level":      schoolLevel,
 		"event_content":     req.EventContent,
 		"key_message":       req.SelectedKeyMessage,
 		"copywriting":       req.EditableCopywriting,

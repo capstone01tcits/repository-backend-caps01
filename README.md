@@ -1,18 +1,20 @@
 ﻿# AI Video Gen - Backend Service
 
-Go REST API backend untuk AI Video Content Creator platform — Capstone project dengan SEVIMA. Meliputi authentication, project management, creative brief, content pillar generation, storyboard generation, video generation, credit system, dan admin management.
+Go REST API backend untuk AI Video Content Creator platform — Capstone project dengan SEVIMA. Meliputi authentication, project management, storyboard generation, video generation, credit system, dan admin management.
+
+Status: Clean & Optimized (April 2026) - Post-audit cleanup dengan removal unused code, endpoints, dan database elements.
 
 ## Documentation
 
 **Comprehensive API & Workflow References:**
 
-- **[API Documentation](docs/API_DOCUMENTATION.md)** — Complete API reference dengan semua endpoints, request/response examples, dan sistem video generation
-- **[Postman Collection](docs/postman_collection.json)** — Import ke Postman untuk testing (termasuk semua endpoints dengan pre-configured variables)
-- **[Complete Workflow](docs/WORKFLOW_COMPLETE_FLOW.md)** — End-to-end flow dari register hingga video download dengan HTTP requests, database changes, dan timeline
+- **[API Documentation](docs/API_DOCUMENTATION.md)** — Complete API reference dengan 18 active endpoints dan usage examples
+- **[Postman Collection](docs/API_COLLECTION.json)** — Import ke Postman untuk testing dengan pre-configured variables dan workflows
+- **[Complete Workflow](docs/WORKFLOW_COMPLETE_FLOW.md)** — End-to-end flow dari register hingga video download dengan HTTP requests dan timeline
 
 ## Tech Stack
 
-**Go Backend (Port 3000) - Module: `Sevima-AI-Content-Creator`**
+**Go Backend (Port 5000) - Module: `Sevima-AI-Content-Creator`**
 - Language: Go 1.21
 - Framework: Fiber v2 (lightweight, fast HTTP framework)
 - Database: PostgreSQL + GORM (Object-Relational Mapping with AutoMigrate)
@@ -36,7 +38,7 @@ Go REST API backend untuk AI Video Content Creator platform — Capstone project
 
 **Database**
 - PostgreSQL (auto-created tables via GORM AutoMigrate on startup)
-- 12 tables managed: users, projects, business_briefs, creative_briefs, content_pillars, content_themes, storyboards, scenes, videos, generation_jobs, video_variants, scene_generations
+- 10 tables managed: users, projects, business_briefs, creative_briefs, storyboards, scenes, videos, generation_jobs, video_variants, scene_generations
 
 **Testing & Documentation**
 - PowerShell Test Scripts: `/testing/` folder with complete_test.ps1 and add_credits.ps1
@@ -56,14 +58,13 @@ Sevima-BackEnd Ai Video Gen/
 │   │   ├── provider.go                      # Provider interface & models
 │   │   └── providers.go                     # Provider implementations (LTX, Runway, etc)
 │   ├── handler/
-│   │   ├── ai_handler.go                   # AI proxy handler
-│   │   ├── auth_handler.go                 # Auth handlers (register, login, refresh, restore)
-│   │   ├── brief_handler.go                # Brief CRUD handlers (business & creative briefs)
-│   │   ├── content_handler.go              # Content Pillar & Theme handlers (generation, selection)
-│   │   ├── credit_handler.go               # Credit management handlers (balance, add)
-│   │   ├── project_handler.go              # Project CRUD handlers (dashboard)
-│   │   ├── storyboard_handler.go           # Storyboard & Scene handlers (generation, selection)
-│   │   └── video_handler.go                # Video generation handlers (variants, scenes, regeneration)
+│   │   ├── ai_handler.go                   # AI proxy handler for external service
+│   │   ├── auth_handler.go                 # Auth endpoints (register, login, refresh, delete)
+│   │   ├── brief_handler.go                # Unified project initialization (creates all briefs)
+│   │   ├── credit_handler.go               # Credit management (balance, admin add)
+│   │   ├── project_handler.go              # Project management (initialize, list, get)
+│   │   ├── storyboard_handler.go           # Storyboard generation
+│   │   └── video_handler.go                # Video generation & management (8 core methods)
 │   ├── middleware/
 │   │   └── auth.go                         # JWT validation & role-based access control
 │   ├── migration/
@@ -89,13 +90,12 @@ Sevima-BackEnd Ai Video Gen/
 │   │   ├── video_repository.go             # Video database queries
 │   │   └── video_variant_repository.go     # Video variant database queries
 │   └── service/
-│       ├── auth_service.go                 # Auth business logic
-│       ├── brief_service.go                # Brief business logic
-│       ├── content_service.go              # Content pillar/theme generation logic
-│       ├── credit_service.go               # Credit deduction & balance management
-│       ├── project_service.go              # Project business logic
-│       ├── storyboard_service.go           # Storyboard generation & scene logic
-│       └── video_generation_service.go     # Video variant generation & regeneration logic
+│       ├── auth_service.go                 # Authentication logic
+│       ├── brief_service.go                # Unified project initialization logic
+│       ├── credit_service.go               # Credit management
+│       ├── project_service.go              # Project management
+│       ├── storyboard_service.go           # Storyboard generation
+│       └── video_generation_service.go     # Video generation & regeneration
 ├── pkg/
 │   └── utils/
 │       ├── jwt.go                          # JWT token generation & validation
@@ -130,22 +130,66 @@ Sevima-BackEnd Ai Video Gen/
 
 ## Database Initialization
 
-Database tables are auto-created on startup via GORM AutoMigrate in `cmd/main.go`. Twelve tables are managed:
+Database tables are auto-created on startup via GORM AutoMigrate in `cmd/main.go`. 10 active tables are managed:
 
-| Table | Model | Description |
-|-------|-------|-------------|
-| `users` | `model.User` | User accounts with role & credits, soft delete |
-| `projects` | `model.Project` | Video projects (container for full workflow) |
-| `business_briefs` | `model.BusinessBrief` | Business brief forms (FK → users, projects) |
-| `creative_briefs` | `model.CreativeBrief` | Creative brief forms (FK → users, business_briefs) |
-| `content_pillars` | `model.ContentPillar` | AI-generated content pillars (FK → projects, users) |
-| `content_themes` | `model.ContentTheme` | Content themes per pillar (FK → content_pillars, users) |
-| `storyboards` | `model.Storyboard` | Storyboard variations (FK → projects, users) |
-| `scenes` | `model.Scene` | Individual scenes in storyboards (FK → storyboards, users) |
-| `videos` | `model.Video` | Generated videos (FK → projects, storyboards, users) |
-| `generation_jobs` | `model.GenerationJob` | Video generation queue jobs (track status & progress) |
-| `video_variants` | `model.VideoVariant` | 3 video variations per storyboard (cinematic, vibrant, professional) |
-| `scene_generations` | `model.SceneGeneration` | Individual scene generation tracking (scene-level progress) |
+| Table | Purpose | Key Fields |
+|-------|---------|-----------|
+| `users` | User account & credentials | id, email (unique), password (bcrypt), role (user/admin), credits (default 10) |
+| `projects` | Container for one video project/campaign | id, user_id (FK), name, theme, tone, status |
+| `business_briefs` | Business context from institution | id, project_id (FK), institute_name, school_level, target_audience, key_message, logo_path, environment_path |
+| `creative_briefs` | Creative direction & copywriting | id, business_brief_id (FK), video_type, duration, style, tone, script, copywriting, hashtags |
+| `storyboards` | Blueprint containing 3-5 scenes | id, project_id (FK), title, description, prompt, is_selected |
+| `scenes` | Individual scene in storyboard | id, storyboard_id (FK), scene_number, description, visual_description, duration, caption |
+| `generation_jobs` | Video generation queue task tracking | id, project_id (FK), storyboard_id (FK), user_id (FK), status (queued/processing/completed), retry_count, provider, model |
+| `video_variants` | 3 video variants (cinematic/vibrant/professional) | id, variant_number, status, video_url, thumbnail_url, file_size, credits_used, provider, model |
+| `scene_generations` | Individual scene generation progress | id, variant_id (FK), scene_number, status, video_url, external_job_id |
+| `videos` | Final merged video output | id, project_id (FK), storyboard_id (FK), user_id (FK), video_url, thumbnail_url, file_size, credits_used |
+
+### Database Workflow Usage
+
+Each table is used at specific workflow stages:
+
+```
+Register
+  └─> INSERT users (user, password hash, 10 initial credits)
+
+Login
+  └─> SELECT users (validate email/password)
+
+Initialize Project (FE Wizard)
+  └─> INSERT projects (container for campaign)
+  └─> INSERT business_briefs (institution context)
+  └─> INSERT creative_briefs (creative direction)
+
+Generate Storyboard
+  └─> INSERT storyboards (blueprint with scenes)
+  └─> INSERT scenes (3-5 individual scenes)
+
+Generate Video (Async)
+  └─> INSERT generation_jobs (status=queued, create job)
+  └─> INSERT video_variants (3 variants: cinematic, vibrant, professional)
+  └─> UPDATE users (deduct 1 credit)
+  └─> Enqueue to background worker channel
+
+Background Worker Processing
+  └─> UPDATE generation_jobs (status=processing)
+  ├─> For each scene:
+  │   ├─> INSERT scene_generations (status=queued)
+  │   ├─> Call AI Service (LTX/Runway API)
+  │   ├─> UPDATE scene_generations (status=completed, video_url)
+  │   └─> UPDATE generation_jobs (progress++)
+  ├─> Merge all scene videos (FFmpeg)
+  ├─> INSERT videos (final MP4)
+  ├─> UPDATE video_variants (status=completed, video_url)
+  └─> UPDATE generation_jobs (status=completed)
+
+Check Video Status
+  └─> SELECT video_variants (get status & progress)
+  └─> SELECT scene_generations (get per-scene status)
+
+Download Video
+  └─> SELECT videos (get final video_url)
+```
 
 No manual migration needed — just start the server and tables will be created/updated automatically via `AutoMigrate()` in main.go.
 
@@ -158,7 +202,7 @@ cp .env.example .env
 
 Configure in `.env`:
 ```
-APP_PORT=3000
+APP_PORT=5000
 APP_ENV=development
 DB_HOST=localhost
 DB_PORT=5432

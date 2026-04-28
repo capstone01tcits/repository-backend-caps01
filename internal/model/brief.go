@@ -17,6 +17,7 @@ type BusinessBrief struct {
 	CompanyName      string         `json:"company_name"`
 	InstituteName    string         `json:"institute_name"`
 	Education        string         `json:"education"`
+	SchoolLevel      string         `json:"school_level"` // PreSchool, TK, SD, SMP, SMA, SMK, Perguruan Tinggi
 	Industry         string         `json:"industry"`
 	TargetAudience   string         `json:"target_audience"`
 	ProjectObjective string         `gorm:"type:text" json:"project_objective"`
@@ -26,6 +27,9 @@ type BusinessBrief struct {
 	Deadline         time.Time      `json:"deadline"`
 	Competitors      string         `gorm:"type:text" json:"competitors"`
 	AdditionalNotes  string         `gorm:"type:text" json:"additional_notes"`
+	LogoPath         string         `json:"logo_path"`                   // path to stored logo file
+	EnvironmentPath  string         `json:"environment_path"`            // path to stored environment photo
+	DocumentPath     string         `json:"document_path"`               // path to stored document
 	Status           string         `gorm:"default:draft" json:"status"` // draft, submitted, approved, rejected
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
@@ -58,8 +62,10 @@ type CreativeBrief struct {
 	VisualReferences string         `gorm:"type:text" json:"visual_references"`
 	MusicPreference  string         `json:"music_preference"`
 	CallToAction     string         `json:"call_to_action"`
-	OutputFormat     string         `json:"output_format"` // mp4, webm, etc.
-	Resolution       string         `json:"resolution"`    // 1080p, 4K, etc.
+	OutputFormat     string         `json:"output_format"`                // mp4, webm, etc.
+	Resolution       string         `json:"resolution"`                   // 1080p, 4K, etc.
+	Copywriting      string         `gorm:"type:text" json:"copywriting"` // social media caption
+	Hashtags         string         `gorm:"type:text" json:"hashtags"`    // social media hashtags
 	AdditionalNotes  string         `gorm:"type:text" json:"additional_notes"`
 	Status           string         `gorm:"default:draft" json:"status"` // draft, submitted, in_production, completed
 	CreatedAt        time.Time      `json:"created_at"`
@@ -151,21 +157,26 @@ type UpdateCreativeBriefRequest struct {
 type CreateProjectFromFERequest struct {
 	// Step 1: Business Brief
 	InstitutionName    string `json:"institution_name" validate:"required"`
-	InstitutionHistory string `json:"institution_history" validate:"required"`
-	SchoolLevel        string `json:"school_level" validate:"required"`
-	OfferedDegrees     string `json:"offered_degrees"` // optional
+	InstitutionHistory string `json:"institution_history"` // optional - not always sent by FE
+	SchoolLevel        string `json:"school_level"`        // optional - not always sent by FE
+	OfferedDegrees     string `json:"offered_degrees"`     // optional
 
 	// Step 2: Creative Brief
 	EventContent       string `json:"event_content" validate:"required"`
 	ToneOfVoice        string `json:"tone_of_voice" validate:"required"`
 	SelectedKeyMessage string `json:"selected_key_message" validate:"required"`
-	VideoDuration      string `json:"video_duration" validate:"required"` // e.g., "15 detik", "30 detik", "60 detik"
-	Prompt             string `json:"prompt"`                             // optional
+	VideoDuration      string `json:"video_duration"` // optional - not always sent by FE (e.g., "15 detik", "30 detik", "60 detik")
+	Prompt             string `json:"prompt"`         // optional
 
 	// Step 3: Theme
 	SelectedTheme string `json:"selected_theme" validate:"required"`
 
 	// Step 4: Summary
-	EditableCopywriting string `json:"editable_copywriting"`
-	EditableHashtags    string `json:"editable_hashtags"`
+	EditableCopywriting string `json:"editable_copywriting"` // optional
+	EditableHashtags    string `json:"editable_hashtags"`    // optional - not always sent by FE
+
+	// Images (Base64 encoded)
+	LogoBase64     string `json:"logo_base64"`     // optional - institution logo
+	EnvBase64      string `json:"env_base64"`      // optional - environment photo
+	DocumentBase64 string `json:"document_base64"` // optional - pdf/doc about institution
 }

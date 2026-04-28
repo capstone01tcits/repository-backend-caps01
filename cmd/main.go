@@ -26,14 +26,12 @@ func main() {
 	// Connect database
 	db := config.ConnectDB()
 
-	// Auto migrate
+	// Auto migrate (10 active tables - ContentPillar & ContentTheme removed in April 2026 audit)
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.Project{},
 		&model.BusinessBrief{},
 		&model.CreativeBrief{},
-		&model.ContentPillar{},
-		&model.ContentTheme{},
 		&model.Storyboard{},
 		&model.Scene{},
 		&model.Video{},
@@ -120,6 +118,10 @@ func main() {
 	videos.Get("/:id", videoHandler.GetVideo)
 	videos.Get("/", videoHandler.ListVideos)
 	videos.Get("/download/:id", videoHandler.DownloadVideo)
+	videos.Post("/:variantId/regenerate", videoHandler.RegenerateVideoVariant)
+
+	// Scene regeneration route
+	api.Post("/videos/scene/:sceneId/regenerate", middleware.Protected(), videoHandler.RegenerateScene)
 
 	// ==================== Credit Routes ====================
 	credits := api.Group("/credits", middleware.Protected())
