@@ -1,0 +1,90 @@
+{
+  "$schema": "https://railway.app/config.schema.json",
+  "build": {
+    "builder": "dockerfile"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "startCommand": "",
+    "restartPolicyMaxRetries": 5,
+    "healthchecks": {
+      "readiness": {
+        "initialDelaySeconds": 10,
+        "periodSeconds": 10,
+        "timeoutSeconds": 5,
+        "successThreshold": 1,
+        "failureThreshold": 3
+      }
+    }
+  },
+  "variables": {
+    "APP_PORT": {
+      "description": "Application port",
+      "value": "8080"
+    },
+    "APP_ENV": {
+      "description": "Application environment",
+      "value": "production"
+    },
+    "DB_HOST": {
+      "description": "Supabase database host",
+      "value": ""
+    },
+    "DB_PORT": {
+      "description": "Database port",
+      "value": "5432"
+    },
+    "DB_USER": {
+      "description": "Database user",
+      "value": ""
+    },
+    "DB_PASSWORD": {
+      "description": "Database password",
+      "value": ""
+    },
+    "DB_NAME": {
+      "description": "Database name",
+      "value": "postgres"
+    },
+    "SUPABASE_URL": {
+      "description": "Supabase project URL",
+      "value": ""
+    },
+    "SUPABASE_ANON_KEY": {
+      "description": "Supabase anonymous key",
+      "value": ""
+    },
+    "SUPABASE_SERVICE_ROLE_KEY": {
+      "description": "Supabase service role key",
+      "value": ""
+    },
+    "STORAGE_BUCKET_VIDEOS": {
+      "description": "Videos bucket name",
+      "value": "videos"
+    },
+    "STORAGE_BUCKET_THUMBNAILS": {
+      "description": "Thumbnails bucket name",
+      "value": "thumbnails"
+    },
+    "STORAGE_BUCKET_ASSETS": {
+      "description": "Assets bucket name",
+      "value": "assets"
+    },
+    "JWT_SECRET": {
+      "description": "JWT secret key",
+      "value": ""
+    },
+    "JWT_EXPIRE_HOURS": {
+      "description": "JWT token expiration hours",
+      "value": "24"
+    },
+    "JWT_REFRESH_SECRET": {
+      "description": "JWT refresh secret key",
+      "value": ""
+    },
+    "JWT_REFRESH_EXPIRE_HOURS": {
+      "description": "JWT refresh token expiration hours",
+      "value": "168"
+    }
+  }
+}

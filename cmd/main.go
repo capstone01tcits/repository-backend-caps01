@@ -58,14 +58,15 @@ func main() {
 	briefSvc := service.NewBriefService(briefRepo, projectRepo, storyboardRepo)
 	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, contentRepo)
 	creditSvc := service.NewCreditService(userRepo)
-	videoGenSvc := service.NewVideoGenerationService(jobRepo, variantRepo, sceneRepo, creditSvc)
+	storageSvc := service.NewStorageService()
+	videoGenSvc := service.NewVideoGenerationService(jobRepo, variantRepo, sceneRepo, creditSvc, storageSvc)
 
 	// Init handlers
 	authHandler := handler.NewAuthHandler(authSvc)
 	projectHandler := handler.NewProjectHandler(projectSvc)
 	briefHandler := handler.NewBriefHandler(briefSvc)
 	storyboardHandler := handler.NewStoryboardHandler(storyboardSvc)
-	videoHandler := handler.NewVideoHandler(videoGenSvc)
+	videoHandler := handler.NewVideoHandler(videoGenSvc, storageSvc)
 	creditHandler := handler.NewCreditHandler(creditSvc)
 	aiHandler := handler.NewAIHandler()
 

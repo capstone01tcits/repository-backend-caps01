@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
 
 	"Sevima-AI-Content-Creator/internal/ai"
@@ -51,6 +53,7 @@ type videoGenerationService struct {
 	variantRepo     repository.VideoVariantRepository
 	sceneRepo       repository.SceneGenerationRepository
 	creditService   CreditService
+	storageService  StorageService
 	providerFactory *ai.ProviderFactory
 }
 
@@ -59,12 +62,14 @@ func NewVideoGenerationService(
 	variantRepo repository.VideoVariantRepository,
 	sceneRepo repository.SceneGenerationRepository,
 	creditService CreditService,
+	storageService StorageService,
 ) VideoGenerationService {
 	return &videoGenerationService{
 		jobRepo:         jobRepo,
 		variantRepo:     variantRepo,
 		sceneRepo:       sceneRepo,
 		creditService:   creditService,
+		storageService:  storageService,
 		providerFactory: &ai.ProviderFactory{},
 	}
 }
@@ -452,10 +457,39 @@ func (s *videoGenerationService) PollJobStatus(ctx context.Context, jobID uuid.U
 			s.variantRepo.UpdateStatus(ctx, variant.ID, "completed")
 			completedVariants++
 
-			// Mock: simulate video URL and thumbnail
-			mockVideoURL := fmt.Sprintf("https://storage.example.com/videos/variants/%s.mp4", variant.ID)
-			mockThumbnailURL := fmt.Sprintf("https://storage.example.com/thumbnails/%s.jpg", variant.ID)
-			s.variantRepo.UpdateWithVideoURL(ctx, variant.ID, mockVideoURL, mockThumbnailURL, int64(1024*1024*50)) // 50MB mock
+			// Get all completed scenes for this variant
+			scenes, _ := s.sceneRepo.GetByVariantID(ctx, variant.ID)
+
+			if len(scenes) > 0 && scenes[0].VideoURL != "" {
+				// Download video from provider
+				videoBytes, err := s.downloadVideoFromProvider(ctx, scenes[0].VideoURL)
+				if err != nil {
+					// Fallback: use provider URL directly
+					videoURL := scenes[0].VideoURL
+					thumbnailURL := fmt.Sprintf("https://provider-generated.com/thumbnails/%s.jpg", variant.ID)
+					s.variantRepo.UpdateWithVideoURL(ctx, variant.ID, videoURL, thumbnailURL, int64(len(videoBytes)))
+					continue
+				}
+
+				// Upload to Supabase
+				videoFilename := fmt.Sprintf("video_%s.mp4", variant.ID.String())
+				videoPath, err := s.storageService.UploadVideo(ctx, videoFilename, videoBytes)
+				if err != nil {
+					// Fallback: use provider URL if Supabase upload fails
+					fmt.Printf("Supabase upload failed, using provider URL: %v\n", err)
+					videoURL := scenes[0].VideoURL
+					thumbnailURL := fmt.Sprintf("https://provider-generated.com/thumbnails/%s.jpg", variant.ID)
+					s.variantRepo.UpdateWithVideoURL(ctx, variant.ID, videoURL, thumbnailURL, int64(len(videoBytes)))
+					continue
+				}
+
+				// Get public URLs
+				videoURL := s.storageService.GetPublicURL("videos", videoPath)
+				thumbnailURL := fmt.Sprintf("https://provider-generated.com/thumbnails/%s.jpg", variant.ID)
+
+				// Update database with Supabase URLs
+				s.variantRepo.UpdateWithVideoURL(ctx, variant.ID, videoURL, thumbnailURL, int64(len(videoBytes)))
+			}
 		}
 	}
 
@@ -468,6 +502,43 @@ func (s *videoGenerationService) PollJobStatus(ctx context.Context, jobID uuid.U
 }
 
 // Helper functions
+
+// downloadVideoFromProvider downloads video bytes from provider URL
+func (s *videoGenerationService) downloadVideoFromProvider(ctx context.Context, videoURL string) ([]byte, error) {
+	if videoURL == "" {
+		return nil, errors.New("video URL is empty")
+	}
+
+	// Create request with context
+	req, err := http.NewRequestWithContext(ctx, "GET", videoURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Execute request
+	client := &http.Client{Timeout: 5 * time.Minute}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download video: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("download failed with status %d", resp.StatusCode)
+	}
+
+	// Read all bytes
+	videoBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read video data: %w", err)
+	}
+
+	if len(videoBytes) == 0 {
+		return nil, errors.New("downloaded video is empty")
+	}
+
+	return videoBytes, nil
+}
 
 func (s *videoGenerationService) generatePromptForVariant(variantNumber int, customPrompt string) string {
 	variations := []string{

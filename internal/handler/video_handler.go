@@ -11,11 +11,13 @@ import (
 
 type VideoHandler struct {
 	videoGenService service.VideoGenerationService
+	storageService  service.StorageService
 }
 
-func NewVideoHandler(videoGenService service.VideoGenerationService) *VideoHandler {
+func NewVideoHandler(videoGenService service.VideoGenerationService, storageService service.StorageService) *VideoHandler {
 	return &VideoHandler{
 		videoGenService: videoGenService,
+		storageService:  storageService,
 	}
 }
 
