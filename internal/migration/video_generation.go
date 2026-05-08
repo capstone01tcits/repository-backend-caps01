@@ -122,6 +122,27 @@ CREATE INDEX idx_scene_generations_deleted_at ON scene_generations(deleted_at);
 CREATE INDEX idx_scene_generations_scene_number ON scene_generations(variant_id, scene_number);
 `
 
+const createStoryboardSectionTable = `
+CREATE TABLE IF NOT EXISTS storyboard_sections (
+    id UUID PRIMARY KEY,
+    storyboard_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    section_type VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
+    duration INTEGER,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
+    
+    CONSTRAINT fk_storyboard_section_storyboard FOREIGN KEY(storyboard_id) REFERENCES storyboards(id),
+    CONSTRAINT fk_storyboard_section_user FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE INDEX idx_storyboard_sections_storyboard_id ON storyboard_sections(storyboard_id);
+CREATE INDEX idx_storyboard_sections_user_id ON storyboard_sections(user_id);
+CREATE INDEX idx_storyboard_sections_deleted_at ON storyboard_sections(deleted_at);
+`
+
 // RunRawMigrations executes raw SQL migrations
 func RunRawMigrations(db *gorm.DB) error {
 	if err := db.Exec(createGenerationJobTable).Error; err != nil {
@@ -133,6 +154,9 @@ func RunRawMigrations(db *gorm.DB) error {
 	if err := db.Exec(createSceneGenerationTable).Error; err != nil {
 		return err
 	}
+	if err := db.Exec(createStoryboardSectionTable).Error; err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -141,8 +165,12 @@ func RunRawMigrations(db *gorm.DB) error {
 const dropGenerationJobTable = `DROP TABLE IF EXISTS generation_jobs CASCADE;`
 const dropVideoVariantTable = `DROP TABLE IF EXISTS video_variants CASCADE;`
 const dropSceneGenerationTable = `DROP TABLE IF EXISTS scene_generations CASCADE;`
+const dropStoryboardSectionTable = `DROP TABLE IF EXISTS storyboard_sections CASCADE;`
 
 func RollbackVideoGeneration(db *gorm.DB) error {
+	if err := db.Exec(dropStoryboardSectionTable).Error; err != nil {
+		return err
+	}
 	if err := db.Exec(dropSceneGenerationTable).Error; err != nil {
 		return err
 	}

@@ -32,9 +32,6 @@ func (h *ProjectHandler) GetProjects(c *fiber.Ctx) error {
 	return utils.OK(c, "Projects retrieved", projects)
 }
 
-// GetProject godoc
-// GET /api/projects/:id
-// Gets a single project by ID
 func (h *ProjectHandler) GetProject(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(string)
 	if !ok || userID == "" {
@@ -48,4 +45,40 @@ func (h *ProjectHandler) GetProject(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Project retrieved", project)
+}
+
+// DeleteProject godoc
+// DELETE /api/projects/:id
+// Soft deletes a project
+func (h *ProjectHandler) DeleteProject(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+	projectID := c.Params("id")
+
+	err := h.projectService.DeleteProject(userID, projectID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Project deleted successfully", nil)
+}
+
+// RestoreProject godoc
+// POST /api/projects/:id/restore
+// Restores a soft-deleted project
+func (h *ProjectHandler) RestoreProject(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+	projectID := c.Params("id")
+
+	err := h.projectService.RestoreProject(userID, projectID)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Project restored successfully", nil)
 }

@@ -10,34 +10,36 @@ import (
 )
 
 type StoryboardService interface {
-	GenerateStoryboards(userID, projectID, contentThemeID string) ([]model.Storyboard, error)
+	GenerateTemplates(userID, projectID string, videoDuration int) ([]model.StoryboardTemplate, error)
+	CreateManualStoryboard(userID string, req *model.CreateManualStoryboardRequest) (*model.Storyboard, error)
 	GetStoryboards(userID, projectID string) ([]model.Storyboard, error)
 	GetStoryboard(userID, storyboardID string) (*model.Storyboard, error)
 	SelectStoryboard(userID, storyboardID string) (*model.Storyboard, error)
-	UpdateStoryboard(userID, storyboardID string, req *model.UpdateStoryboardRequest) (*model.Storyboard, error)
-	GetScenes(userID, storyboardID string) ([]model.Scene, error)
+	UpdateStoryboard(userID, storyboardID string, req *model.UpdateManualStoryboardRequest) (*model.Storyboard, error)
+	GetStoryboardSections(userID, storyboardID string) ([]model.StoryboardSection, error)
+	DeleteStoryboard(userID, storyboardID string) error
+	RestoreStoryboard(userID, storyboardID string) error
 }
 
 type storyboardService struct {
 	storyboardRepo repository.StoryboardRepository
 	projectRepo    repository.ProjectRepository
-	contentRepo    repository.ContentRepository
+	briefRepo      repository.BriefRepository
+	templateGen    *TemplateGenerator
 }
 
 func NewStoryboardService(
 	storyboardRepo repository.StoryboardRepository,
 	projectRepo repository.ProjectRepository,
-	contentRepo repository.ContentRepository,
+	briefRepo repository.BriefRepository,
 ) StoryboardService {
-	return &storyboardService{storyboardRepo, projectRepo, contentRepo}
+	templateGen := NewTemplateGenerator(projectRepo, briefRepo)
+	return &storyboardService{storyboardRepo, projectRepo, briefRepo, templateGen}
 }
 
-func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeID string) ([]model.Storyboard, error) {
-	uid, err := uuid.Parse(userID)
-	if err != nil {
-		return nil, errors.New("invalid user ID")
-	}
-
+// GenerateTemplates creates multiple storyboard template options for user selection
+func (s *storyboardService) GenerateTemplates(userID, projectID string, videoDuration int) ([]model.StoryboardTemplate, error) {
+	// Verify project exists and user has access
 	project, err := s.projectRepo.FindByID(projectID)
 	if err != nil {
 		return nil, errors.New("project not found")
@@ -47,92 +49,69 @@ func (s *storyboardService) GenerateStoryboards(userID, projectID, contentThemeI
 		return nil, errors.New("unauthorized access to this project")
 	}
 
-	// Simplified workflow: skip content pillar/theme (removed in April 2026 audit)
-	// Use project theme directly for storyboard generation
-	pid, _ := uuid.Parse(projectID)
-
-	// Stub: generate 2 storyboard variations with scenes
-	// In production, this would call the AI service
-	storyboardData := []struct {
-		title  string
-		desc   string
-		scenes []struct {
-			num int
-			t   string
-			d   string
-			v   string
-			dur int
-		}
-	}{
-		{
-			title: "Storyboard A - Dynamic",
-			desc:  "A dynamic, fast-paced storyboard based on theme: " + project.Theme,
-			scenes: []struct {
-				num int
-				t   string
-				d   string
-				v   string
-				dur int
-			}{
-				{1, "Opening Hook", "Attention-grabbing opening sequence", "Wide shot with dramatic lighting and motion graphics", 5},
-				{2, "Problem Statement", "Present the challenge or pain point", "Close-up shots with text overlay highlighting the problem", 8},
-				{3, "Solution Reveal", "Introduce the product/service as solution", "Product showcase with smooth transitions and feature highlights", 10},
-				{4, "Call to Action", "End with clear CTA", "Logo animation with contact info and call-to-action text", 7},
-			},
-		},
-		{
-			title: "Storyboard B - Narrative",
-			desc:  "A storytelling-driven storyboard based on theme: " + project.Theme,
-			scenes: []struct {
-				num int
-				t   string
-				d   string
-				v   string
-				dur int
-			}{
-				{1, "Setting the Scene", "Establish context and atmosphere", "Cinematic wide shot establishing the environment", 6},
-				{2, "Character Introduction", "Introduce relatable character/persona", "Medium shot of character in their environment", 8},
-				{3, "Journey & Transformation", "Show the transformation journey", "Montage sequence showing before and after", 12},
-				{4, "Resolution", "Happy ending with brand integration", "Warm lighting, character smiling, brand logo reveal", 4},
-			},
-		},
+	// Validate video duration
+	if videoDuration < 15 || videoDuration > 300 {
+		return nil, errors.New("video duration must be between 15 and 300 seconds")
 	}
 
-	var created []model.Storyboard
-	for _, sb := range storyboardData {
-		storyboard := &model.Storyboard{
-			ProjectID:   pid,
-			UserID:      uid,
-			Title:       sb.title,
-			Description: sb.desc,
-		}
-
-		if err := s.storyboardRepo.Create(storyboard); err != nil {
-			return nil, errors.New("failed to create storyboard")
-		}
-
-		var scenes []model.Scene
-		for _, sc := range sb.scenes {
-			scene := &model.Scene{
-				StoryboardID: storyboard.ID,
-				UserID:       uid,
-				SceneNumber:  sc.num,
-				Title:        sc.t,
-				Description:  sc.d,
-				VisualDesc:   sc.v,
-				Duration:     sc.dur,
-			}
-			if err := s.storyboardRepo.CreateScene(scene); err != nil {
-				return nil, errors.New("failed to create scene")
-			}
-			scenes = append(scenes, *scene)
-		}
-
-		storyboard.Scenes = scenes
-		created = append(created, *storyboard)
+	// Generate templates
+	templates, err := s.templateGen.GenerateTemplates(projectID, videoDuration)
+	if err != nil {
+		return nil, errors.New("failed to generate templates")
 	}
 
-	return created, nil
+	return templates, nil
+}
+
+func (s *storyboardService) CreateManualStoryboard(userID string, req *model.CreateManualStoryboardRequest) (*model.Storyboard, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+
+	project, err := s.projectRepo.FindByID(req.ProjectID)
+	if err != nil {
+		return nil, errors.New("project not found")
+	}
+
+	if project.UserID.String() != userID {
+		return nil, errors.New("unauthorized access to this project")
+	}
+
+	pid, _ := uuid.Parse(req.ProjectID)
+
+	// Create the storyboard
+	storyboard := &model.Storyboard{
+		ProjectID:     pid,
+		UserID:        uid,
+		Title:         req.Title,
+		Description:   req.Description,
+		Style:         req.Style,
+		TotalDuration: req.Duration,
+	}
+
+	if err := s.storyboardRepo.Create(storyboard); err != nil {
+		return nil, errors.New("failed to create storyboard")
+	}
+
+	// Create the 3 sections: hook, value, cta
+	var sections []model.StoryboardSection
+	for _, sectionInput := range req.Sections {
+		section := &model.StoryboardSection{
+			StoryboardID: storyboard.ID,
+			UserID:       uid,
+			SectionType:  sectionInput.SectionType,
+			Content:      sectionInput.Content,
+			Duration:     sectionInput.Duration,
+		}
+		if err := s.storyboardRepo.CreateSection(section); err != nil {
+			return nil, errors.New("failed to create storyboard section")
+		}
+		sections = append(sections, *section)
+	}
+
+	storyboard.Sections = sections
+	return storyboard, nil
 }
 
 func (s *storyboardService) GetStoryboards(userID, projectID string) ([]model.Storyboard, error) {
@@ -184,22 +163,9 @@ func (s *storyboardService) SelectStoryboard(userID, storyboardID string) (*mode
 	return storyboard, nil
 }
 
-func (s *storyboardService) GetScenes(userID, storyboardID string) ([]model.Scene, error) {
-	storyboard, err := s.storyboardRepo.FindByID(storyboardID)
-	if err != nil {
-		return nil, errors.New("storyboard not found")
-	}
-
-	if storyboard.UserID.String() != userID {
-		return nil, errors.New("unauthorized access")
-	}
-
-	return s.storyboardRepo.FindScenesByStoryboardID(storyboardID)
-}
-
 // UpdateStoryboard godoc
-// Updates prompt for a storyboard (Sprint 3)
-func (s *storyboardService) UpdateStoryboard(userID, storyboardID string, req *model.UpdateStoryboardRequest) (*model.Storyboard, error) {
+// Updates storyboard and its sections (manual storyboard)
+func (s *storyboardService) UpdateStoryboard(userID, storyboardID string, req *model.UpdateManualStoryboardRequest) (*model.Storyboard, error) {
 	storyboard, err := s.storyboardRepo.FindByID(storyboardID)
 	if err != nil {
 		return nil, errors.New("storyboard not found")
@@ -209,13 +175,79 @@ func (s *storyboardService) UpdateStoryboard(userID, storyboardID string, req *m
 		return nil, errors.New("unauthorized access")
 	}
 
-	if req.Prompt != nil {
-		storyboard.Prompt = *req.Prompt
+	// Update basic storyboard info
+	if req.Title != nil {
+		storyboard.Title = *req.Title
+	}
+	if req.Description != nil {
+		storyboard.Description = *req.Description
 	}
 
 	if err := s.storyboardRepo.Update(storyboard); err != nil {
 		return nil, errors.New("failed to update storyboard")
 	}
 
+	// Update sections if provided
+	if len(req.Sections) > 0 {
+		// Get existing sections
+		sections, err := s.storyboardRepo.FindSectionsByStoryboardID(storyboardID)
+		if err != nil {
+			return nil, errors.New("failed to retrieve sections")
+		}
+
+		// Update each section
+		for i, sectionInput := range req.Sections {
+			if i < len(sections) {
+				sections[i].SectionType = sectionInput.SectionType
+				sections[i].Content = sectionInput.Content
+				if err := s.storyboardRepo.UpdateSection(&sections[i]); err != nil {
+					return nil, errors.New("failed to update section")
+				}
+			}
+		}
+
+		storyboard.Sections = sections
+	}
+
 	return storyboard, nil
 }
+
+func (s *storyboardService) GetStoryboardSections(userID, storyboardID string) ([]model.StoryboardSection, error) {
+	storyboard, err := s.storyboardRepo.FindByID(storyboardID)
+	if err != nil {
+		return nil, errors.New("storyboard not found")
+	}
+
+	if storyboard.UserID.String() != userID {
+		return nil, errors.New("unauthorized access")
+	}
+
+	return s.storyboardRepo.FindSectionsByStoryboardID(storyboardID)
+}
+
+func (s *storyboardService) DeleteStoryboard(userID, storyboardID string) error {
+	storyboard, err := s.storyboardRepo.FindByID(storyboardID)
+	if err != nil {
+		return errors.New("storyboard not found")
+	}
+
+	if storyboard.UserID.String() != userID {
+		return errors.New("unauthorized access")
+	}
+
+	return s.storyboardRepo.Delete(storyboardID)
+}
+
+func (s *storyboardService) RestoreStoryboard(userID, storyboardID string) error {
+	storyboard, err := s.storyboardRepo.UnscopedFindByID(storyboardID)
+	if err != nil {
+		return errors.New("storyboard not found")
+	}
+
+	if storyboard.UserID.String() != userID {
+		return errors.New("unauthorized access")
+	}
+
+	return s.storyboardRepo.Restore(storyboardID)
+}
+

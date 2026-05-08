@@ -26,14 +26,14 @@ func main() {
 	// Connect database
 	db := config.ConnectDB()
 
-	// Auto migrate (10 active tables - ContentPillar & ContentTheme removed in April 2026 audit)
+	// Auto migrate (11 active tables - Manual Storyboard sections added, Scenes deprecated)
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.Project{},
 		&model.BusinessBrief{},
 		&model.CreativeBrief{},
 		&model.Storyboard{},
-		&model.Scene{},
+		&model.StoryboardSection{},
 		&model.Video{},
 		&model.GenerationJob{},
 		&model.VideoVariant{},
@@ -46,7 +46,6 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	projectRepo := repository.NewProjectRepository(db)
 	briefRepo := repository.NewBriefRepository(db)
-	contentRepo := repository.NewContentRepository(db)
 	storyboardRepo := repository.NewStoryboardRepository(db)
 	jobRepo := repository.NewGenerationJobRepository(db)
 	variantRepo := repository.NewVideoVariantRepository(db)
@@ -56,7 +55,7 @@ func main() {
 	authSvc := service.NewAuthService(userRepo)
 	projectSvc := service.NewProjectService(projectRepo)
 	briefSvc := service.NewBriefService(briefRepo, projectRepo, storyboardRepo)
-	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, contentRepo)
+	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, briefRepo)
 	creditSvc := service.NewCreditService(userRepo)
 	storageSvc := service.NewStorageService()
 	videoGenSvc := service.NewVideoGenerationService(jobRepo, variantRepo, sceneRepo, creditSvc, storageSvc)
@@ -108,10 +107,20 @@ func main() {
 	// List and get projects
 	projects.Get("/", projectHandler.GetProjects)
 	projects.Get("/:id", projectHandler.GetProject)
+	projects.Delete("/:id", projectHandler.DeleteProject)
+	projects.Post("/:id/restore", projectHandler.RestoreProject)
 
 	// ==================== Storyboard Routes ====================
 	storyboard := api.Group("/storyboard", middleware.Protected())
-	storyboard.Post("/generate", storyboardHandler.GenerateStoryboard)
+	storyboard.Post("/templates/generate", storyboardHandler.GenerateStoryboardTemplates)
+	storyboard.Post("/create", storyboardHandler.CreateManualStoryboard)
+	storyboard.Get("/:project_id", storyboardHandler.GetStoryboards)
+	storyboard.Get("/detail/:storyboard_id", storyboardHandler.GetStoryboard)
+	storyboard.Post("/select", storyboardHandler.SelectStoryboard)
+	storyboard.Put("/:storyboard_id", storyboardHandler.UpdateStoryboard)
+	storyboard.Delete("/:storyboard_id", storyboardHandler.DeleteStoryboard)
+	storyboard.Post("/:storyboard_id/restore", storyboardHandler.RestoreStoryboard)
+	storyboard.Get("/:storyboard_id/sections", storyboardHandler.GetStoryboardSections)
 
 	// ==================== Video Routes ====================
 	videos := api.Group("/videos", middleware.Protected())

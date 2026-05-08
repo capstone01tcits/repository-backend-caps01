@@ -15,6 +15,7 @@ type ProjectService interface {
 	GetProjects(userID string) ([]model.Project, error)
 	UpdateProject(userID, projectID string, req *model.UpdateProjectRequest) (*model.Project, error)
 	DeleteProject(userID, projectID string) error
+	RestoreProject(userID, projectID string) error
 }
 
 type projectService struct {
@@ -104,4 +105,17 @@ func (s *projectService) DeleteProject(userID, projectID string) error {
 	}
 
 	return s.projectRepo.Delete(projectID)
+}
+
+func (s *projectService) RestoreProject(userID, projectID string) error {
+	project, err := s.projectRepo.UnscopedFindByID(projectID)
+	if err != nil {
+		return errors.New("project not found")
+	}
+
+	if project.UserID.String() != userID {
+		return errors.New("unauthorized access to this project")
+	}
+
+	return s.projectRepo.Restore(projectID)
 }

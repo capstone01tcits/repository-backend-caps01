@@ -1,32 +1,32 @@
 # API Documentation - AI Video Generation Platform
 
-Version: 3.0.0 (April 2026 - Post-Audit Cleanup)
+Version: 3.1.0 (May 2026 - Template Generator & Manual Storyboard)
 Base URL: http://localhost:5000
 AI Service URL: http://localhost:8000
 Collection Format: Bruno/Postman API Collection (docs/API_COLLECTION.json)
 
 ---
 
-## Backend Status - Cleaned & Optimized
+## Backend Status - Template Generator Ready
 
-AUDIT COMPLETED: April 2026
-- Removed: 3 files (video_service.go, content_handler.go, content_service.go)
-- Removed: 11+ unused handler methods across 4 handlers
-- Code Size: Reduced by approximately 800 lines
+LATEST UPDATE: May 2026
+- Added: Storyboard Template Generator with 4 style variations
+- Added: Manual storyboard creation endpoint (3-section structure)
+- Improved: Flexible video duration handling (15-300 seconds)
 - Build Status: Compiles successfully with zero errors
-- Ready for: Frontend integration and production deployment
+- Ready for: Frontend template selector UI and manual composition
 
-Core Workflow (5 Steps):
+Core Workflow (5-6 Steps):
 1. User Registration/Login
 2. Project Initialization (with briefs and images)
-3. Storyboard Generation
+3. Storyboard Generation (Choose: Auto-Templates OR Manual Create)
 4. Video Generation (3 variants)
 5. Video Retrieval and Download
 
-Total Active Endpoints: 20
+Total Active Endpoints: 22
 - Authentication: 6 endpoints
 - Projects: 3 endpoints
-- Storyboard: 1 endpoint
+- Storyboard: 2 endpoints (Generate Templates + Create Manual)
 - Videos: 6 endpoints
 - Credits: 2 endpoints
 - Health/AI Gateway: 2 endpoints
@@ -493,66 +493,180 @@ GET /api/projects/{project_id}
 Authorization: Bearer {access_token}
 ```
 
+#### Soft Delete Project
+
+```http
+DELETE /api/projects/{project_id}
+Authorization: Bearer {access_token}
+```
+
+#### Restore Project
+
+```http
+POST /api/projects/{project_id}/restore
+Authorization: Bearer {access_token}
+```
+
 
 
 ### Storyboard API
 
-#### Generate Storyboard
+#### Generate Storyboard Templates
+
+Backend generates storyboard templates by combining project data (including the user's chosen Tone, Copywriting, and Hashtags from Creative Brief) with pre-prepared educational content templates, without using external AI text generation.
 
 ```http
-POST /api/storyboard/generate
+POST /api/storyboard/templates/generate
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "project_id": "550e8400-e29b-41d4-a716-446655440000"
+  "project_id": "550e8400-e29b-41d4-a716-446655440000",
+  "video_duration": 30
 }
 ```
 
-**Response (201 Created):**
+**Request Parameters:**
+- `project_id` (required): UUID of education project created from `/api/projects/initialize`
+- `video_duration` (required): Total duration in seconds (15-300)
+
+**Response (200 OK):**
 ```json
 {
   "success": true,
-  "message": "Storyboard generated successfully",
+  "message": "Templates generated successfully",
   "data": {
-    "storyboard_id": "5ja7b810-9dad-11d1-80b4-00c04fd430c8",
     "project_id": "550e8400-e29b-41d4-a716-446655440000",
-    "status": "ready",
-    "scenes": [
+    "video_duration": 30,
+    "count": 4,
+    "templates": [
       {
-        "scene_id": "6ka7b810-9dad-11d1-80b4-00c04fd430c8",
-        "scene_number": 1,
-        "title": "Opening Hook",
-        "narration": "Halo generasi masa depan!",
-        "visual_description": "Wide shot with dramatic lighting showing campus landmark",
-        "duration": 5
-      },
-      {
-        "scene_id": "7la7b810-9dad-11d1-80b4-00c04fd430c8",
-        "scene_number": 2,
-        "title": "Campus Life",
-        "narration": "Di sini, kami siap membantu mewujudkan impian Anda",
-        "visual_description": "Students in activities, modern facilities, interactive learning",
-        "duration": 8
-      },
-      {
-        "scene_id": "8ma7b810-9dad-11d1-80b4-00c04fd430c8",
-        "scene_number": 3,
-        "title": "Call to Action",
-        "narration": "Jangan lewatkan kesempatan ini. Raih mimpimu bersama kami!",
-        "visual_description": "Campus logo with CTA text and animated graphics",
-        "duration": 6
+        "template_id": "dynamic_template",
+        "style": "Dynamic",
+        "description": "Fast-paced, attention-grabbing...",
+        "duration": 30,
+        "sections": [
+          {
+            "section_type": "hook",
+            "title": "Hook - Grab Attention",
+            "suggested_duration": 10,
+            "content": "START WITH IMPACT...",
+            "tips": "Tone: Santai & Ramah. Use fast transitions..."
+          },
+          ...
+        ]
       }
-    ],
-    "total_duration": 19,
-    "created_at": "2026-03-13T10:25:00Z"
+    ]
   }
 }
 ```
 
+**How It Works:**
+- Backend reads project data and briefs from `/api/projects/initialize`
+- System injects user inputs (Institution Name, Key Message, Tone, Copywriting, Hashtags) into 4 distinct educational templates
+- Content is education-focused and perfectly matches the user's explicit instructions
+- The client app can then display these templates for the user to choose or customize via `/api/storyboard/create`
+
+#### Soft Delete Storyboard
+
+```http
+DELETE /api/storyboard/{storyboard_id}
+Authorization: Bearer {access_token}
+```
+
+#### Restore Storyboard
+
+```http
+POST /api/storyboard/{storyboard_id}/restore
+Authorization: Bearer {access_token}
+```
+
 ---
 
-### Credit APIs
+### Storyboard Data Flow
+
+Shows how storyboard data flows from project initialization through video generation.
+
+**Flow Diagram:**
+
+```
+Step 1: Initialize Project
+(POST /api/projects/initialize)
+        ↓
+Returns: project_id
+        ↓
+Step 2: Generate Storyboard Templates
+(POST /api/storyboard/templates/generate)
+Input: project_id, video_duration
+Returns: Array of 4 templates with pre-filled content
+
+Step 2b: Create Manual Storyboard
+(POST /api/storyboard/create)
+Input: project_id, selected template sections
+Returns: storyboard_id with 3 custom sections
+        ↓
+Step 3: Generate Video FROM Storyboard
+(POST /api/videos/generate)
+Input: project_id + storyboard_id (from Step 2b)
+        ↓
+Returns: job_id, status: "queued"
+        ↓
+Step 4: Poll Video Status
+(GET /api/videos/{id})
+        ↓
+Returns: status (processing → completed)
+        ↓
+Step 5: Download Generated Video
+(GET /api/videos/download/{id})
+```
+
+**Data Mapping:**
+
+| Source Endpoint | Data Used | Target Endpoint |
+|-----------------|-----------|-----------------|
+| POST /api/projects/initialize | Returns `project_id` | Used in storyboard endpoints |
+| POST /api/storyboard/templates/generate | Returns 4 templates with `sections[]` content | User reviews and creates custom storyboard or uses as template |
+| POST /api/storyboard/create | Returns `storyboard_id` and `sections[].id` | Used in POST /api/videos/generate |
+| POST /api/videos/generate | Returns `job_id` | Used in GET /api/videos/{id} for polling |
+
+**Critical Fields for Workflow:**
+
+1. **From Project Initialization:**
+   - `project_id` - Required for all subsequent endpoints
+
+2. **From Template Generation (if using Option A):**
+   - `sections[].content` - AI-suggested content for each section
+   - `sections[].suggested_duration` - Recommended timing
+   - `style` - Selected template style
+
+3. **From Manual Storyboard (Option B):**
+   - `id` - Storyboard ID for video generation
+   - `sections[].id` - Individual section IDs
+   - `sections[].content` - Your custom content
+   - `total_duration` - Total video length
+
+4. **For Video Generation:**
+   - `project_id` + `storyboard_id` - The essential pair for creating videos
+
+**Complete Request-Response Chain:**
+
+```json
+Request 1: POST /api/projects/initialize
+Response 1 → project_id: "abc-123"
+
+Request 2: POST /api/storyboard/create
+Body: { project_id: "abc-123", ... }
+Response 2 → storyboard_id: "xyz-789"
+
+Request 3: POST /api/videos/generate
+Body: { project_id: "abc-123", storyboard_id: "xyz-789" }
+Response 3 → job_id: "job-456", status: "queued"
+
+Request 4: GET /api/videos/{job_id}
+Response 4 → status: "completed", video_url: "..."
+```
+
+---
 
 #### Get Credit Balance
 

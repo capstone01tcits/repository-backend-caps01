@@ -10,9 +10,11 @@ import (
 type ProjectRepository interface {
 	Create(project *model.Project) error
 	FindByID(id string) (*model.Project, error)
+	UnscopedFindByID(id string) (*model.Project, error)
 	FindByUserID(userID string) ([]model.Project, error)
 	Update(project *model.Project) error
 	Delete(id string) error
+	Restore(id string) error
 }
 
 type projectRepository struct {
@@ -41,6 +43,20 @@ func (r *projectRepository) FindByID(id string) (*model.Project, error) {
 	return &project, nil
 }
 
+func (r *projectRepository) UnscopedFindByID(id string) (*model.Project, error) {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+	
+	var project model.Project
+	err = r.db.Unscoped().Where("id = ?", uid).First(&project).Error
+	if err != nil {
+		return nil, err
+	}
+	return &project, nil
+}
+
 func (r *projectRepository) FindByUserID(userID string) ([]model.Project, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
@@ -62,4 +78,12 @@ func (r *projectRepository) Delete(id string) error {
 		return err
 	}
 	return r.db.Where("id = ?", uid).Delete(&model.Project{}).Error
+}
+
+func (r *projectRepository) Restore(id string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	return r.db.Unscoped().Model(&model.Project{}).Where("id = ?", uid).Update("deleted_at", nil).Error
 }

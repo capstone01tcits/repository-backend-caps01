@@ -1,8 +1,8 @@
-﻿{
+{
   "info": {
     "name": "AI Video Generation Platform - Active Endpoints",
-    "version": "3.0.0",
-    "description": "Updated April 2026 - Post-Audit Cleanup. Only active endpoints that are routed in main.go",
+    "version": "3.1.0",
+    "description": "Updated May 2026 - New Storyboard Template Generator with 4 style variations (Dynamic, Narrative, Energetic, Minimalist). Manual storyboard composition with 3-section structure (Hook/Value/CTA). Flexible video duration handling (15-300 seconds).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -317,6 +317,42 @@
               }
             ]
           }
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Restore Project",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/restore",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "restore"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
         }
       ]
     },
@@ -324,15 +360,15 @@
       "name": "Storyboard",
       "item": [
         {
-          "name": "Generate Storyboard",
+          "name": "Generate Storyboard Templates",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "var jsonData = res.body;",
-                  "if (jsonData.data && jsonData.data.storyboard_id) {",
-                  "  bru.setVar('storyboard_id', jsonData.data.storyboard_id);",
+                  "if (jsonData.data && jsonData.data.templates && jsonData.data.templates.length > 0) {",
+                  "  bru.setVar('storyboard_id', jsonData.data.templates[0].id);",
                   "}"
                 ]
               }
@@ -341,10 +377,10 @@
           "request": {
             "method": "POST",
             "url": {
-              "raw": "{{base_url}}/api/storyboard/generate",
+              "raw": "{{base_url}}/api/storyboard/templates/generate",
               "protocol": "http",
               "host": ["{{base_url}}"],
-              "path": ["api", "storyboard", "generate"]
+              "path": ["api", "storyboard", "templates", "generate"]
             },
             "header": [
               {
@@ -358,8 +394,83 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"project_id\": \"{{project_id}}\"\n}"
+              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"video_duration\": 30\n}"
             }
+          }
+        },
+        {
+          "name": "Create Manual Storyboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = res.body;",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "  bru.setVar('storyboard_id', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/storyboard/create",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "storyboard", "create"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"title\": \"Custom Storyboard\",\n  \"description\": \"Manually created storyboard\",\n  \"total_duration\": 30,\n  \"style\": \"Dynamic\",\n  \"sections\": [\n    {\n      \"section_type\": \"hook\",\n      \"content\": \"Hook content here\",\n      \"duration\": 10\n    },\n    {\n      \"section_type\": \"value\",\n      \"content\": \"Value proposition here\",\n      \"duration\": 10\n    },\n    {\n      \"section_type\": \"cta\",\n      \"content\": \"Call to action here\",\n      \"duration\": 10\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Storyboard",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "storyboard", "{{storyboard_id}}"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Restore Storyboard",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}/restore",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "storyboard", "{{storyboard_id}}", "restore"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
           }
         }
       ]

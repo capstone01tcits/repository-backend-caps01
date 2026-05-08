@@ -1,7 +1,7 @@
 # Complete Workflow - Register to Video Generation
 
-Updated: April 2026 (Post-Audit Cleanup)
-Simplified complete flow from Registration through Video Generation
+Updated: May 2026 (Automated Storyboard Generation)
+Complete flow from Registration through Video Generation
 
 Note: Use Bruno/Postman API Collection (docs/API_COLLECTION.json) for automatic variable population.
 Variables (access_token, project_id, etc.) auto-set after each endpoint.
@@ -157,7 +157,203 @@ Key Info to Save:
 
 ## STEP 4: Generate Storyboard
 
-Generate storyboard scenes from the project that was just created.
+Backend automatically generates storyboard by combining project data with pre-prepared content templates.
+
+Request:
+POST /api/storyboard/templates/generate
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "project_id": "550e8400-e29b-41d4-a716-446655440001",
+  "video_duration": 30
+}
+
+Response (201 Created):
+{
+  "success": true,
+  "message": "Templates generated successfully",
+  "data": {
+    "project_id": "550e8400-e29b-41d4-a716-446655440001",
+    "video_duration": 30,
+    "templates": [
+      {
+        "template_id": "dynamic_template",
+        "style": "Dynamic",
+        "description": "Fast-paced, attention-grabbing with motion and energy. Ideal for attracting Gen Z students.",
+        "duration": 30,
+        "sections": [
+          {
+            "section_type": "hook",
+            "title": "Hook - Grab Attention",
+            "suggested_duration": 10,
+            "content": "START WITH IMPACT: Capture attention in first 10s with striking campus visuals.\n\nOpening ideas:\n- Student quote: \"I came to study, I found my future\"\n- Question: \"What if your college changed everything?\"\n- Statement: \"Universitas Indonesia is reshaping education\"\n\nVisuals: Campus landmarks, students collaborating, quick campus cuts, aerial shots",
+            "tips": "Use fast transitions, trending audio, relatable student voices"
+          },
+          {
+            "section_type": "value",
+            "title": "Value - Highlight Excellence",
+            "suggested_duration": 10,
+            "content": "SHOWCASE INSTITUTIONAL STRENGTHS:\n- Ranked #1 Engineering in Southeast Asia\n- 95% employment rate within 6 months\n- 50+ active student clubs\n- State-of-the-art research labs\n- Industry partnerships: Google, Microsoft, Gojek\n- Alumni: 2000+ at Fortune 500 companies",
+            "tips": "Use concrete data and visual proof"
+          },
+          {
+            "section_type": "cta",
+            "title": "CTA - Drive Enrollment",
+            "suggested_duration": 10,
+            "content": "DRIVE ENROLLMENT:\n- \"Apply now at ui-admissions.ac.id\"\n- \"Application deadline: March 31, 2026\"\n- \"Early bird scholarships available\"\n- \"Join 50,000+ students at Universitas Indonesia\"\n\nDisplay: Website link, QR code, phone number, campus image with logo",
+            "tips": "Make action obvious. Include deadline to create urgency"
+          }
+        ]
+      },
+      {
+        "template_id": "narrative_template",
+        "style": "Narrative",
+        "description": "Story-driven approach following student journey from admission through graduation and career success.",
+        "duration": 30,
+        "sections": [
+          {
+            "section_type": "hook",
+            "title": "Hook - Student Story Begins",
+            "suggested_duration": 10,
+            "content": "ESTABLISH STUDENT JOURNEY:\n- \"Meet Rini - she came with a dream of becoming an engineer\"\n- \"Three years ago, Budi stood where you are now\"\n- \"This is the story of how Universitas Indonesia changed lives\"\n\nShow diverse characters: first-generation student, career-changer, athlete, international student",
+            "tips": "Make it personal and relatable. Show diverse backgrounds"
+          },
+          {
+            "section_type": "value",
+            "title": "Value - The Transformation",
+            "suggested_duration": 10,
+            "content": "SHOW THE TRANSFORMATION:\n- First day in class with inspiring professors\n- Collaborative project building smart systems\n- Research at national conference\n- Campus clubs and lifelong friendships\n- Real internship at tech startup\n- Student gaining confidence and expertise\n\nHighlight: Faculty mentorship, hands-on learning, industry partnerships, campus community",
+            "tips": "Show genuine transformation. Use real testimonials"
+          },
+          {
+            "section_type": "cta",
+            "title": "CTA - Your Turn Starts Now",
+            "suggested_duration": 10,
+            "content": "INSPIRE FUTURE STUDENTS:\n- \"Rini graduated and was hired by Google\"\n- \"95% placement rate within 6 months\"\n- \"Alumni network: 200,000+ professionals globally\"\n- \"Your story at Universitas Indonesia starts here\"\n\nCTA: Apply now at ui-admissions.ac.id | Campus tour: tours.ui.ac.id | Deadline: March 31",
+            "tips": "End on high note showing success and achievement"
+          }
+        ]
+      },
+      {
+        "template_id": "energetic_template",
+        "style": "Energetic",
+        "description": "High-energy, youth-focused showcasing campus culture, student life, and social vibrancy."
+      },
+      {
+        "template_id": "minimalist_template",
+        "style": "Minimalist",
+        "description": "Clean, professional emphasizing institutional prestige and academic excellence."
+      }
+    ],
+    "count": 4
+  }
+}
+
+Key Info to Save:
+- templates: Review 4 style options with AI-suggested content specific to your institution
+- Each template has complete hook/value/cta with realistic examples
+- Choose the template that best matches your vision and target audience
+- Note the template_id to reference if you want to use it for video generation
+
+---
+
+### Option B: Create Manual Storyboard (Full Control)
+
+Compose your own storyboard with complete control over content and messaging.
+
+Request:
+POST /api/storyboard/create
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "project_id": "550e8400-e29b-41d4-a716-446655440001",
+  "title": "Engineering Excellence Campaign - 2026",
+  "description": "Target freshman students interested in engineering programs",
+  "total_duration": 30,
+  "style": "Dynamic",
+  "sections": [
+    {
+      "section_type": "hook",
+      "content": "Open with student testimonial: 'I came to study engineering, I found my future' - cut to 3-second campus skyline with dynamic music, quick cuts of students working on robots in labs and prototyping",
+      "duration": 10
+    },
+    {
+      "section_type": "value",
+      "content": "Showcase: state-of-the-art engineering labs with 3D printers and IoT equipment, student project showcase (smart city project won national award), industry partnerships: Google, Gojek, Traveloka plaques visible. Graphics overlay: '#1 Ranked Engineering Program in SE Asia', '2000+ alumni at Fortune 500 companies', '95% employment rate', 'Full scholarships available for top students', '50+ research clubs'",
+      "duration": 10
+    },
+    {
+      "section_type": "cta",
+      "content": "Text overlay: 'Transform Your Future in Engineering' with bold font. Voice-over: 'Join 5000+ engineering students at Universitas Indonesia. Early application closes March 31, 2026. Full scholarships for top 100 students. Apply now at ui-admissions.ac.id or call +62-21-7886-1234. Open house: Feb 20, 27, Mar 6'",
+      "duration": 10
+    }
+  ]
+}
+
+Response (201 Created):
+{
+  "success": true,
+  "message": "Storyboard created successfully",
+  "data": {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "project_id": "550e8400-e29b-41d4-a716-446655440001",
+    "title": "Engineering Excellence Campaign - 2026",
+    "description": "Target freshman students interested in engineering programs",
+    "total_duration": 30,
+    "style": "Dynamic",
+    "is_selected": false,
+    "created_at": "2026-05-08T10:25:00Z",
+    "sections": [
+      {
+        "id": "section-1",
+        "section_type": "hook",
+        "content": "Open with student testimonial: 'I came to study engineering, I found my future' - cut to 3-second campus skyline with dynamic music, quick cuts of students working on robots in labs",
+        "duration": 10
+      },
+      {
+        "id": "section-2",
+        "section_type": "value",
+        "content": "Showcase: state-of-the-art engineering labs with 3D printers and IoT equipment, student project showcase (smart city project won national award), industry partnerships: Google, Gojek, Traveloka. Graphics: '#1 Ranked Engineering Program in SE Asia', '95% employment rate', 'Full scholarships for top 100 students'",
+        "duration": 10
+      },
+      {
+        "id": "section-3",
+        "section_type": "cta",
+        "content": "Text overlay: 'Transform Your Future in Engineering'. CTA: 'Apply now at ui-admissions.ac.id | Call +62-21-7886-1234 | Deadline: March 31, 2026 | Full scholarships available | Open house: Feb 20, 27, Mar 6'",
+        "duration": 10
+      }
+    ]
+  }
+}
+
+Key Info to Save:
+- storyboard_id: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" (Use this for video generation)
+- All 3 sections ready for AI video generation
+- Your custom messaging and branding will be used in the final video
+
+---
+
+### Which Option Should You Choose?
+
+**Choose Auto-Generate Templates (Option A) if:**
+- You want AI-assisted suggestions based on your project data
+- You need inspiration for structuring your video
+- You want to compare 4 different professional styles
+- You want to save time on content planning
+
+**Choose Manual Storyboard (Option B) if:**
+- You have a specific creative vision already defined
+- You want complete control over every message and detail
+- You have existing scripts or content requirements
+---
+
+## STEP 4: Generate Storyboard
+
+Backend automatically generates storyboard by combining project data with pre-prepared content templates.
+
+The system uses your project information (institution name, tone, key message, etc.) and automatically fills in pre-prepared educational content structures.
 
 Request:
 POST /api/storyboard/generate
@@ -173,46 +369,47 @@ Response (201 Created):
   "success": true,
   "message": "Storyboard generated successfully",
   "data": {
-    "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
     "project_id": "550e8400-e29b-41d4-a716-446655440001",
-    "status": "ready",
-    "scenes": [
+    "institution_name": "Universitas Indonesia",
+    "total_duration": 30,
+    "created_at": "2026-05-08T10:25:00Z",
+    "sections": [
       {
-        "scene_number": 1,
-        "title": "Opening Hook",
-        "description": "Wide shot of campus landmark with dramatic sunset lighting",
-        "narration": "Halo generasi masa depan!",
-        "duration": 5
+        "id": "section-1",
+        "section_type": "hook",
+        "title": "Hook - Grab Attention",
+        "content": "START WITH IMPACT: Capture attention in first 10s with striking campus visuals. Student testimonial: 'I came to study, I found my future'. Question: 'What if your college changed everything?'. Visuals: Campus landmarks, students collaborating, quick cuts, aerial shots.",
+        "duration": 10
       },
       {
-        "scene_number": 2,
-        "title": "Campus Life",
-        "description": "Students engaged in various activities, modern facilities, interactive learning",
-        "narration": "Di sini, kami siap membantu mewujudkan impian Anda",
-        "duration": 7
+        "id": "section-2",
+        "section_type": "value",
+        "title": "Value - Institutional Excellence",
+        "content": "SHOWCASE STRENGTHS: Ranked #1 Engineering in Southeast Asia. 95% employment rate. 50+ student clubs. State-of-the-art research labs. Industry partnerships: Google, Microsoft, Gojek. Alumni: 2000+ at Fortune 500 companies. Scholarship opportunities available.",
+        "duration": 10
       },
       {
-        "scene_number": 3,
-        "title": "Call to Action",
-        "description": "Campus logo with animated graphics and contact information",
-        "narration": "Jangan lewatkan kesempatan ini. Daftar sekarang!",
-        "duration": 3
+        "id": "section-3",
+        "section_type": "cta",
+        "title": "CTA - Call to Action",
+        "content": "DRIVE ENROLLMENT: Apply now at ui-admissions.ac.id. Application deadline: March 31, 2026. Early bird scholarships available. Join 50,000+ students. Contact: +62-21-7886-1234. Open house: Feb 20, 27, Mar 6.",
+        "duration": 10
       }
-    ],
-    "total_duration": 15,
-    "created_at": "2026-03-13T10:20:00Z"
+    ]
   }
 }
 
 Key Info to Save:
-- storyboard_id: Use for video generation
-- scenes: Review scene content and descriptions
+- storyboard_id: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" (Use this for video generation)
+- All 3 sections auto-generated and ready for video creation
+- Content is automatically combined with your project data
 
 ---
 
 ## STEP 5: Generate Video
 
-Initiate video generation from the storyboard. This creates a background job that processes asynchronously.
+Initiate video generation from the auto-generated storyboard.
 
 Request:
 POST /api/videos/generate
