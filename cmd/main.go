@@ -64,7 +64,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authSvc)
 	projectHandler := handler.NewProjectHandler(projectSvc)
 	briefHandler := handler.NewBriefHandler(briefSvc)
-	storyboardHandler := handler.NewStoryboardHandler(storyboardSvc)
+	storyboardHandler := handler.NewStoryboardHandler(storyboardSvc, videoGenSvc)
 	videoHandler := handler.NewVideoHandler(videoGenSvc, storageSvc)
 	creditHandler := handler.NewCreditHandler(creditSvc)
 	aiHandler := handler.NewAIHandler()
@@ -119,6 +119,8 @@ func main() {
 	storyboard.Delete("/:storyboard_id", storyboardHandler.DeleteStoryboard)
 	storyboard.Post("/:storyboard_id/restore", storyboardHandler.RestoreStoryboard)
 	storyboard.Get("/:storyboard_id/sections", storyboardHandler.GetStoryboardSections)
+	storyboard.Get("/:storyboard_id/veo3-test", storyboardHandler.GetVeo3TestPayload)
+	storyboard.Post("/:storyboard_id/veo3-test", storyboardHandler.SendVeo3TestPayload)
 
 	// ==================== Video Routes ====================
 	videos := api.Group("/videos", middleware.Protected())

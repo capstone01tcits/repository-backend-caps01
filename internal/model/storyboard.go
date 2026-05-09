@@ -110,3 +110,9 @@ type UpdateStoryboardSectionInput struct {
 type SelectStoryboardRequest struct {
 	StoryboardID string `json:"storyboard_id" validate:"required"`
 }
+
+type Veo3TestPayload struct {
+	Model           string   `json:"model"`
+	Prompt          string   `json:"prompt"`
+	ReferenceImages []string `json:"reference_images"`
+}

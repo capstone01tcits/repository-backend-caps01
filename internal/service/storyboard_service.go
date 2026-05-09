@@ -19,6 +19,7 @@ type StoryboardService interface {
 	DeleteStoryboard(userID, storyboardID string) error
 	RestoreStoryboard(userID, storyboardID string) error
 	AutoGenerateStoryboard(userID string, projectID uuid.UUID, bb *model.BusinessBrief, cb *model.CreativeBrief) (*model.Storyboard, error)
+	GetVeo3TestPayload(userID, storyboardID string) (*model.Veo3TestPayload, error)
 }
 
 type storyboardService struct {
@@ -258,5 +259,73 @@ func (s *storyboardService) AutoGenerateStoryboard(userID string, projectID uuid
 
 	storyboard.Sections = sections
 	return storyboard, nil
+}
+
+func (s *storyboardService) GetVeo3TestPayload(userID, storyboardID string) (*model.Veo3TestPayload, error) {
+	storyboard, err := s.storyboardRepo.FindByID(storyboardID)
+	if err != nil {
+		return nil, errors.New("storyboard tidak ditemukan")
+	}
+
+	if storyboard.UserID.String() != userID {
+		return nil, errors.New("unauthorized access")
+	}
+
+	// Fetch business brief and creative brief to get meta info
+	bb, err := s.briefRepo.FindBusinessBriefByProjectID(storyboard.ProjectID.String())
+	if err != nil {
+		return nil, errors.New("business brief tidak ditemukan")
+	}
+
+	cb, err := s.briefRepo.FindCreativeBriefByProjectID(storyboard.ProjectID.String())
+	if err != nil {
+		return nil, errors.New("creative brief tidak ditemukan")
+	}
+
+	// Fetch sections
+	sections, err := s.storyboardRepo.FindSectionsByStoryboardID(storyboardID)
+	if err != nil {
+		return nil, errors.New("gagal mengambil sections storyboard")
+	}
+
+	// Construct "Kata-kata Pakem" for Veo3 Prompt
+	var hook, value, cta model.StoryboardSection
+	for _, sec := range sections {
+		switch sec.SectionType {
+		case "hook":
+			hook = sec
+		case "value":
+			value = sec
+		case "cta":
+			cta = sec
+		}
+	}
+
+	// Standard phrasing (kata-kata pakem)
+	prompt := fmt.Sprintf("Create a %s promotional video for %s about %s.\n\n", cb.Style, bb.InstituteName, cb.VideoType)
+	
+	currentTime := 0
+	prompt += fmt.Sprintf("SCENE 1 (%d–%ds): HOOK %s\n", currentTime, currentTime+hook.Duration, hook.Content)
+	currentTime += hook.Duration
+	prompt += fmt.Sprintf("SCENE 2 (%d–%ds): VALUE %s\n", currentTime, currentTime+value.Duration, value.Content)
+	currentTime += value.Duration
+	prompt += fmt.Sprintf("SCENE 3 (%d–%ds): CTA %s\n\n", currentTime, currentTime+cta.Duration, cta.Content)
+	
+	prompt += "Maintain cinematic continuity, same characters, smooth transitions."
+
+	// Reference images from initial input (logo and environment)
+	var refImages []string
+	if bb.LogoPath != "" {
+		refImages = append(refImages, bb.LogoPath)
+	}
+	if bb.EnvironmentPath != "" {
+		refImages = append(refImages, bb.EnvironmentPath)
+	}
+
+	return &model.Veo3TestPayload{
+		Model:           "veo3",
+		Prompt:          prompt,
+		ReferenceImages: refImages,
+	}, nil
 }
 

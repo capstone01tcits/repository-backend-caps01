@@ -587,6 +587,56 @@
               }
             ]
           }
+        },
+        {
+          "name": "Get Veo3 Test Payload",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}/veo3-test",
+              "protocol": "http",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "storyboard",
+                "{{storyboard_id}}",
+                "veo3-test"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Send Veo3 Test Payload",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}/veo3-test",
+              "protocol": "http",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "storyboard",
+                "{{storyboard_id}}",
+                "veo3-test"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
         }
       ]
     },

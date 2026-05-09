@@ -593,6 +593,58 @@ GET /api/storyboard/{storyboard_id}/sections
 Authorization: Bearer {access_token}
 ```
 
+#### Get Veo3 Test Payload
+
+Returns a payload formatted specifically for the Veo3 video generation model using data from the storyboard and briefs.
+
+```http
+GET /api/storyboard/{storyboard_id}/veo3-test
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Veo3 test payload generated successfully",
+  "data": {
+    "model": "veo3",
+    "prompt": "Create a cinematic promotional video for ITS about Promosi Kampus.\n\nSCENE 1 (0–5s): HOOK Visual memukau menampilkan landmark/suasana ITS. Tone: Professional.\nSCENE 2 (5–12s): VALUE Sorot fasilitas laboratorium teknik terbaru dan kolaborasi mahasiswa.\nSCENE 3 (12–15s): CTA Pesan penutup: 'ITS - Advancing Humanity'. Hubungi kami di its.ac.id\n\nMaintain cinematic continuity, same characters, smooth transitions.",
+    "reference_images": [
+      "https://supabase-url.com/storage/v1/object/public/assets/logos/logo_uuid.png",
+      "https://supabase-url.com/storage/v1/object/public/assets/environments/env_uuid.jpg"
+    ]
+  }
+}
+
+#### Send Veo3 Test Payload
+
+Generates the standardized Veo3 payload and immediately triggers the video generation process.
+
+```http
+POST /api/storyboard/{storyboard_id}/veo3-test
+Authorization: Bearer {access_token}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Veo3 test request sent successfully",
+  "data": {
+    "generation_job_id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
+    "status": "queued",
+    "payload_sent": {
+      "model": "veo3",
+      "prompt": "Create a cinematic promotional video for ITS...",
+      "reference_images": [...]
+    }
+  }
+}
+```
+
+---
+
 ---
 
 ### Storyboard Data Flow
