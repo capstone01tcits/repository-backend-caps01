@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 
 	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/repository"
@@ -10,22 +11,20 @@ import (
 )
 
 type StoryboardService interface {
-	GenerateTemplates(userID, projectID string, videoDuration int) ([]model.StoryboardTemplate, error)
 	CreateManualStoryboard(userID string, req *model.CreateManualStoryboardRequest) (*model.Storyboard, error)
-	GetStoryboards(userID, projectID string) ([]model.Storyboard, error)
+	GetStoryboardByProject(userID, projectID string) (*model.Storyboard, error)
 	GetStoryboard(userID, storyboardID string) (*model.Storyboard, error)
-	SelectStoryboard(userID, storyboardID string) (*model.Storyboard, error)
 	UpdateStoryboard(userID, storyboardID string, req *model.UpdateManualStoryboardRequest) (*model.Storyboard, error)
 	GetStoryboardSections(userID, storyboardID string) ([]model.StoryboardSection, error)
 	DeleteStoryboard(userID, storyboardID string) error
 	RestoreStoryboard(userID, storyboardID string) error
+	AutoGenerateStoryboard(userID string, projectID uuid.UUID, bb *model.BusinessBrief, cb *model.CreativeBrief) (*model.Storyboard, error)
 }
 
 type storyboardService struct {
 	storyboardRepo repository.StoryboardRepository
 	projectRepo    repository.ProjectRepository
 	briefRepo      repository.BriefRepository
-	templateGen    *TemplateGenerator
 }
 
 func NewStoryboardService(
@@ -33,35 +32,9 @@ func NewStoryboardService(
 	projectRepo repository.ProjectRepository,
 	briefRepo repository.BriefRepository,
 ) StoryboardService {
-	templateGen := NewTemplateGenerator(projectRepo, briefRepo)
-	return &storyboardService{storyboardRepo, projectRepo, briefRepo, templateGen}
+	return &storyboardService{storyboardRepo, projectRepo, briefRepo}
 }
 
-// GenerateTemplates creates multiple storyboard template options for user selection
-func (s *storyboardService) GenerateTemplates(userID, projectID string, videoDuration int) ([]model.StoryboardTemplate, error) {
-	// Verify project exists and user has access
-	project, err := s.projectRepo.FindByID(projectID)
-	if err != nil {
-		return nil, errors.New("project not found")
-	}
-
-	if project.UserID.String() != userID {
-		return nil, errors.New("unauthorized access to this project")
-	}
-
-	// Validate video duration
-	if videoDuration < 15 || videoDuration > 300 {
-		return nil, errors.New("video duration must be between 15 and 300 seconds")
-	}
-
-	// Generate templates
-	templates, err := s.templateGen.GenerateTemplates(projectID, videoDuration)
-	if err != nil {
-		return nil, errors.New("failed to generate templates")
-	}
-
-	return templates, nil
-}
 
 func (s *storyboardService) CreateManualStoryboard(userID string, req *model.CreateManualStoryboardRequest) (*model.Storyboard, error) {
 	uid, err := uuid.Parse(userID)
@@ -114,7 +87,7 @@ func (s *storyboardService) CreateManualStoryboard(userID string, req *model.Cre
 	return storyboard, nil
 }
 
-func (s *storyboardService) GetStoryboards(userID, projectID string) ([]model.Storyboard, error) {
+func (s *storyboardService) GetStoryboardByProject(userID, projectID string) (*model.Storyboard, error) {
 	project, err := s.projectRepo.FindByID(projectID)
 	if err != nil {
 		return nil, errors.New("project not found")
@@ -140,28 +113,6 @@ func (s *storyboardService) GetStoryboard(userID, storyboardID string) (*model.S
 	return storyboard, nil
 }
 
-func (s *storyboardService) SelectStoryboard(userID, storyboardID string) (*model.Storyboard, error) {
-	storyboard, err := s.storyboardRepo.FindByID(storyboardID)
-	if err != nil {
-		return nil, errors.New("storyboard not found")
-	}
-
-	if storyboard.UserID.String() != userID {
-		return nil, errors.New("unauthorized access")
-	}
-
-	// Deselect all storyboards in this project, then select this one
-	if err := s.storyboardRepo.DeselectAllByProjectID(storyboard.ProjectID.String()); err != nil {
-		return nil, errors.New("failed to update selection")
-	}
-
-	storyboard.IsSelected = true
-	if err := s.storyboardRepo.Update(storyboard); err != nil {
-		return nil, errors.New("failed to select storyboard")
-	}
-
-	return storyboard, nil
-}
 
 // UpdateStoryboard godoc
 // Updates storyboard and its sections (manual storyboard)
@@ -249,5 +200,63 @@ func (s *storyboardService) RestoreStoryboard(userID, storyboardID string) error
 	}
 
 	return s.storyboardRepo.Restore(storyboardID)
+}
+
+func (s *storyboardService) AutoGenerateStoryboard(userID string, projectID uuid.UUID, bb *model.BusinessBrief, cb *model.CreativeBrief) (*model.Storyboard, error) {
+	// 1. Create Storyboard entity
+	storyboard := &model.Storyboard{
+		ProjectID:     projectID,
+		UserID:        uuid.MustParse(userID),
+		Title:         "Promotional Video: " + bb.InstituteName,
+		Description:   "Auto-generated 3-scene storyboard for " + cb.VideoType,
+		Style:         cb.Style,
+		TotalDuration: cb.Duration,
+	}
+
+	if err := s.storyboardRepo.Create(storyboard); err != nil {
+		return nil, fmt.Errorf("gagal membuat storyboard otomatis: %w", err)
+	}
+
+	// 2. Allocate duration for Hook (0-5s), Value (5-12s), CTA (12-15s)
+	hookDur, valueDur, ctaDur := 5, 7, 3
+	if cb.Duration != 15 && cb.Duration > 0 {
+		hookDur = int(float64(cb.Duration) * 0.33)
+		ctaDur = int(float64(cb.Duration) * 0.20)
+		valueDur = cb.Duration - hookDur - ctaDur
+	}
+
+	// 3. Construct 3 mandatory scenes
+	sections := []model.StoryboardSection{
+		{
+			StoryboardID: storyboard.ID,
+			UserID:       uuid.MustParse(userID),
+			SectionType:  "hook",
+			Content:      fmt.Sprintf("Visual memukau menampilkan landmark/suasana %s. Tone: %s.", bb.InstituteName, cb.Tone),
+			Duration:     hookDur,
+		},
+		{
+			StoryboardID: storyboard.ID,
+			UserID:       uuid.MustParse(userID),
+			SectionType:  "value",
+			Content:      fmt.Sprintf("Sorot fasilitas dan keunggulan spesifik. Catatan: %s", cb.AdditionalNotes),
+			Duration:     valueDur,
+		},
+		{
+			StoryboardID: storyboard.ID,
+			UserID:       uuid.MustParse(userID),
+			SectionType:  "cta",
+			Content:      fmt.Sprintf("Pesan penutup: '%s'. %s", cb.CallToAction, cb.Copywriting),
+			Duration:     ctaDur,
+		},
+	}
+
+	for _, sec := range sections {
+		if err := s.storyboardRepo.CreateSection(&sec); err != nil {
+			return nil, fmt.Errorf("gagal menyimpan scene %s: %w", sec.SectionType, err)
+		}
+	}
+
+	storyboard.Sections = sections
+	return storyboard, nil
 }
 

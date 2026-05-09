@@ -54,6 +54,8 @@ type videoGenerationService struct {
 	sceneRepo       repository.SceneGenerationRepository
 	creditService   CreditService
 	storageService  StorageService
+	briefRepo       repository.BriefRepository
+	storyboardRepo  repository.StoryboardRepository
 	providerFactory *ai.ProviderFactory
 }
 
@@ -61,6 +63,8 @@ func NewVideoGenerationService(
 	jobRepo repository.GenerationJobRepository,
 	variantRepo repository.VideoVariantRepository,
 	sceneRepo repository.SceneGenerationRepository,
+	briefRepo repository.BriefRepository,
+	storyboardRepo repository.StoryboardRepository,
 	creditService CreditService,
 	storageService StorageService,
 ) VideoGenerationService {
@@ -68,6 +72,8 @@ func NewVideoGenerationService(
 		jobRepo:         jobRepo,
 		variantRepo:     variantRepo,
 		sceneRepo:       sceneRepo,
+		briefRepo:       briefRepo,
+		storyboardRepo:  storyboardRepo,
 		creditService:   creditService,
 		storageService:  storageService,
 		providerFactory: &ai.ProviderFactory{},
@@ -81,11 +87,9 @@ func (s *videoGenerationService) GenerateVideoVariants(ctx context.Context, user
 		return nil, fmt.Errorf("failed to get user credits: %w", err)
 	}
 
-	// Calculate credits needed for 3 videos: 8-12 sec each, 2-3 scenes
-	sceneDuration := 5  // middle of 4-6 sec
-	videoDuration := 10 // middle of 8-12 sec
-	sceneCount := 2     // middle of 2-3
-	creditsNeeded := s.CalculateCreditsForGeneration(videoDuration, sceneCount, 3)
+	// Calculate credits needed for 1 video (Veo 3 fixed cost)
+	videoDuration := 15 // Standard duration
+	creditsNeeded := 150 // 15s * 10 credits/sec
 
 	if credits < creditsNeeded {
 		return nil, errors.New("insufficient credits for video generation")
@@ -99,10 +103,10 @@ func (s *videoGenerationService) GenerateVideoVariants(ctx context.Context, user
 		JobType:         "generate",
 		Status:          "queued",
 		Priority:        1,
-		SceneCount:      sceneCount,
+		SceneCount:      3,
 		VideoDuration:   videoDuration,
-		Provider:        "ltx",
-		Model:           "ltx-2-fast",
+		Provider:        "wavespeed",
+		Model:           "veo3",
 		Resolution:      "1080p",
 		CreditsRequired: creditsNeeded,
 		MaxRetries:      3,
@@ -122,56 +126,45 @@ func (s *videoGenerationService) GenerateVideoVariants(ctx context.Context, user
 		return nil, fmt.Errorf("failed to create generation job: %w", err)
 	}
 
-	// Create 3 video variants
-	for i := 1; i <= 3; i++ {
-		variant := &model.VideoVariant{
-			UserID:        userID,
-			ProjectID:     projectID,
-			StoryboardID:  storyboardID,
-			VariantNumber: i,
-			Status:        "pending",
-			Duration:      videoDuration,
-			Resolution:    "1080p",
-			Provider:      "ltx",
-			Model:         "ltx-2-fast",
+	// Create 1 video variant (1 Project = 1 Storyboard = 1 Video)
+	variant := &model.VideoVariant{
+		UserID:        userID,
+		ProjectID:     projectID,
+		StoryboardID:  storyboardID,
+		VariantNumber: 1,
+		Status:        "pending",
+		Duration:      videoDuration,
+		Resolution:    "1080p",
+		Provider:      "wavespeed",
+		Model:         "veo3",
+	}
+
+	// Ambil data brief untuk merangkai prompt Veo 3
+	bb, _ := s.briefRepo.FindBusinessBriefByProjectID(projectID.String())
+	cb, _ := s.briefRepo.FindCreativeBriefByProjectID(projectID.String())
+	sections, _ := s.storyboardRepo.FindSectionsByStoryboardID(storyboardID.String())
+
+	// Gunakan helper BuildVeo3Prompt
+	fullPrompt := ai.BuildVeo3Prompt(bb, cb, sections)
+	variant.PromptUsed = fullPrompt
+
+	if err := s.variantRepo.Create(ctx, variant); err != nil {
+		return nil, fmt.Errorf("failed to create video variant: %w", err)
+	}
+
+	// Create 3 scene generation tasks for tracking
+	for i, sec := range sections {
+		sceneGen := &model.SceneGeneration{
+			VariantID:   variant.ID,
+			SceneNumber: i + 1,
+			SceneIndex:  i,
+			Prompt:      sec.Content,
+			Duration:    sec.Duration,
+			Status:      "pending",
 		}
 
-		// Generate prompt based on variant
-		prompt := s.generatePromptForVariant(i, customPrompt)
-		variant.PromptUsed = prompt
-
-		// Create scene plan (2-3 scenes)
-		scenePlan := s.generateScenePlan(sceneDuration, sceneCount)
-		scenePlanJSON, _ := json.Marshal(scenePlan)
-		variant.ScenePlan = scenePlanJSON
-
-		if err := s.variantRepo.Create(ctx, variant); err != nil {
-			return nil, fmt.Errorf("failed to create video variant: %w", err)
-		}
-
-		// Create individual scene generation tasks
-		for j, scene := range scenePlan {
-			// Handle both int and float64 for duration since JSON unmarshaling may change types
-			var duration int
-			switch d := scene["duration"].(type) {
-			case int:
-				duration = d
-			case float64:
-				duration = int(d)
-			}
-
-			sceneGen := &model.SceneGeneration{
-				VariantID:   variant.ID,
-				SceneNumber: j + 1,
-				SceneIndex:  j,
-				Prompt:      scene["prompt"].(string),
-				Duration:    duration,
-				Status:      "pending",
-			}
-
-			if err := s.sceneRepo.Create(ctx, sceneGen); err != nil {
-				return nil, fmt.Errorf("failed to create scene generation task: %w", err)
-			}
+		if err := s.sceneRepo.Create(ctx, sceneGen); err != nil {
+			return nil, fmt.Errorf("failed to create scene generation task: %w", err)
 		}
 	}
 
@@ -355,50 +348,99 @@ func (s *videoGenerationService) ProcessGenerationJob(ctx context.Context, jobID
 		return fmt.Errorf("failed to get job: %w", err)
 	}
 
-	// Update job status to processing
-	if err := s.jobRepo.UpdateStatus(ctx, jobID, "processing", ""); err != nil {
+	// Update job status to generating_assets
+	if err := s.jobRepo.UpdateStatus(ctx, jobID, "generating_assets", "Mengirim prompt ke Veo 3 AI Service"); err != nil {
 		return fmt.Errorf("failed to update job status: %w", err)
 	}
 
-	// Get video variants for this job
+	// 1. Persiapkan data Brief jika menggunakan model veo3
+	var bb *model.BusinessBrief
+	var cb *model.CreativeBrief
+	var refImages []string
+
+	if job.Model == "veo3" {
+		bb, _ = s.briefRepo.FindBusinessBriefByProjectID(job.ProjectID.String())
+		if bb != nil {
+			cbs, _ := s.briefRepo.FindCreativeBriefsByBusinessBriefID(bb.ID.String())
+			if len(cbs) > 0 {
+				cb = &cbs[0]
+			}
+
+			// Kumpulkan gambar referensi
+			if bb.LogoPath != "" {
+				refImages = append(refImages, bb.LogoPath)
+			}
+			if bb.EnvironmentPath != "" {
+				refImages = append(refImages, bb.EnvironmentPath)
+			}
+		}
+	}
+
+	// 2. Get video variants for this job
 	variants, err := s.variantRepo.GetByStoryboardID(ctx, job.StoryboardID)
 	if err != nil {
 		return fmt.Errorf("failed to get variants: %w", err)
 	}
 
-	// Process each variant's scenes
+	// 3. Process each variant
+	provider := s.providerFactory.GetProviderByModel(job.Model)
+
 	for _, variant := range variants {
 		scenes, err := s.sceneRepo.GetByVariantID(ctx, variant.ID)
-		if err != nil {
+		if err != nil || len(scenes) == 0 {
 			continue
 		}
 
-		// Update variant status
 		s.variantRepo.UpdateStatus(ctx, variant.ID, "processing")
 
-		// Generate each scene
-		provider := s.providerFactory.GetProviderByModel(job.Model)
+		if job.Model == "veo3" && bb != nil && cb != nil {
+			// FLOW VEO 3: Kirim satu request gabungan untuk seluruh variant
+			storyboardSections, _ := s.storyboardRepo.FindSectionsByStoryboardID(job.StoryboardID.String())
+			fullPrompt := ai.BuildVeo3Prompt(bb, cb, storyboardSections)
 
-		for _, scene := range scenes {
 			req := ai.VideoGenerationRequest{
-				Prompt:     scene.Prompt,
-				Duration:   scene.Duration,
-				Resolution: job.Resolution,
-				FPS:        30,
-				Model:      job.Model,
+				Prompt:          fullPrompt,
+				Duration:        job.VideoDuration,
+				Resolution:      job.Resolution,
+				FPS:             30,
+				Model:           job.Model,
+				ReferenceImages: refImages,
 			}
 
 			resp, err := provider.GenerateScene(ctx, req)
 			if err != nil {
-				s.sceneRepo.UpdateStatus(ctx, scene.ID, "failed")
-				s.jobRepo.UpdateStatus(ctx, jobID, "failed", fmt.Sprintf("Scene generation failed: %v", err))
+				s.jobRepo.UpdateStatus(ctx, jobID, "failed", fmt.Sprintf("Veo 3 generation failed: %v", err))
 				continue
 			}
 
-			// Store external job ID
-			scene.ExternalJobID = resp.JobID
-			scene.Status = "processing"
-			s.sceneRepo.Update(ctx, &scene)
+			// Tandai semua scene dengan JobID yang sama (karena diproses sekaligus oleh Veo 3)
+			for _, scene := range scenes {
+				scene.ExternalJobID = resp.JobID
+				scene.Status = "processing"
+				s.sceneRepo.Update(ctx, &scene)
+			}
+		} else {
+			// FLOW STANDAR: Generate per scene (Legacy/Non-Veo3)
+			for _, scene := range scenes {
+				req := ai.VideoGenerationRequest{
+					Prompt:          scene.Prompt,
+					Duration:        scene.Duration,
+					Resolution:      job.Resolution,
+					FPS:             30,
+					Model:           job.Model,
+					ReferenceImages: refImages,
+				}
+
+				resp, err := provider.GenerateScene(ctx, req)
+				if err != nil {
+					s.sceneRepo.UpdateStatus(ctx, scene.ID, "failed")
+					continue
+				}
+
+				scene.ExternalJobID = resp.JobID
+				scene.Status = "processing"
+				s.sceneRepo.Update(ctx, &scene)
+			}
 		}
 	}
 
@@ -442,6 +484,10 @@ func (s *videoGenerationService) PollJobStatus(ctx context.Context, jobID uuid.U
 				continue
 			}
 
+			if resp.Status == "stitching_video" {
+				s.jobRepo.UpdateStatus(ctx, jobID, "stitching_video", "Menggabungkan adegan video menggunakan FFmpeg")
+			}
+
 			if resp.Status == "completed" && resp.VideoURL != "" {
 				s.sceneRepo.UpdateWithVideoURL(ctx, scene.ID, resp.VideoURL)
 				s.sceneRepo.UpdateStatus(ctx, scene.ID, "completed")
@@ -454,6 +500,7 @@ func (s *videoGenerationService) PollJobStatus(ctx context.Context, jobID uuid.U
 
 		// Check if all scenes are complete
 		if variantComplete {
+			s.jobRepo.UpdateStatus(ctx, jobID, "stitching_video", "Menggabungkan 3 scene dengan FFmpeg")
 			s.variantRepo.UpdateStatus(ctx, variant.ID, "completed")
 			completedVariants++
 
@@ -495,7 +542,7 @@ func (s *videoGenerationService) PollJobStatus(ctx context.Context, jobID uuid.U
 
 	// If all variants are complete, update job status
 	if completedVariants == len(variants) {
-		s.jobRepo.UpdateStatus(ctx, jobID, "completed", "")
+		s.jobRepo.UpdateStatus(ctx, jobID, "completed", "Video siap diunduh")
 	}
 
 	return nil

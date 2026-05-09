@@ -54,11 +54,11 @@ func main() {
 	// Init services
 	authSvc := service.NewAuthService(userRepo)
 	projectSvc := service.NewProjectService(projectRepo)
-	briefSvc := service.NewBriefService(briefRepo, projectRepo, storyboardRepo)
-	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, briefRepo)
-	creditSvc := service.NewCreditService(userRepo)
 	storageSvc := service.NewStorageService()
-	videoGenSvc := service.NewVideoGenerationService(jobRepo, variantRepo, sceneRepo, creditSvc, storageSvc)
+	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, briefRepo)
+	briefSvc := service.NewBriefService(briefRepo, projectRepo, storyboardSvc, storageSvc)
+	creditSvc := service.NewCreditService(userRepo)
+	videoGenSvc := service.NewVideoGenerationService(jobRepo, variantRepo, sceneRepo, briefRepo, storyboardRepo, creditSvc, storageSvc)
 
 	// Init handlers
 	authHandler := handler.NewAuthHandler(authSvc)
@@ -112,11 +112,9 @@ func main() {
 
 	// ==================== Storyboard Routes ====================
 	storyboard := api.Group("/storyboard", middleware.Protected())
-	storyboard.Post("/templates/generate", storyboardHandler.GenerateStoryboardTemplates)
 	storyboard.Post("/create", storyboardHandler.CreateManualStoryboard)
-	storyboard.Get("/:project_id", storyboardHandler.GetStoryboards)
+	storyboard.Get("/:project_id", storyboardHandler.GetStoryboardByProject)
 	storyboard.Get("/detail/:storyboard_id", storyboardHandler.GetStoryboard)
-	storyboard.Post("/select", storyboardHandler.SelectStoryboard)
 	storyboard.Put("/:storyboard_id", storyboardHandler.UpdateStoryboard)
 	storyboard.Delete("/:storyboard_id", storyboardHandler.DeleteStoryboard)
 	storyboard.Post("/:storyboard_id/restore", storyboardHandler.RestoreStoryboard)

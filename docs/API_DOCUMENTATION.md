@@ -1,39 +1,37 @@
 # API Documentation - AI Video Generation Platform
 
-Version: 3.1.0 (May 2026 - Template Generator & Manual Storyboard)
+Version: 4.1.0 (May 2026 - Veo 3 Integration & Linear Automated Flow)
 Base URL: http://localhost:5000
 AI Service URL: http://localhost:8000
-Collection Format: Bruno/Postman API Collection (docs/API_COLLECTION.json)
+Collection Format: Bruno/Postman API Collection (docs/API_collection.json)
 
 ---
 
 ## Backend Status - Template Generator Ready
 
 LATEST UPDATE: May 2026
-- Added: Storyboard Template Generator with 4 style variations
-- Added: Manual storyboard creation endpoint (3-section structure)
-- Improved: Flexible video duration handling (15-300 seconds)
+- Veo 3 Integration: Real HTTP requests with specialized `Veo3Payload`, automated FFmpeg stitching, or direct aggregator integration via **Wavespeed**.
+- Linear Automated Flow: Auto-generates a 3-scene Storyboard (Hook, Value, CTA) directly during Project Initialization.
+- Soft-delete and restore for projects and storyboards
 - Build Status: Compiles successfully with zero errors
-- Ready for: Frontend template selector UI and manual composition
 
-Core Workflow (5-6 Steps):
+Core Workflow (4 Steps):
 1. User Registration/Login
-2. Project Initialization (with briefs and images)
-3. Storyboard Generation (Choose: Auto-Templates OR Manual Create)
-4. Video Generation (3 variants)
-5. Video Retrieval and Download
+2. Project Initialization (Creates Briefs & Auto-Generates Storyboard)
+3. Video Generation (Sends payload to Veo 3)
+4. Video Retrieval and Download (polling `generating_assets` and `stitching_video` statuses)
 
-Total Active Endpoints: 22
+Total Active Endpoints: 27
 - Authentication: 6 endpoints
-- Projects: 3 endpoints
-- Storyboard: 2 endpoints (Generate Templates + Create Manual)
+- Projects: 5 endpoints
+- Storyboard: 6 endpoints (create, get by project, get detail, update, delete, restore)
 - Videos: 6 endpoints
-- Credits: 2 endpoints
+- Credits: 1 endpoint
+- Admin: 1 endpoint
 - Health/AI Gateway: 2 endpoints
 
-**Database Models Updated:**
-- BusinessBrief: Added `SchoolLevel`, `LogoPath`, `EnvironmentPath`, `DocumentPath`
-- CreativeBrief: Added `Copywriting`, `Hashtags` fields
+**Database Tables (10 via AutoMigrate):**
+users, projects, business_briefs, creative_briefs, storyboards, storyboard_sections, videos, generation_jobs, video_variants, scene_generations
 
 ---
 
@@ -54,9 +52,9 @@ Total Active Endpoints: 22
 The AI Video Generation Platform Backend provides RESTful APIs for:
 
 - **User authentication** with role-based access (user / admin)
-- **Project management** (unified initialization from FE wizard)
-- **AI storyboard generation** with automatic scene generation
-- **AI video generation** with provider routing (LTX, Runway)
+- **Project management** (unified initialization from FE wizard, soft-delete/restore)
+- **Storyboard management** (manual create, CRUD with sections, linked 1:1 to Project)
+- **AI video generation** with Veo 3 / Wavespeed integration
 - **Credit management** (user balance & admin top-up)
 - **AI service gateway** (proxy to Python AI service at port 8000)
 
@@ -97,10 +95,11 @@ Frontend (Next.js)
 │  └────────────────┬─────────────────┘    │
 │                   │                      │
 │  ┌────────────────┴─────────────────┐    │
-│  │  PostgreSQL + 12 Tables          │    │
-│  │  - Original 9 tables             │    │
-│  │  - GenerationJob, VideoVariant   │    │
-│  │  - SceneGeneration               │    │
+│  │  PostgreSQL + 10 Tables          │    │
+│  │  - User, Project, Briefs (2)     │    │
+│  │  - Storyboard, StoryboardSection │    │
+│  │  - Video, GenerationJob          │    │
+│  │  - VideoVariant, SceneGeneration │    │
 │  └────────────────┬─────────────────┘    │
 │                   │                      │
 │  ┌────────────────┴───────────────────┐  │
@@ -111,9 +110,10 @@ Frontend (Next.js)
 │  └────────────────┬───────────────────┘  │
 │                   │                      │
 │  ┌────────────────┴───────────────────┐  │
-│  │  AI Provider Abstraction           │  │
-│  │  - LTX, Runway, Wan2.1             │  │
-│  │  - Mock implementations            │  │
+│  │  AI Provider Implementation        │  │
+│  │  - Veo 3 (Internal / Simulation)   │  │
+│  │  - Wavespeed (External Aggregator) │  │
+│  │  - FFmpeg Video Stitching          │  │
 │  └────────────────┬───────────────────┘  │
 │                   │                      │
 │  ┌────────────────┴───────────────────┐  │
@@ -153,7 +153,7 @@ Content-Type: application/json
 
 | Role | Permissions |
 |------|-------------|
-| `user` | Create/edit own projects, access own briefs and content, generate videos (credit-limited), view own credits |
+| `user` | Create/edit own projects, access own briefs and content, generate videos (10 credits/sec), view own credits |
 | `admin` | All user permissions, add credits to users |
 
 ---
@@ -390,8 +390,9 @@ Authorization: Bearer {access_token}
 
 This endpoint accepts 12 fields from the frontend wizard (9 required + 3 optional) and atomically creates:
 - **Project** with metadata
-- **BusinessBrief** with 10 auto-filled fields
-- **CreativeBrief** with 8 auto-filled fields
+- **BusinessBrief** with auto-filled fields
+- **CreativeBrief** with auto-filled fields
+- **Storyboard** with 3 auto-generated scenes (Hook, Value, CTA) in draft status
 
 ```http
 POST /api/projects/initialize
@@ -455,7 +456,8 @@ Content-Type: application/json
     "event_content": "Penerimaan Mahasiswa Baru",
     "key_message": "Bergabunglah dengan keluarga besar kami",
     "copywriting": "Halo generasi masa depan! Bergabunglah dengan keluarga besar kami.",
-    "hashtags": "#SMANegeri1Jakarta #PenerimaanMahasiswaBaru #Pendidikan"
+    "hashtags": "#SMANegeri1Jakarta #PenerimaanMahasiswaBaru #Pendidikan",
+    "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
   }
 }
 ```
@@ -511,73 +513,83 @@ Authorization: Bearer {access_token}
 
 ### Storyboard API
 
-#### Generate Storyboard Templates
-
-Backend generates storyboard templates by combining project data (including the user's chosen Tone, Copywriting, and Hashtags from Creative Brief) with pre-prepared educational content templates, without using external AI text generation.
+#### Get Storyboard by Project
 
 ```http
-POST /api/storyboard/templates/generate
+GET /api/storyboard/{project_id}
 Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "project_id": "550e8400-e29b-41d4-a716-446655440000",
-  "video_duration": 30
-}
 ```
-
-**Request Parameters:**
-- `project_id` (required): UUID of education project created from `/api/projects/initialize`
-- `video_duration` (required): Total duration in seconds (15-300)
 
 **Response (200 OK):**
 ```json
 {
   "success": true,
-  "message": "Templates generated successfully",
+  "message": "Storyboard retrieved successfully",
   "data": {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
     "project_id": "550e8400-e29b-41d4-a716-446655440000",
-    "video_duration": 30,
-    "count": 4,
-    "templates": [
-      {
-        "template_id": "dynamic_template",
-        "style": "Dynamic",
-        "description": "Fast-paced, attention-grabbing...",
-        "duration": 30,
-        "sections": [
-          {
-            "section_type": "hook",
-            "title": "Hook - Grab Attention",
-            "suggested_duration": 10,
-            "content": "START WITH IMPACT...",
-            "tips": "Tone: Santai & Ramah. Use fast transitions..."
-          },
-          ...
-        ]
-      }
+    "title": "Dynamic Campaign",
+    "total_duration": 30,
+    "style": "Dynamic",
+    "sections": [
+      { "id": "...", "section_type": "hook", "content": "...", "duration": 10 },
+      { "id": "...", "section_type": "value", "content": "...", "duration": 10 },
+      { "id": "...", "section_type": "cta", "content": "...", "duration": 10 }
     ]
   }
 }
 ```
 
-**How It Works:**
-- Backend reads project data and briefs from `/api/projects/initialize`
-- System injects user inputs (Institution Name, Key Message, Tone, Copywriting, Hashtags) into 4 distinct educational templates
-- Content is education-focused and perfectly matches the user's explicit instructions
-- The client app can then display these templates for the user to choose or customize via `/api/storyboard/create`
-
-#### Soft Delete Storyboard
+#### Get Storyboard Detail
 
 ```http
-DELETE /api/storyboard/{storyboard_id}
+GET /api/storyboard/detail/{storyboard_id}
 Authorization: Bearer {access_token}
 ```
 
-#### Restore Storyboard
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Storyboard retrieved successfully",
+  "data": {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "title": "Dynamic Campaign",
+    "total_duration": 30,
+    "style": "Dynamic",
+    "is_selected": true,
+    "sections": [
+      { "id": "...", "section_type": "hook", "content": "...", "duration": 10 },
+      { "id": "...", "section_type": "value", "content": "...", "duration": 10 },
+      { "id": "...", "section_type": "cta", "content": "...", "duration": 10 }
+    ]
+  }
+}
+```
+
+
+#### Update Storyboard
 
 ```http
-POST /api/storyboard/{storyboard_id}/restore
+PUT /api/storyboard/{storyboard_id}
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "title": "Updated Title",
+  "description": "Updated description",
+  "sections": [
+    { "section_type": "hook", "content": "New hook", "duration": 10 },
+    { "section_type": "value", "content": "New value", "duration": 10 },
+    { "section_type": "cta", "content": "New CTA", "duration": 10 }
+  ]
+}
+```
+
+#### Get Storyboard Sections
+
+```http
+GET /api/storyboard/{storyboard_id}/sections
 Authorization: Bearer {access_token}
 ```
 
@@ -590,33 +602,23 @@ Shows how storyboard data flows from project initialization through video genera
 **Flow Diagram:**
 
 ```
-Step 1: Initialize Project
+Step 1: Initialize Project (Auto-Generates Storyboard)
 (POST /api/projects/initialize)
         ↓
-Returns: project_id
+Returns: project_id, storyboard_id
         ↓
-Step 2: Generate Storyboard Templates
-(POST /api/storyboard/templates/generate)
-Input: project_id, video_duration
-Returns: Array of 4 templates with pre-filled content
-
-Step 2b: Create Manual Storyboard
-(POST /api/storyboard/create)
-Input: project_id, selected template sections
-Returns: storyboard_id with 3 custom sections
-        ↓
-Step 3: Generate Video FROM Storyboard
+Step 2: Generate Video FROM Storyboard
 (POST /api/videos/generate)
-Input: project_id + storyboard_id (from Step 2b)
+Input: project_id + storyboard_id (from Step 1)
         ↓
 Returns: job_id, status: "queued"
         ↓
-Step 4: Poll Video Status
+Step 3: Poll Video Status
 (GET /api/videos/{id})
         ↓
-Returns: status (processing → completed)
+Returns: status (generating_assets → stitching_video → completed)
         ↓
-Step 5: Download Generated Video
+Step 4: Download Generated Video
 (GET /api/videos/download/{id})
 ```
 
@@ -652,18 +654,14 @@ Step 5: Download Generated Video
 
 ```json
 Request 1: POST /api/projects/initialize
-Response 1 → project_id: "abc-123"
+Response 1 → project_id: "abc-123", storyboard_id: "xyz-789"
 
-Request 2: POST /api/storyboard/create
-Body: { project_id: "abc-123", ... }
-Response 2 → storyboard_id: "xyz-789"
-
-Request 3: POST /api/videos/generate
+Request 2: POST /api/videos/generate
 Body: { project_id: "abc-123", storyboard_id: "xyz-789" }
-Response 3 → job_id: "job-456", status: "queued"
+Response 2 → job_id: "job-456", status: "queued"
 
-Request 4: GET /api/videos/{job_id}
-Response 4 → status: "completed", video_url: "..."
+Request 3: GET /api/videos/{job_id}
+Response 3 → status: "completed", video_url: "..."
 ```
 
 ---
@@ -747,7 +745,7 @@ Content-Type: application/json
   "success": true,
   "message": "Video generation job created",
   "data": {
-    "job_id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
+    "generation_job_id": "7ca7b810-9dad-11d1-80b4-00c04fd430c8",
     "status": "queued",
     "created_at": "2026-03-13T10:30:00Z"
   }
@@ -828,19 +826,6 @@ Authorization: Bearer {access_token}
     "file_size": 51234567,
     "format": "mp4",
     "resolution": "1920x1080"
-  }
-}
-```
-
-**Regenerate Limit Exceeded (400):**
-```json
-{
-  "success": false,
-  "error": "REGENERATE_LIMIT_EXCEEDED",
-  "message": "Video has reached maximum regenerate attempts (3/3)",
-  "data": {
-    "regenerate_count": 3,
-    "max_regenerate": 3
   }
 }
 ```
@@ -942,31 +927,6 @@ Content-Type: application/json
 
 ---
 
-#### Download Video Variant
-
-```http
-GET /api/videos/{variant_id}/download
-Authorization: Bearer {access_token}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Video download ready",
-  "data": {
-    "variant_id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
-    "download_url": "https://storage.example.com/videos/8da7b810.mp4",
-    "file_size": 52428800,
-    "format": "mp4",
-    "resolution": "1080p"
-  }
-}
-```
-
-**Requirements:**
-- Video status must be "completed"
-
 ---
 
 ## Video Generation System Details
@@ -1057,19 +1017,17 @@ Credit hanya dikenakan pada operasi video generation. Generate content pillar da
 
 ## Database Schema
 
-### Tables (12 total)
+### Tables (10 total via AutoMigrate)
 
 | Table | Purpose | Key Fields |
 |-------|---------|-----------|
 | users | User accounts | id, email, password, role, credits |
 | projects | Video projects | id, user_id, name, status |
-| business_briefs | Business input | id, project_id, company_name, target_audience |
-| creative_briefs | Creative direction | id, business_brief_id, tone, style |
-| content_pillars | AI-generated pillars | id, project_id, title, is_selected |
-| content_themes | Pillar themes | id, content_pillar_id, title, is_selected |
-| storyboards | Storyboard variations | id, project_id, title, is_selected |
-| scenes | Individual scenes | id, storyboard_id, scene_number, duration |
-| videos | Generated videos (legacy) | id, storyboard_id, video_url |
+| business_briefs | Business input | id, project_id, institute_name, school_level, target_audience |
+| creative_briefs | Creative direction | id, business_brief_id, tone, style, copywriting, hashtags |
+| storyboards | Storyboard blueprints | id, project_id, title, style, total_duration, is_selected |
+| storyboard_sections | 3-part sections (hook/value/cta) | id, storyboard_id, section_type, content, duration |
+| videos | Generated videos | id, storyboard_id, video_url |
 | generation_jobs | Video job queue | id, status, provider, credits_required |
 | video_variants | 3 video variations | id, variant_number, video_url, status |
 | scene_generations | Individual scene tracking | id, variant_id, scene_number, video_url |
@@ -1082,7 +1040,7 @@ Credit hanya dikenakan pada operasi video generation. Generate content pillar da
 
 ```bash
 # Server
-APP_PORT=3000
+APP_PORT=5000
 APP_ENV=development
 
 # Database
@@ -1128,20 +1086,20 @@ See [Postman Collection](./postman_collection.json) for all endpoints with pre-c
 Quick test:
 ```bash
 # Health check
-curl http://localhost:3000/health
+curl http://localhost:5000/health
 
 # Register
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"name":"Test","email":"test@example.com","password":"123456"}'
 
 # Login and get token
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"123456"}'
 
 # Generate videos (requires valid token)
-curl -X POST http://localhost:3000/api/videos/generate \
+curl -X POST http://localhost:5000/api/videos/generate \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1154,6 +1112,6 @@ curl -X POST http://localhost:3000/api/videos/generate \
 
 ## Additional Resources
 
-- **Postman Collection**: [postman_collection.json](./postman_collection.json)
+- **API Collection**: [API_collection.json](./API_collection.json)
 - **Main README**: [../README.md](../README.md)
 - **Complete Workflow**: [WORKFLOW_COMPLETE_FLOW.md](./WORKFLOW_COMPLETE_FLOW.md)

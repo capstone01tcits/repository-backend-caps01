@@ -17,14 +17,13 @@ type Storyboard struct {
 	Description   string         `gorm:"type:text" json:"description"`
 	TotalDuration int            `json:"total_duration"` // in seconds (30, 45, 60, etc)
 	Style         string         `json:"style"`          // template style name (e.g., "dynamic", "narrative", "energetic")
-	IsSelected    bool           `gorm:"default:false" json:"is_selected"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
 	User     User                `gorm:"foreignKey:UserID" json:"-"`
-	Project  Project             `gorm:"foreignKey:ProjectID" json:"-"`
+	Project  *Project             `gorm:"foreignKey:ProjectID" json:"-"`
 	Sections []StoryboardSection `gorm:"foreignKey:StoryboardID" json:"sections,omitempty"`
 }
 
@@ -49,7 +48,7 @@ type StoryboardSection struct {
 
 	// Relations
 	User       User       `gorm:"foreignKey:UserID" json:"-"`
-	Storyboard Storyboard `gorm:"foreignKey:StoryboardID" json:"-"`
+	Storyboard *Storyboard `gorm:"foreignKey:StoryboardID" json:"-"`
 }
 
 func (ss *StoryboardSection) BeforeCreate(tx *gorm.DB) error {

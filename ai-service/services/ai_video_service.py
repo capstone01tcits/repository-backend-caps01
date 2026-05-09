@@ -65,6 +65,7 @@ class AIVideoService:
         duration: int = 10,
         ratio: str = "16:9",
         task_type: str = "text_to_video",
+        reference_images: List[str] = None,
     ) -> VideoJob:
         """
         Submit job baru ke AI engine.
@@ -93,7 +94,7 @@ class AIVideoService:
         # Di production: ganti dengan Celery task / message queue
         thread = threading.Thread(
             target=self._run_inference,
-            args=(job_id, prompt, duration, ratio, task_type),
+            args=(job_id, prompt, duration, ratio, task_type, reference_images),
             daemon=True,
         )
         thread.start()
@@ -178,6 +179,7 @@ class AIVideoService:
         duration: int,
         ratio: str,
         task_type: str,
+        reference_images: List[str] = None,
     ) -> None:
         """
         Jalankan AI inference di background.
@@ -194,7 +196,10 @@ class AIVideoService:
             request = VideoRequest(
                 instruction=task_type,
                 input=prompt,
-                context={"job_id": job_id},
+                context={
+                    "job_id": job_id,
+                    "reference_images": reference_images or []
+                },
                 constraints={
                     "duration": duration,
                     "ratio": ratio,

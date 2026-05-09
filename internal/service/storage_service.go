@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -28,6 +29,9 @@ type StorageService interface {
 
 	// UploadAsset uploads asset (logo, environment, document) to assets bucket
 	UploadAsset(ctx context.Context, assetType, filename string, file []byte) (string, error)
+
+	// UploadBase64 parses base64 string and uploads it
+	UploadBase64(ctx context.Context, bucketName, filePath, base64Str string) (string, error)
 
 	// DeleteFile deletes a file from bucket
 	DeleteFile(ctx context.Context, bucketName, filePath string) error
@@ -70,8 +74,18 @@ func (s *storageService) UploadFile(ctx context.Context, bucketName, filePath st
 		return "", errors.New("supabase credentials not configured")
 	}
 
+	// Get directory and filename (ensure forward slashes for URL)
+	filePath = strings.ReplaceAll(filePath, "\\", "/")
+	dir := filepath.Dir(filePath)
+	if dir == "." || dir == "/" {
+		dir = ""
+	} else {
+		dir = strings.ReplaceAll(dir, "\\", "/") + "/"
+	}
+
 	// Generate unique filename to prevent conflicts
-	uniqueFilename := fmt.Sprintf("%s_%d_%s%s",
+	uniqueFilename := fmt.Sprintf("%s%s_%d_%s%s",
+		dir,
 		strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath)),
 		time.Now().UnixNano(),
 		uuid.New().String()[:8],
@@ -101,7 +115,9 @@ func (s *storageService) UploadFile(ctx context.Context, bucketName, filePath st
 
 	if resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("upload failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+		errStr := fmt.Sprintf("upload failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+		fmt.Printf("Storage Error: %s\n", errStr)
+		return "", errors.New(errStr)
 	}
 
 	return uniqueFilename, nil
@@ -124,6 +140,30 @@ func (s *storageService) UploadAsset(ctx context.Context, assetType, filename st
 	// assetType: "logo", "environment", "document"
 	path := fmt.Sprintf("%s/%s", assetType, filename)
 	return s.UploadFile(ctx, s.bucketAssets, path, file)
+}
+
+// UploadBase64 parses base64 string and uploads it
+func (s *storageService) UploadBase64(ctx context.Context, bucketName, filePath, base64Str string) (string, error) {
+	if base64Str == "" {
+		return "", nil
+	}
+
+	// Handle data:image/png;base64,... format
+	b64data := base64Str
+	if strings.Contains(base64Str, ",") {
+		parts := strings.Split(base64Str, ",")
+		if len(parts) > 1 {
+			b64data = parts[1]
+		}
+	}
+
+	// Decode base64
+	data, err := base64.StdEncoding.DecodeString(b64data)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode base64: %w", err)
+	}
+
+	return s.UploadFile(ctx, bucketName, filePath, data)
 }
 
 // DeleteFile deletes a file from bucket

@@ -21,6 +21,7 @@ type BriefRepository interface {
 	FindCreativeBriefByID(id string) (*model.CreativeBrief, error)
 	FindCreativeBriefsByUserID(userID string) ([]model.CreativeBrief, error)
 	FindCreativeBriefsByBusinessBriefID(businessBriefID string) ([]model.CreativeBrief, error)
+	FindCreativeBriefByProjectID(projectID string) (*model.CreativeBrief, error)
 	UpdateCreativeBrief(brief *model.CreativeBrief) error
 	DeleteCreativeBrief(id string) error
 }
@@ -124,6 +125,20 @@ func (r *briefRepository) FindCreativeBriefsByBusinessBriefID(businessBriefID st
 	}
 	err = r.db.Where("business_brief_id = ?", bid).Order("created_at DESC").Find(&briefs).Error
 	return briefs, err
+}
+
+func (r *briefRepository) FindCreativeBriefByProjectID(projectID string) (*model.CreativeBrief, error) {
+	var brief model.CreativeBrief
+	pid, err := uuid.Parse(projectID)
+	if err != nil {
+		return nil, err
+	}
+	err = r.db.Joins("JOIN business_briefs on business_briefs.id = creative_briefs.business_brief_id").
+		Where("business_briefs.project_id = ?", pid).First(&brief).Error
+	if err != nil {
+		return nil, err
+	}
+	return &brief, nil
 }
 
 func (r *briefRepository) UpdateCreativeBrief(brief *model.CreativeBrief) error {

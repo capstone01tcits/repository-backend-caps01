@@ -12,11 +12,10 @@ type StoryboardRepository interface {
 	Create(storyboard *model.Storyboard) error
 	FindByID(id string) (*model.Storyboard, error)
 	UnscopedFindByID(id string) (*model.Storyboard, error)
-	FindByProjectID(projectID string) ([]model.Storyboard, error)
+	FindByProjectID(projectID string) (*model.Storyboard, error)
 	Update(storyboard *model.Storyboard) error
 	Delete(id string) error
 	Restore(id string) error
-	DeselectAllByProjectID(projectID string) error
 
 	// StoryboardSection
 	CreateSection(section *model.StoryboardSection) error
@@ -65,16 +64,19 @@ func (r *storyboardRepository) UnscopedFindByID(id string) (*model.Storyboard, e
 }
 
 
-func (r *storyboardRepository) FindByProjectID(projectID string) ([]model.Storyboard, error) {
-	var storyboards []model.Storyboard
+func (r *storyboardRepository) FindByProjectID(projectID string) (*model.Storyboard, error) {
+	var storyboard model.Storyboard
 	pid, err := uuid.Parse(projectID)
 	if err != nil {
-		return storyboards, err
+		return nil, err
 	}
 	err = r.db.Where("project_id = ?", pid).Preload("Sections", func(db *gorm.DB) *gorm.DB {
 		return db.Order("created_at ASC")
-	}).Order("created_at ASC").Find(&storyboards).Error
-	return storyboards, err
+	}).First(&storyboard).Error
+	if err != nil {
+		return nil, err
+	}
+	return &storyboard, nil
 }
 
 func (r *storyboardRepository) Update(storyboard *model.Storyboard) error {
@@ -98,13 +100,6 @@ func (r *storyboardRepository) Restore(id string) error {
 }
 
 
-func (r *storyboardRepository) DeselectAllByProjectID(projectID string) error {
-	pid, err := uuid.Parse(projectID)
-	if err != nil {
-		return err
-	}
-	return r.db.Model(&model.Storyboard{}).Where("project_id = ?", pid).Update("is_selected", false).Error
-}
 
 func (r *storyboardRepository) CreateSection(section *model.StoryboardSection) error {
 	return r.db.Create(section).Error

@@ -19,6 +19,8 @@ from typing import Dict, Optional
 from .base import VideoProvider, VideoRequest
 from .ltx_provider import LTXProvider
 from .runway_provider import RunwayProvider
+from .veo3_provider import Veo3Provider
+from .wavespeed_provider import WavespeedProvider
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,10 @@ ROUTING_TABLE: Dict[str, Dict[str, str]] = {
     "image_to_video": {
         "provider": "runway",
         "model": "gen4.5",
+    },
+    "veo3": {
+        "provider": "wavespeed",
+        "model": "veo3",
     },
 }
 
@@ -122,6 +128,12 @@ def build_provider(
             model=_model or "gen4.5",
         )
 
+    if _provider == "veo3":
+        return Veo3Provider(model=_model or "veo3")
+
+    if _provider == "wavespeed":
+        return WavespeedProvider(model=_model or "veo3")
+
     raise ValueError(
-        f"Provider '{_provider}' tidak dikenali. Pilihan valid: ltx, runway"
+        f"Provider '{_provider}' tidak dikenali. Pilihan valid: ltx, runway, veo3, wavespeed"
     )

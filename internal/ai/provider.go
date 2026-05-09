@@ -10,7 +10,8 @@ type VideoGenerationRequest struct {
 	Duration    int    // Duration in seconds (4-6 for scenes)
 	Resolution  string // 1080p, 720p, etc
 	FPS         int    // Frames per second
-	Model       string // Model name/version
+	Model           string   // Model name/version
+	ReferenceImages []string // Base64 images or URLs for reference
 }
 
 // VideoGenerationResponse represents the response from video generation
@@ -54,40 +55,18 @@ type ProviderFactory struct {
 
 // GetProvider returns the appropriate provider based on tier
 func (pf *ProviderFactory) GetProvider(tier string, model string) VideoProvider {
-	switch tier {
-	case "standard":
-		return NewLTXStandardProvider()
-	case "premium":
-		if model == "gen4.5" {
-			return NewRunwayProvider()
-		}
-		return NewLTXPremiumProvider()
-	case "research":
-		if model == "wan2.1" {
-			return NewWan2Provider()
-		}
-		return NewLTXOpenSourceProvider()
-	default:
-		return NewLTXStandardProvider()
-	}
+	// Default to Veo3 since other providers are mocks and being removed
+	return NewVeo3Provider()
 }
 
 // GetProviderByModel returns provider based on specific model name
 func (pf *ProviderFactory) GetProviderByModel(model string) VideoProvider {
 	switch model {
-	case "ltx-2-fast":
-		return NewLTXStandardProvider()
-	case "ltx-2-pro":
-		return NewLTXPremiumProvider()
-	case "gen4.5":
-		return NewRunwayProvider()
-	case "gen4_turbo":
-		return NewRunwayTurboProvider()
-	case "wan2.1":
-		return NewWan2Provider()
-	case "ltx-video-open":
-		return NewLTXOpenSourceProvider()
+	case "veo3":
+		return NewVeo3Provider()
 	default:
-		return NewLTXStandardProvider()
+		// Fallback to Veo3 or return nil/error if preferred. 
+		// For now keeping it simple as per request to remove mocks.
+		return NewVeo3Provider()
 	}
 }

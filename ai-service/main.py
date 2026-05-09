@@ -15,6 +15,7 @@ Tidak perlu tahu apapun tentang LTX, Runway, atau routing.
 import sys
 import os
 import logging
+from typing import List
 
 # Add current directory to Python path for imports
 sys.path.insert(0, os.path.dirname(__file__))
@@ -103,16 +104,17 @@ def health_check():
     return {"status": "ok", "service": "ai-video-generator"}
 
 
+class Veo3Payload(BaseModel):
+    """Request body untuk POST /api/veo3/generate."""
+    model: str = Field(default="veo3")
+    prompt: str = Field(..., description="Prompt lengkap dengan format SCENE")
+    reference_images: List[str] = Field(default_factory=list)
+
 @app.post("/generate", response_model=GenerateResponse, status_code=202)
 def generate_video(body: GenerateRequest):
     """
-    Submit job generate video.
-
-    - Return langsung dengan job_id (async, tidak menunggu video selesai)
-    - Status awal: pending → processing → done / failed
-    - Gunakan GET /status/{job_id} untuk polling status
+    Submit job generate video (LTX/Runway).
     """
-    # FIX 3: Ganti f-string logger dengan lazy % formatting
     logger.info("[API] POST /generate prompt_preview=%.60s", body.prompt)
     try:
         job = service.submit(
@@ -128,6 +130,31 @@ def generate_video(body: GenerateRequest):
         job_id=job.job_id,
         status=job.status.value,
         message="Job diterima. Gunakan GET /status/{job_id} untuk cek progress.",
+    )
+
+
+@app.post("/api/veo3/generate", response_model=GenerateResponse, status_code=202)
+def generate_veo3(body: Veo3Payload):
+    """
+    Endpoint khusus Veo 3 untuk pemrosesan prompt otomatis dan stitching.
+    """
+    logger.info("[API] POST /api/veo3/generate model=%s", body.model)
+    try:
+        # Kita gunakan task_type 'veo3' agar router memilih Veo3Provider
+        job = service.submit(
+            prompt=body.prompt,
+            duration=15, # Default duration total untuk 3 scene
+            ratio="16:9",
+            task_type="veo3",
+            reference_images=body.reference_images
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return GenerateResponse(
+        job_id=job.job_id,
+        status=job.status.value,
+        message="Veo 3 job diterima. Video akan digenerate dan digabung secara otomatis.",
     )
 
 

@@ -16,40 +16,6 @@ func NewStoryboardHandler(storyboardService service.StoryboardService) *Storyboa
 	return &StoryboardHandler{storyboardService}
 }
 
-// GenerateStoryboardTemplates godoc
-// POST /api/storyboard/templates/generate
-// Generate multiple storyboard template options based on project data and desired duration
-func (h *StoryboardHandler) GenerateStoryboardTemplates(c *fiber.Ctx) error {
-	userID, ok := c.Locals("userID").(string)
-	if !ok || userID == "" {
-		return utils.Unauthorized(c, "Unauthorized")
-	}
-
-	var req model.GenerateStoryboardTemplatesRequest
-	if err := c.BodyParser(&req); err != nil {
-		return utils.BadRequest(c, "Invalid request body")
-	}
-
-	if req.ProjectID == "" {
-		return utils.BadRequest(c, "project_id is required")
-	}
-
-	if req.VideoDuration < 15 || req.VideoDuration > 300 {
-		return utils.BadRequest(c, "video_duration must be between 15 and 300 seconds")
-	}
-
-	templates, err := h.storyboardService.GenerateTemplates(userID, req.ProjectID, req.VideoDuration)
-	if err != nil {
-		return utils.BadRequest(c, err.Error())
-	}
-
-	return utils.OK(c, "Templates generated successfully", map[string]interface{}{
-		"project_id":     req.ProjectID,
-		"video_duration": req.VideoDuration,
-		"templates":      templates,
-		"count":          len(templates),
-	})
-}
 
 // CreateManualStoryboard godoc
 // POST /api/storyboard/create
@@ -101,10 +67,10 @@ func (h *StoryboardHandler) CreateManualStoryboard(c *fiber.Ctx) error {
 	return utils.Created(c, "Manual storyboard created successfully", storyboard)
 }
 
-// GetStoryboards godoc
+// GetStoryboardByProject godoc
 // GET /api/storyboard/:project_id
-// Get all storyboards for a project
-func (h *StoryboardHandler) GetStoryboards(c *fiber.Ctx) error {
+// Get the storyboard for a project
+func (h *StoryboardHandler) GetStoryboardByProject(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(string)
 	if !ok || userID == "" {
 		return utils.Unauthorized(c, "Unauthorized")
@@ -115,12 +81,12 @@ func (h *StoryboardHandler) GetStoryboards(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "project_id is required")
 	}
 
-	storyboards, err := h.storyboardService.GetStoryboards(userID, projectID)
+	storyboard, err := h.storyboardService.GetStoryboardByProject(userID, projectID)
 	if err != nil {
 		return utils.BadRequest(c, err.Error())
 	}
 
-	return utils.OK(c, "Storyboards retrieved successfully", storyboards)
+	return utils.OK(c, "Storyboard retrieved successfully", storyboard)
 }
 
 // GetStoryboard godoc
@@ -145,31 +111,6 @@ func (h *StoryboardHandler) GetStoryboard(c *fiber.Ctx) error {
 	return utils.OK(c, "Storyboard retrieved successfully", storyboard)
 }
 
-// SelectStoryboard godoc
-// POST /api/storyboard/select
-// Select a storyboard for a project
-func (h *StoryboardHandler) SelectStoryboard(c *fiber.Ctx) error {
-	userID, ok := c.Locals("userID").(string)
-	if !ok || userID == "" {
-		return utils.Unauthorized(c, "Unauthorized")
-	}
-
-	var req model.SelectStoryboardRequest
-	if err := c.BodyParser(&req); err != nil {
-		return utils.BadRequest(c, "Invalid request body")
-	}
-
-	if req.StoryboardID == "" {
-		return utils.BadRequest(c, "storyboard_id is required")
-	}
-
-	storyboard, err := h.storyboardService.SelectStoryboard(userID, req.StoryboardID)
-	if err != nil {
-		return utils.BadRequest(c, err.Error())
-	}
-
-	return utils.OK(c, "Storyboard selected successfully", storyboard)
-}
 
 // UpdateStoryboard godoc
 // PUT /api/storyboard/:storyboard_id

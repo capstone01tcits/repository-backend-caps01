@@ -1,9 +1,9 @@
 # Complete Workflow - Register to Video Generation
 
-Updated: May 2026 (Automated Storyboard Generation)
+Updated: May 2026 (Veo 3 Integration: Linear Automated Flow)
 Complete flow from Registration through Video Generation
 
-Note: Use Bruno/Postman API Collection (docs/API_COLLECTION.json) for automatic variable population.
+Note: Use Bruno/Postman API Collection (docs/API_collection.json) for automatic variable population.
 Variables (access_token, project_id, etc.) auto-set after each endpoint.
 
 ---
@@ -12,12 +12,11 @@ Variables (access_token, project_id, etc.) auto-set after each endpoint.
 
 1. [Step 1: Register User](#step-1-register-user)
 2. [Step 2: Login](#step-2-login)
-3. [Step 3: Initialize Project](#step-3-initialize-project)
-4. [Step 4: Generate Storyboard](#step-4-generate-storyboard)
-5. [Step 5: Generate Video](#step-5-generate-video)
-6. [Step 6: Check Video Status](#step-6-check-video-status)
-7. [Step 7: Download Video](#step-7-download-video)
-8. [Complete Timeline](#complete-visual-timeline)
+3. [Step 3: Initialize Project & Auto-Generate Storyboard](#step-3-initialize-project)
+4. [Step 4: Generate Video](#step-4-generate-video)
+5. [Step 5: Check Video Status](#step-5-check-video-status)
+6. [Step 6: Download Video](#step-6-download-video)
+7. [Complete Timeline](#complete-visual-timeline)
 
 ---
 
@@ -99,7 +98,7 @@ Authorization: Bearer {access_token}
 
 ## STEP 3: Initialize Project
 
-Updated in April 2026: Unified atomic endpoint that creates Project, BusinessBrief, and CreativeBrief in one call.
+Updated in May 2026: Unified atomic endpoint that creates Project, BusinessBrief, CreativeBrief, and **auto-generates the Storyboard** in one linear flow.
 
 This endpoint accepts all fields from the frontend wizard form and handles image uploads as base64 strings.
 
@@ -143,271 +142,20 @@ Response (201 Created):
     "key_message": "Bergabunglah dengan komunitas pembelajar yang dinamis",
     "copywriting": "Halo calon siswa baru! SMA Negeri 1 Jakarta menghadirkan pengalaman belajar yang berbeda.",
     "hashtags": "#SMANegeri1Jakarta #PenerimaanSiswaBaru #Sekolah",
+    "storyboard_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
     "created_at": "2026-03-13T10:15:00Z"
   }
 }
 
-Key Info to Save:
 - project_id: Use for next steps
 - business_brief_id: Reference to business context
 - creative_brief_id: Reference to creative direction
-- Project now has all briefs and images automatically created
+- storyboard_id: **THE ONLY** auto-generated storyboard ID for Video Generation
+- Project now has all briefs, images, and exactly ONE 3-scene Storyboard (Hook, Value, CTA) automatically created
 
 ---
 
-## STEP 4: Generate Storyboard
-
-Backend automatically generates storyboard by combining project data with pre-prepared content templates.
-
-Request:
-POST /api/storyboard/templates/generate
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "project_id": "550e8400-e29b-41d4-a716-446655440001",
-  "video_duration": 30
-}
-
-Response (201 Created):
-{
-  "success": true,
-  "message": "Templates generated successfully",
-  "data": {
-    "project_id": "550e8400-e29b-41d4-a716-446655440001",
-    "video_duration": 30,
-    "templates": [
-      {
-        "template_id": "dynamic_template",
-        "style": "Dynamic",
-        "description": "Fast-paced, attention-grabbing with motion and energy. Ideal for attracting Gen Z students.",
-        "duration": 30,
-        "sections": [
-          {
-            "section_type": "hook",
-            "title": "Hook - Grab Attention",
-            "suggested_duration": 10,
-            "content": "START WITH IMPACT: Capture attention in first 10s with striking campus visuals.\n\nOpening ideas:\n- Student quote: \"I came to study, I found my future\"\n- Question: \"What if your college changed everything?\"\n- Statement: \"Universitas Indonesia is reshaping education\"\n\nVisuals: Campus landmarks, students collaborating, quick campus cuts, aerial shots",
-            "tips": "Use fast transitions, trending audio, relatable student voices"
-          },
-          {
-            "section_type": "value",
-            "title": "Value - Highlight Excellence",
-            "suggested_duration": 10,
-            "content": "SHOWCASE INSTITUTIONAL STRENGTHS:\n- Ranked #1 Engineering in Southeast Asia\n- 95% employment rate within 6 months\n- 50+ active student clubs\n- State-of-the-art research labs\n- Industry partnerships: Google, Microsoft, Gojek\n- Alumni: 2000+ at Fortune 500 companies",
-            "tips": "Use concrete data and visual proof"
-          },
-          {
-            "section_type": "cta",
-            "title": "CTA - Drive Enrollment",
-            "suggested_duration": 10,
-            "content": "DRIVE ENROLLMENT:\n- \"Apply now at ui-admissions.ac.id\"\n- \"Application deadline: March 31, 2026\"\n- \"Early bird scholarships available\"\n- \"Join 50,000+ students at Universitas Indonesia\"\n\nDisplay: Website link, QR code, phone number, campus image with logo",
-            "tips": "Make action obvious. Include deadline to create urgency"
-          }
-        ]
-      },
-      {
-        "template_id": "narrative_template",
-        "style": "Narrative",
-        "description": "Story-driven approach following student journey from admission through graduation and career success.",
-        "duration": 30,
-        "sections": [
-          {
-            "section_type": "hook",
-            "title": "Hook - Student Story Begins",
-            "suggested_duration": 10,
-            "content": "ESTABLISH STUDENT JOURNEY:\n- \"Meet Rini - she came with a dream of becoming an engineer\"\n- \"Three years ago, Budi stood where you are now\"\n- \"This is the story of how Universitas Indonesia changed lives\"\n\nShow diverse characters: first-generation student, career-changer, athlete, international student",
-            "tips": "Make it personal and relatable. Show diverse backgrounds"
-          },
-          {
-            "section_type": "value",
-            "title": "Value - The Transformation",
-            "suggested_duration": 10,
-            "content": "SHOW THE TRANSFORMATION:\n- First day in class with inspiring professors\n- Collaborative project building smart systems\n- Research at national conference\n- Campus clubs and lifelong friendships\n- Real internship at tech startup\n- Student gaining confidence and expertise\n\nHighlight: Faculty mentorship, hands-on learning, industry partnerships, campus community",
-            "tips": "Show genuine transformation. Use real testimonials"
-          },
-          {
-            "section_type": "cta",
-            "title": "CTA - Your Turn Starts Now",
-            "suggested_duration": 10,
-            "content": "INSPIRE FUTURE STUDENTS:\n- \"Rini graduated and was hired by Google\"\n- \"95% placement rate within 6 months\"\n- \"Alumni network: 200,000+ professionals globally\"\n- \"Your story at Universitas Indonesia starts here\"\n\nCTA: Apply now at ui-admissions.ac.id | Campus tour: tours.ui.ac.id | Deadline: March 31",
-            "tips": "End on high note showing success and achievement"
-          }
-        ]
-      },
-      {
-        "template_id": "energetic_template",
-        "style": "Energetic",
-        "description": "High-energy, youth-focused showcasing campus culture, student life, and social vibrancy."
-      },
-      {
-        "template_id": "minimalist_template",
-        "style": "Minimalist",
-        "description": "Clean, professional emphasizing institutional prestige and academic excellence."
-      }
-    ],
-    "count": 4
-  }
-}
-
-Key Info to Save:
-- templates: Review 4 style options with AI-suggested content specific to your institution
-- Each template has complete hook/value/cta with realistic examples
-- Choose the template that best matches your vision and target audience
-- Note the template_id to reference if you want to use it for video generation
-
----
-
-### Option B: Create Manual Storyboard (Full Control)
-
-Compose your own storyboard with complete control over content and messaging.
-
-Request:
-POST /api/storyboard/create
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "project_id": "550e8400-e29b-41d4-a716-446655440001",
-  "title": "Engineering Excellence Campaign - 2026",
-  "description": "Target freshman students interested in engineering programs",
-  "total_duration": 30,
-  "style": "Dynamic",
-  "sections": [
-    {
-      "section_type": "hook",
-      "content": "Open with student testimonial: 'I came to study engineering, I found my future' - cut to 3-second campus skyline with dynamic music, quick cuts of students working on robots in labs and prototyping",
-      "duration": 10
-    },
-    {
-      "section_type": "value",
-      "content": "Showcase: state-of-the-art engineering labs with 3D printers and IoT equipment, student project showcase (smart city project won national award), industry partnerships: Google, Gojek, Traveloka plaques visible. Graphics overlay: '#1 Ranked Engineering Program in SE Asia', '2000+ alumni at Fortune 500 companies', '95% employment rate', 'Full scholarships available for top students', '50+ research clubs'",
-      "duration": 10
-    },
-    {
-      "section_type": "cta",
-      "content": "Text overlay: 'Transform Your Future in Engineering' with bold font. Voice-over: 'Join 5000+ engineering students at Universitas Indonesia. Early application closes March 31, 2026. Full scholarships for top 100 students. Apply now at ui-admissions.ac.id or call +62-21-7886-1234. Open house: Feb 20, 27, Mar 6'",
-      "duration": 10
-    }
-  ]
-}
-
-Response (201 Created):
-{
-  "success": true,
-  "message": "Storyboard created successfully",
-  "data": {
-    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "project_id": "550e8400-e29b-41d4-a716-446655440001",
-    "title": "Engineering Excellence Campaign - 2026",
-    "description": "Target freshman students interested in engineering programs",
-    "total_duration": 30,
-    "style": "Dynamic",
-    "is_selected": false,
-    "created_at": "2026-05-08T10:25:00Z",
-    "sections": [
-      {
-        "id": "section-1",
-        "section_type": "hook",
-        "content": "Open with student testimonial: 'I came to study engineering, I found my future' - cut to 3-second campus skyline with dynamic music, quick cuts of students working on robots in labs",
-        "duration": 10
-      },
-      {
-        "id": "section-2",
-        "section_type": "value",
-        "content": "Showcase: state-of-the-art engineering labs with 3D printers and IoT equipment, student project showcase (smart city project won national award), industry partnerships: Google, Gojek, Traveloka. Graphics: '#1 Ranked Engineering Program in SE Asia', '95% employment rate', 'Full scholarships for top 100 students'",
-        "duration": 10
-      },
-      {
-        "id": "section-3",
-        "section_type": "cta",
-        "content": "Text overlay: 'Transform Your Future in Engineering'. CTA: 'Apply now at ui-admissions.ac.id | Call +62-21-7886-1234 | Deadline: March 31, 2026 | Full scholarships available | Open house: Feb 20, 27, Mar 6'",
-        "duration": 10
-      }
-    ]
-  }
-}
-
-Key Info to Save:
-- storyboard_id: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" (Use this for video generation)
-- All 3 sections ready for AI video generation
-- Your custom messaging and branding will be used in the final video
-
----
-
-### Which Option Should You Choose?
-
-**Choose Auto-Generate Templates (Option A) if:**
-- You want AI-assisted suggestions based on your project data
-- You need inspiration for structuring your video
-- You want to compare 4 different professional styles
-- You want to save time on content planning
-
-**Choose Manual Storyboard (Option B) if:**
-- You have a specific creative vision already defined
-- You want complete control over every message and detail
-- You have existing scripts or content requirements
----
-
-## STEP 4: Generate Storyboard
-
-Backend automatically generates storyboard by combining project data with pre-prepared content templates.
-
-The system uses your project information (institution name, tone, key message, etc.) and automatically fills in pre-prepared educational content structures.
-
-Request:
-POST /api/storyboard/generate
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "project_id": "550e8400-e29b-41d4-a716-446655440001"
-}
-
-Response (201 Created):
-{
-  "success": true,
-  "message": "Storyboard generated successfully",
-  "data": {
-    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "project_id": "550e8400-e29b-41d4-a716-446655440001",
-    "institution_name": "Universitas Indonesia",
-    "total_duration": 30,
-    "created_at": "2026-05-08T10:25:00Z",
-    "sections": [
-      {
-        "id": "section-1",
-        "section_type": "hook",
-        "title": "Hook - Grab Attention",
-        "content": "START WITH IMPACT: Capture attention in first 10s with striking campus visuals. Student testimonial: 'I came to study, I found my future'. Question: 'What if your college changed everything?'. Visuals: Campus landmarks, students collaborating, quick cuts, aerial shots.",
-        "duration": 10
-      },
-      {
-        "id": "section-2",
-        "section_type": "value",
-        "title": "Value - Institutional Excellence",
-        "content": "SHOWCASE STRENGTHS: Ranked #1 Engineering in Southeast Asia. 95% employment rate. 50+ student clubs. State-of-the-art research labs. Industry partnerships: Google, Microsoft, Gojek. Alumni: 2000+ at Fortune 500 companies. Scholarship opportunities available.",
-        "duration": 10
-      },
-      {
-        "id": "section-3",
-        "section_type": "cta",
-        "title": "CTA - Call to Action",
-        "content": "DRIVE ENROLLMENT: Apply now at ui-admissions.ac.id. Application deadline: March 31, 2026. Early bird scholarships available. Join 50,000+ students. Contact: +62-21-7886-1234. Open house: Feb 20, 27, Mar 6.",
-        "duration": 10
-      }
-    ]
-  }
-}
-
-Key Info to Save:
-- storyboard_id: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" (Use this for video generation)
-- All 3 sections auto-generated and ready for video creation
-- Content is automatically combined with your project data
-
----
-
-## STEP 5: Generate Video
+## STEP 4: Generate Video
 
 Initiate video generation from the auto-generated storyboard.
 
@@ -443,7 +191,7 @@ Credits Used:
 
 ---
 
-## STEP 6: Check Video Status
+## STEP 5: Check Video Status
 
 Poll the video endpoint to check generation status. Repeat until status is "completed".
 
@@ -456,13 +204,24 @@ Response (200 OK - Processing):
   "success": true,
   "message": "Video retrieved",
   "data": {
-    "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
-    "variant_number": 1,
-    "status": "processing",
-    "video_url": null,
-    "progress": "Generating scene 2 of 3",
+    "progress": "Mengirim prompt ke Veo 3 AI Service",
     "created_at": "2026-03-13T10:25:00Z",
     "updated_at": "2026-03-13T10:27:30Z"
+  }
+}
+
+Response (200 OK - Stitching):
+{
+  "success": true,
+  "message": "Video retrieved",
+  "data": {
+    "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
+    "variant_number": 1,
+    "status": "stitching_video",
+    "video_url": null,
+    "progress": "Menggabungkan adegan video menggunakan FFmpeg",
+    "created_at": "2026-03-13T10:25:00Z",
+    "updated_at": "2026-03-13T10:29:00Z"
   }
 }
 
@@ -477,8 +236,8 @@ Response (200 OK - Completed):
     "video_url": "https://storage.example.com/videos/8da7b810.mp4",
     "thumbnail_url": "https://storage.example.com/thumbnails/8da7b810.jpg",
     "duration": 15,
-    "provider": "ltx",
-    "model": "ltx-2-fast",
+    "provider": "Veo3",
+    "model": "veo3",
     "resolution": "1920x1080",
     "file_size": 51234567,
     "created_at": "2026-03-13T10:25:00Z",
@@ -508,7 +267,7 @@ Response (200 OK - Completed):
 
 ---
 
-## STEP 7: Download Video
+## STEP 6: Download Video
 
 Once video generation is complete, download using the download endpoint.
 
@@ -544,8 +303,8 @@ Time    Action                              Status                  Details
 00:15   Project Initialization              COMPLETE               Project + Briefs created with images
 00:20   Storyboard Generation               COMPLETE               3 scenes generated
 00:25   Video Generation Started            QUEUED                 Job submitted
-01:30   Video Generation                    PROCESSING             Worker started, generating scenes
-02:45   Video Generation                    PROCESSING             Scene 2/3 in progress
+01:30   Video Generation                    GENERATING_ASSETS      Worker started, sending Veo 3 prompt
+02:45   Video Generation                    STITCHING_VIDEO        Merging 3 scenes with FFmpeg
 03:30   Video Generation Completed          COMPLETE               All scenes merged
 03:35   Video Ready for Download            DOWNLOADABLE           Final video available
 03:45   Video Downloaded                    COMPLETE               User has MP4 file (51 MB)
@@ -607,6 +366,19 @@ Initialize Project (FE Wizard)
       ├─ color_palette, music_preference, mood
       ├─ business_brief_id (FK to business_briefs)
       └─ user_id (FK to users)
+
+  └─> INSERT storyboards (Auto-generated in Linear Flow)
+      ├─ title, description
+      ├─ is_selected = true
+      ├─ project_id (FK to projects)
+      └─ user_id (FK to users)
+  
+  └─> INSERT scenes (3 mandatory scenes: Hook, Value, CTA)
+      ├─ section_type ('hook', 'value', 'cta')
+      ├─ content
+      ├─ duration
+      ├─ storyboard_id (FK to storyboards)
+      └─ user_id (FK to users)
 ```
 
 ### Step 4: Generate Storyboard
@@ -646,12 +418,10 @@ Generate Video (Async Job Submission)
       ├─ storyboard_id (FK to storyboards)
       └─ user_id (FK to users)
   
-  └─> INSERT video_variants (3 rows)
-      ├─ Row 1: variant_number = 1, style = 'cinematic'
-      ├─ Row 2: variant_number = 2, style = 'vibrant'
-      ├─ Row 3: variant_number = 3, style = 'professional'
-      ├─ status = 'pending' (for all)
-      ├─ provider = pending (for all)
+  └─> INSERT video_variants (1 row)
+      ├─ Row 1: variant_number = 1, style = 'cinematic' (Veo 3 Standard)
+      ├─ status = 'pending'
+      ├─ provider = 'veo3'
       ├─ project_id (FK to projects)
       ├─ storyboard_id (FK to storyboards)
       └─ user_id (FK to users)
@@ -668,10 +438,11 @@ Generate Video (Async Job Submission)
 Background Worker (3 concurrent goroutines)
   
   └─> UPDATE generation_jobs
-      ├─ status = 'processing'
+      ├─ status = 'generating_assets'
       ├─ started_at = NOW()
       └─ WHERE id = job_id
   
+  ├─> Build Veo 3 JSON Payload (Identity Mapping, Prompting)
   ├─> For each scene (loop):
   │   │
   │   ├─> INSERT scene_generations
@@ -699,6 +470,7 @@ Background Worker (3 concurrent goroutines)
   │       ├─ processing_notes = JSON update with progress
   │       └─ updated_at = NOW()
   │
+  ├─> UPDATE generation_jobs (status = 'stitching_video')
   ├─> Merge all scene videos (FFmpeg concatenation)
   │   └─ Output: /outputs/videos/merged_{variant_style}.mp4
   │

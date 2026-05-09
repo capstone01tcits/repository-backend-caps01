@@ -22,7 +22,7 @@ type Project struct {
 	User            User             `gorm:"foreignKey:UserID" json:"-"`
 	BusinessBriefs  []BusinessBrief  `gorm:"foreignKey:ProjectID" json:"business_briefs,omitempty"`
 	ContentPillars  []ContentPillar  `gorm:"foreignKey:ProjectID" json:"content_pillars,omitempty"`
-	Storyboards     []Storyboard     `gorm:"foreignKey:ProjectID" json:"storyboards,omitempty"`
+	Storyboard      *Storyboard      `gorm:"foreignKey:ProjectID" json:"storyboard,omitempty"`
 	Videos          []Video          `gorm:"foreignKey:ProjectID" json:"videos,omitempty"`
 }
 

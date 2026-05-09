@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -35,11 +37,12 @@ type BriefService interface {
 type briefService struct {
 	briefRepo      repository.BriefRepository
 	projectRepo    repository.ProjectRepository
-	storyboardRepo repository.StoryboardRepository
+	storyboardSvc  StoryboardService
+	storageSvc     StorageService
 }
 
-func NewBriefService(briefRepo repository.BriefRepository, projectRepo repository.ProjectRepository, storyboardRepo repository.StoryboardRepository) BriefService {
-	return &briefService{briefRepo, projectRepo, storyboardRepo}
+func NewBriefService(briefRepo repository.BriefRepository, projectRepo repository.ProjectRepository, storyboardSvc StoryboardService, storageSvc StorageService) BriefService {
+	return &briefService{briefRepo, projectRepo, storyboardSvc, storageSvc}
 }
 
 // ==================== Business Brief ====================
@@ -354,6 +357,43 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		schoolLevel = "Perguruan Tinggi" // default
 	}
 
+	// Handle Image Uploads to Bucket
+	ctx := context.Background()
+	bucketAssets := "assets" // Default bucket name
+
+	logoURL := ""
+	if req.LogoBase64 != "" {
+		filename := fmt.Sprintf("logo_%s.png", project.ID.String())
+		path, err := s.storageSvc.UploadBase64(ctx, bucketAssets, "logos/"+filename, req.LogoBase64)
+		if err == nil {
+			logoURL = s.storageSvc.GetPublicURL(bucketAssets, path)
+		} else {
+			fmt.Printf("Logo Upload Error: %v\n", err)
+		}
+	}
+
+	envURL := ""
+	if req.EnvBase64 != "" {
+		filename := fmt.Sprintf("env_%s.jpg", project.ID.String())
+		path, err := s.storageSvc.UploadBase64(ctx, bucketAssets, "environments/"+filename, req.EnvBase64)
+		if err == nil {
+			envURL = s.storageSvc.GetPublicURL(bucketAssets, path)
+		} else {
+			fmt.Printf("Env Upload Error: %v\n", err)
+		}
+	}
+
+	docURL := ""
+	if req.DocumentBase64 != "" {
+		filename := fmt.Sprintf("doc_%s.pdf", project.ID.String())
+		path, err := s.storageSvc.UploadBase64(ctx, bucketAssets, "documents/"+filename, req.DocumentBase64)
+		if err == nil {
+			docURL = s.storageSvc.GetPublicURL(bucketAssets, path)
+		} else {
+			fmt.Printf("Doc Upload Error: %v\n", err)
+		}
+	}
+
 	businessBrief := &model.BusinessBrief{
 		ID:               uuid.New(),
 		UserID:           uid,
@@ -371,9 +411,9 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		Timeline:         "",                 // optional
 		Competitors:      "",                 // optional
 		AdditionalNotes:  req.OfferedDegrees, // map from offered degrees
-		LogoPath:         req.LogoBase64,     // store base64 directly for now
-		EnvironmentPath:  req.EnvBase64,      // store base64 directly for now
-		DocumentPath:     req.DocumentBase64, // store base64 directly for now
+		LogoPath:         logoURL,            // Store bucket URL instead of base64
+		EnvironmentPath:  envURL,             // Store bucket URL instead of base64
+		DocumentPath:     docURL,             // Store bucket URL instead of base64
 		Status:           "draft",
 	}
 	if err := s.briefRepo.CreateBusinessBrief(businessBrief); err != nil {
@@ -410,11 +450,18 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		return nil, errors.New("failed to create creative brief")
 	}
 
+	// Step 4: Auto-Generate Storyboard
+	storyboard, err := s.storyboardSvc.AutoGenerateStoryboard(userID, project.ID, businessBrief, creativeBrief)
+	if err != nil {
+		return nil, err
+	}
+
 	// Return response with IDs for frontend
 	return map[string]interface{}{
 		"project_id":        project.ID.String(),
 		"business_brief_id": businessBrief.ID.String(),
 		"creative_brief_id": creativeBrief.ID.String(),
+		"storyboard_id":     storyboard.ID.String(),
 		"project_name":      projectName,
 		"theme":             req.SelectedTheme,
 		"tone":              req.ToneOfVoice,

@@ -1,15 +1,15 @@
-﻿# AI Video Gen - Backend Service
+# AI Video Gen - Backend Service
 
 Go REST API backend untuk AI Video Content Creator platform — Capstone project dengan SEVIMA. Meliputi authentication, project management, storyboard generation, video generation, credit system, dan admin management.
 
-Status: Clean & Optimized (April 2026) - Post-audit cleanup dengan removal unused code, endpoints, dan database elements.
+Status: Clean & Optimized (May 2026) - Veo 3 Integration: Linear Automated Flow with Real HTTP requests and FFmpeg Video Stitching.
 
 ## Documentation
 
 **Comprehensive API & Workflow References:**
 
-- **[API Documentation](docs/API_DOCUMENTATION.md)** — Complete API reference dengan 20 active endpoints dan usage examples
-- **[Postman Collection](docs/API_COLLECTION.json)** — Import ke Postman untuk testing dengan pre-configured variables dan workflows
+- **[API Documentation](docs/API_DOCUMENTATION.md)** — Complete API reference dengan 25 active endpoints dan usage examples
+- **[API Collection](docs/API_collection.json)** — Import ke Postman/Bruno untuk testing dengan pre-configured variables dan workflows
 - **[Complete Workflow](docs/WORKFLOW_COMPLETE_FLOW.md)** — End-to-end flow dari register hingga video download dengan HTTP requests dan timeline
 
 **Deployment & Production Setup:**
@@ -44,7 +44,7 @@ Status: Clean & Optimized (April 2026) - Post-audit cleanup dengan removal unuse
 
 **Database**
 - PostgreSQL (auto-created tables via GORM AutoMigrate on startup)
-- 10 tables managed: users, projects, business_briefs, creative_briefs, storyboards, scenes, videos, generation_jobs, video_variants, scene_generations
+- 10 tables managed: users, projects, business_briefs, creative_briefs, storyboards, storyboard_sections, videos, generation_jobs, video_variants, scene_generations
 
 **Testing & Documentation**
 - PowerShell Test Scripts: `/testing/` folder with complete_test.ps1 and add_credits.ps1
@@ -62,7 +62,7 @@ Sevima-BackEnd Ai Video Gen/
 ├── internal/
 │   ├── ai/                                  # AI provider integrations
 │   │   ├── provider.go                      # Provider interface & models
-│   │   └── providers.go                     # Provider implementations (LTX, Runway, etc)
+│   │   └── veo3_provider.go                 # Veo 3 production provider
 │   ├── handler/
 │   │   ├── ai_handler.go                   # AI proxy handler for external service
 │   │   ├── auth_handler.go                 # Auth endpoints (register, login, refresh, delete)
@@ -131,7 +131,7 @@ Sevima-BackEnd Ai Video Gen/
 ├── go.mod                                  # Go module definition (Sevima-AI-Content-Creator)
 ├── go.sum                                  # Go dependencies lock file
 ├── README.md                               # This file
-└── app.exe                                 # Compiled Go executable (Windows)
+└── Dockerfile                              # Docker build configuration
 ```
 
 ## Database Initialization
@@ -141,15 +141,15 @@ Database tables are auto-created on startup via GORM AutoMigrate in `cmd/main.go
 | Table | Purpose | Key Fields |
 |-------|---------|-----------|
 | `users` | User account & credentials | id, email (unique), password (bcrypt), role (user/admin), credits (default 10) |
-| `projects` | Container for one video project/campaign | id, user_id (FK), name, theme, tone, status |
+| `projects` | Container for one video project | id, user_id (FK), name, theme, status |
 | `business_briefs` | Business context from institution | id, project_id (FK), institute_name, school_level, target_audience, key_message, logo_path, environment_path |
 | `creative_briefs` | Creative direction & copywriting | id, business_brief_id (FK), video_type, duration, style, tone, script, copywriting, hashtags |
-| `storyboards` | Blueprint containing 3-5 scenes | id, project_id (FK), title, description, prompt, is_selected |
-| `scenes` | Individual scene in storyboard | id, storyboard_id (FK), scene_number, description, visual_description, duration, caption |
-| `generation_jobs` | Video generation queue task tracking | id, project_id (FK), storyboard_id (FK), user_id (FK), status (queued/processing/completed), retry_count, provider, model |
-| `video_variants` | 3 video variants (cinematic/vibrant/professional) | id, variant_number, status, video_url, thumbnail_url, file_size, credits_used, provider, model |
-| `scene_generations` | Individual scene generation progress | id, variant_id (FK), scene_number, status, video_url, external_job_id |
-| `videos` | Final merged video output | id, project_id (FK), storyboard_id (FK), user_id (FK), video_url, thumbnail_url, file_size, credits_used |
+| `storyboards` | Blueprint containing 3 mandatory scenes | id, project_id (FK), title, description |
+| `storyboard_sections` | Individual section (Hook/Value/CTA) | id, storyboard_id (FK), section_type, content, duration |
+| `generation_jobs` | Video generation queue task tracking | id, project_id (FK), storyboard_id (FK), user_id (FK), status, provider, model |
+| `video_variants` | Single video output variant | id, status, video_url, thumbnail_url, file_size, credits_used, provider, model |
+| `scene_generations` | Progress per scene | id, variant_id (FK), scene_number, status, video_url |
+| `videos` | Final video record | id, project_id (FK), storyboard_id (FK), video_url |
 
 ### Database Workflow Usage
 
@@ -166,10 +166,8 @@ Initialize Project (FE Wizard)
   └─> INSERT projects (container for campaign)
   └─> INSERT business_briefs (institution context)
   └─> INSERT creative_briefs (creative direction)
-
-Generate Storyboard
-  └─> INSERT storyboards (blueprint with scenes)
-  └─> INSERT scenes (3-5 individual scenes)
+  └─> INSERT storyboards (auto-generated blueprint)
+  └─> INSERT scenes (3 mandatory scenes: Hook, Value, CTA)
 
 Generate Video (Async)
   └─> INSERT generation_jobs (status=queued, create job)
@@ -178,12 +176,14 @@ Generate Video (Async)
   └─> Enqueue to background worker channel
 
 Background Worker Processing
-  └─> UPDATE generation_jobs (status=processing)
+  └─> UPDATE generation_jobs (status=generating_assets)
+  ├─> Create Veo 3 JSON Payload
   ├─> For each scene:
   │   ├─> INSERT scene_generations (status=queued)
-  │   ├─> Call AI Service (LTX/Runway API)
+  │   ├─> Call AI Service (Veo 3 integration)
   │   ├─> UPDATE scene_generations (status=completed, video_url)
   │   └─> UPDATE generation_jobs (progress++)
+  ├─> UPDATE generation_jobs (status=stitching_video)
   ├─> Merge all scene videos (FFmpeg)
   ├─> INSERT videos (final MP4)
   ├─> UPDATE video_variants (status=completed, video_url)
@@ -245,7 +245,7 @@ go mod tidy
 go run cmd/main.go
 ```
 
-Server berjalan di `http://localhost:3000`
+Server berjalan di `http://localhost:5000`
 
 **Python AI Service:**
 ```bash
@@ -256,121 +256,71 @@ python main.py
 
 Service berjalan di `http://localhost:8000`
 
-## API Endpoints
+## API Endpoints (27 Active)
 
 ### Health Check (Public)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Check Go backend status |
-| GET | `/api/ai/health` | Check Python AI service connectivity |
 
-### Authentication (Public)
+### Authentication (6 endpoints)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user (default role=user, credits=10) |
-| POST | `/api/auth/login` | Login and get access/refresh tokens |
-| POST | `/api/auth/refresh` | Refresh access token using refresh token |
-| POST | `/api/auth/restore` | Restore deleted account (soft delete recovery) |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | Public | Register new user (default role=user, credits=10) |
+| POST | `/api/auth/login` | Public | Login and get access/refresh tokens |
+| POST | `/api/auth/refresh` | Public | Refresh access token using refresh token |
+| GET | `/api/auth/me` | Protected | Get current user profile (includes role & credits) |
+| POST | `/api/auth/change-password` | Protected | Change user password |
+| DELETE | `/api/auth/account` | Protected | Delete user account (soft delete) |
 
-### Profile (Protected - requires Bearer token)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/auth/me` | Get current user profile (includes role & credits) |
-| GET | `/api/auth/users/:user_id` | Get another user's profile (returns limited info) |
-| POST | `/api/auth/change-password` | Change user password |
-| DELETE | `/api/auth/account` | Delete user account (soft delete) |
-
-### Projects / Dashboard (Protected)
+### Projects (5 endpoints - Protected)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/projects` | Create new project |
+| POST | `/api/projects/initialize` | Initialize project, briefs, and auto-generate storyboard (Linear Flow) |
 | GET | `/api/projects` | List current user's projects |
-| GET | `/api/projects/:id` | Get project by ID (with details) |
-| PUT | `/api/projects/:id` | Update project (name, description, status) |
-| DELETE | `/api/projects/:id` | Delete project (soft delete) |
+| GET | `/api/projects/:id` | Get project by ID |
+| DELETE | `/api/projects/:id` | Soft delete project |
+| POST | `/api/projects/:id/restore` | Restore soft-deleted project |
 
-### Business Brief (Protected)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/briefs/business` | Create new business brief (with optional project_id) |
-| GET | `/api/briefs/business` | List current user's business briefs |
-| GET | `/api/briefs/business/:id` | Get business brief by ID |
-| PUT | `/api/briefs/business/:id` | Update business brief |
-| DELETE | `/api/briefs/business/:id` | Delete business brief (soft delete) |
-| GET | `/api/briefs/business/:id/creative` | List creative briefs under a business brief |
-
-### Creative Brief (Protected)
+### Storyboard (6 endpoints - Protected)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/briefs/creative` | Create new creative brief (linked to business brief) |
-| GET | `/api/briefs/creative` | List current user's creative briefs |
-| GET | `/api/briefs/creative/:id` | Get creative brief by ID |
-| PUT | `/api/briefs/creative/:id` | Update creative brief |
-| DELETE | `/api/briefs/creative/:id` | Delete creative brief (soft delete) |
+| POST | `/api/storyboard/create` | Create manual storyboard (3 sections: hook/value/cta) |
+| GET | `/api/storyboard/:project_id` | Get the storyboard for a project |
+| GET | `/api/storyboard/detail/:storyboard_id` | Get single storyboard with sections |
+| PUT | `/api/storyboard/:storyboard_id` | Update storyboard and sections |
+| DELETE | `/api/storyboard/:storyboard_id` | Soft delete storyboard |
+| POST | `/api/storyboard/:storyboard_id/restore` | Restore soft-deleted storyboard |
+| GET | `/api/storyboard/:storyboard_id/sections` | Get sections for a storyboard |
 
-### Content Pillars (Protected)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/projects/:id/content-pillars/generate` | AI-generate content pillars (3 variations with themes) for project |
-| GET | `/api/projects/:id/content-pillars` | List all content pillars for a project |
-| GET | `/api/content-pillars/:id` | Get single content pillar by ID |
-| PUT | `/api/content-pillars/:id` | Update content pillar |
-| POST | `/api/content-pillars/:id/select` | Select a content pillar as active |
-| GET | `/api/content-pillars/:id/themes` | List all themes under a content pillar |
-
-### Content Themes (Protected)
+### Videos (6 endpoints - Protected)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/content-themes/:id/select` | Select a content theme as active |
+| POST | `/api/videos/generate` | Generate video from storyboard (creates job) |
+| GET | `/api/videos/:id` | Get video details with scenes |
+| GET | `/api/videos` | List user's videos |
+| GET | `/api/videos/download/:id` | Download generated video |
+| POST | `/api/videos/:variantId/regenerate` | Regenerate video (using new prompt) |
+| POST | `/api/videos/scene/:sceneId/regenerate` | Regenerate individual scene |
 
-### Storyboards (Protected)
+### Credits & Admin (2 endpoints - Protected)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/projects/:id/storyboards/generate` | AI-generate storyboard variations (2-3 variations) for project |
-| GET | `/api/projects/:id/storyboards` | List all storyboards for a project |
-| GET | `/api/storyboards/:id` | Get storyboard by ID (with scenes) |
-| PUT | `/api/storyboards/:id` | Update storyboard |
-| POST | `/api/storyboards/:id/select` | Select a storyboard as active |
-| GET | `/api/storyboards/:id/scenes` | List all scenes in a storyboard |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/credits` | Protected | Get current user's credit balance |
+| POST | `/api/admin/credits` | Admin | Add credits to a user |
 
-### Videos (Protected)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/videos/generate` | Generate 3 video variants (deducts 1 credit) |
-| GET | `/api/videos/generation/:jobId` | Check video generation job status (polling) |
-| GET | `/api/videos/storyboard/:storyboardId` | Get all 3 video variants for a storyboard |
-| GET | `/api/videos/:variantId` | Get single video variant by ID (with all scenes) |
-| GET | `/api/videos/:variantId/download` | Get video download URL/info |
-| POST | `/api/videos/:variantId/regenerate` | Regenerate entire video variant with new prompt |
-| POST | `/api/videos/scene/:sceneId/regenerate` | Regenerate individual scene within a video |
-
-### Credits (Protected)
+### AI Gateway (2 endpoints)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/credits` | Get current user's credit balance |
-
-### Admin (Protected - requires admin role)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/admin/credits` | Add credits to a user (admin only) |
-
-### AI Gateway (Protected - routes to Python AI Service)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| ANY | `/api/ai/*` | Proxy any request to Python AI service with user context headers |
+| GET | `/api/ai/health` | Check Python AI service connectivity |
+| ANY | `/api/ai/*` | Proxy request to Python AI service (Protected) |
 
 All AI gateway endpoints inject user context headers (`X-User-ID`, `X-User-Email`) automatically.
 
@@ -381,18 +331,13 @@ The backend includes a **scene-based video generation system** that creates 3 vi
 ### Video Generation Overview
 
 **Key Features:**
-- **3 Video Variants**: Automatically generates 3 variations per storyboard (e.g., cinematic, vibrant, professional)
-- **Scene-Based Architecture**: Each video composed of individual scenes (4-6 sec each), total 8-12 seconds per video
-- **Multiple Providers**: Pluggable provider architecture supporting:
-  - **LTX-2-Fast** (standard tier) - 2 credits/second
-  - **LTX-2-Pro** (premium tier) - 3 credits/second
-  - **Runway** (gen4.5 model) - Variable credits
-  - **Wan 2.1** (research tier) - Variable credits
-  - **Open-source models** - 1 credit/second
-- **Queue System**: Background workers process videos asynchronously via `GenerationJob`
-- **Job Tracking**: Full job lifecycle: queued → processing → completed/failed
-- **Regeneration**: Regenerate full videos or individual scenes with new prompts
-- **Retry Logic**: Automatic retry mechanism with configurable max retries per job
+- **Single High-Quality Video**: Automatically generates one high-quality video per storyboard using the Veo 3 model.
+- **Scene-Based Architecture**: Video composed of 3 mandatory scenes (Hook, Value, CTA).
+- **Veo 3 & Wavespeed**: Integration with specialized `Veo3Payload` for cinematic continuity and automated FFmpeg stitching.
+- **Queue System**: Background workers process videos asynchronously via `GenerationJob`.
+- **Job Tracking**: Full job lifecycle: queued → generating_assets → stitching_video → completed/failed.
+- **Regeneration**: Regenerate the full video or individual scenes with new prompts.
+- **Retry Logic**: Automatic retry mechanism with configurable max retries per job.
 
 ### Models & Components
 
@@ -415,10 +360,7 @@ The backend includes a **scene-based video generation system** that creates 3 vi
 
 **Providers** (in `internal/ai/`):
 - `VideoProvider` interface - Defines provider contract
-- `LTXStandardProvider` - LTX-2-Fast implementation
-- `LTXPremiumProvider` - LTX-2-Pro implementation
-- `RunwayProvider` - Runway gen4.5 implementation
-- `Wan2Provider` - Wan 2.1 implementation
+- `Veo3Provider` - Production implementation hitting Python AI Service
 - `ProviderFactory` - Factory for creating appropriate provider instances
 
 ### Video Generation Endpoints & Flow
@@ -427,32 +369,31 @@ Complete endpoints for video generation:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/videos/generate` | Generate 3 video variants from storyboard (deducts 1 credit) |
-| GET | `/api/videos/generation/:jobId` | Check generation job status (polling) |
-| GET | `/api/videos/storyboard/:storyboardId` | Get all 3 video variants for a storyboard |
-| GET | `/api/videos/:variantId` | Get single video variant details (with all scenes) |
-| GET | `/api/videos/:variantId/download` | Download video file |
-| POST | `/api/videos/:variantId/regenerate` | Regenerate entire video variant |
+| POST | `/api/videos/generate` | Generate video from storyboard (deducts 1 credit) |
+| GET | `/api/videos/:id` | Check generation status and get video details |
+| GET | `/api/videos` | List all user videos |
+| GET | `/api/videos/download/:id` | Download video file |
+| POST | `/api/videos/:id/regenerate` | Regenerate entire video |
 | POST | `/api/videos/scene/:sceneId/regenerate` | Regenerate individual scene |
 
 ### Quick Video Generation CLI Example
 
 ```bash
 # 1. Register & Login
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"name":"John","email":"john@example.com","password":"pass123"}'
 
 # Save token from response: export TOKEN="eyJ..."
 
 # 2. Create Project
-curl -X POST http://localhost:3000/api/projects \
+curl -X POST http://localhost:5000/api/projects \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"My Video Project"}' # Save project_id
 
 # 3. Create Business Brief
-curl -X POST http://localhost:3000/api/briefs/business \
+curl -X POST http://localhost:5000/api/briefs/business \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -463,49 +404,22 @@ curl -X POST http://localhost:3000/api/briefs/business \
     "target_audience": "Developers"
   }' # Save business_brief_id
 
-# 4. Generate Content Pillars
-curl -X POST http://localhost:3000/api/projects/{project_id}/content-pillars/generate \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"project_id": "{project_id}"}' # Get pillar & theme IDs
-
-# 5. Select Content Pillar & Theme
-curl -X POST http://localhost:3000/api/content-pillars/{pillar_id}/select \
-  -H "Authorization: Bearer $TOKEN"
-
-curl -X POST http://localhost:3000/api/content-themes/{theme_id}/select \
-  -H "Authorization: Bearer $TOKEN"
-
-# 6. Generate Storyboards
-curl -X POST http://localhost:3000/api/projects/{project_id}/storyboards/generate \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"project_id": "{project_id}","content_theme_id": "{theme_id}"}' # Get storyboard_id
-
-# 7. Select Storyboard
-curl -X POST http://localhost:3000/api/storyboards/{storyboard_id}/select \
-  -H "Authorization: Bearer $TOKEN"
-
-# 8. Generate Video (3 variants)
-curl -X POST http://localhost:3000/api/videos/generate \
+# 6. Generate Video
+# Note: Storyboard ID is now returned directly from Project Initialization
+curl -X POST http://localhost:5000/api/videos/generate \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "project_id": "{project_id}",
-    "storyboard_id": "{storyboard_id}",
-    "title": "My Generated Video"
+    "storyboard_id": "{storyboard_id}"
   }' # Get generation_job_id
 
-# 9. Poll Generation Status
-curl http://localhost:3000/api/videos/generation/{generation_job_id} \
+# 7. Poll Generation Status
+curl http://localhost:5000/api/videos/{generation_job_id} \
   -H "Authorization: Bearer $TOKEN"
 
-# 10. Get Variants When Completed
-curl http://localhost:3000/api/videos/storyboard/{storyboard_id} \
-  -H "Authorization: Bearer $TOKEN"
-
-# 11. Download Video
-curl http://localhost:3000/api/videos/{variant_id}/download \
+# 8. Download Video
+curl http://localhost:5000/api/videos/download/{generation_job_id} \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -518,32 +432,24 @@ POST /api/videos/generate
 1. API validates credits, storyboard, project
 2. VideoGenerationService creates GenerationJob (status: queued)
 3. Video deducts 1 credit from user
-4. Creates 3 VideoVariant records (one per variant type)
-5. Enqueues 3 jobs in JobQueue
+4. Creates 1 VideoVariant record
+5. Enqueues job in JobQueue
 
     |
     v
 Background Workers start processing
     |
-    +-- For each VideoVariant:
-    |   |
-    |   v
-    |   1. Fetch SceneGenerations for variant
-    |   2. For each scene: call VideoProvider.GenerateScene()
-    |   3. Update SceneGeneration status as scenes complete
-    |   4. JobQueue polls provider for scene status (60-sec intervals)
-    |   5. Max polling duration: 2 hours
-    |   |
-    |   v
-    |
-    +-- When all scenes complete:
-        1. VideoVariant marked as completed
-        2. Download/store video file
-        3. GenerationJob marked as completed
+    v
+1. Fetch Storyboard Sections
+2. Build Veo3Payload with all 3 scenes
+3. Call AI Service /api/veo3/generate (Wavespeed/Veo 3)
+4. AI Service processes scenes and joins them with FFmpeg
+5. VideoVariant marked as completed
+6. GenerationJob marked as completed
         
     |
     v
-GET /api/videos/generation/{jobId} returns status: completed
+GET /api/videos/{jobId} returns status: completed
 ```
 
 ### Credit Calculation
@@ -562,12 +468,12 @@ GET /api/videos/generation/{jobId} returns status: completed
 
 ### 1. Health Check (No Auth)
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:5000/health
 ```
 
 ### 2. Register User
 ```bash
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "John Doe",
@@ -578,7 +484,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 
 ### 3. Login (save tokens)
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john@example.com",
@@ -588,13 +494,13 @@ curl -X POST http://localhost:3000/api/auth/login \
 
 ### 4. Get Profile (Protected)
 ```bash
-curl http://localhost:3000/api/auth/me \
+curl http://localhost:5000/api/auth/me \
   -H "Authorization: Bearer {access_token}"
 ```
 
 ### 5. Create Project
 ```bash
-curl -X POST http://localhost:3000/api/projects \
+curl -X POST http://localhost:5000/api/projects \
   -H "Authorization: Bearer {access_token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -605,103 +511,39 @@ curl -X POST http://localhost:3000/api/projects \
 
 ### 6. List Projects
 ```bash
-curl http://localhost:3000/api/projects \
+curl http://localhost:5000/api/projects \
   -H "Authorization: Bearer {access_token}"
 ```
 
-### 7. Create Business Brief
+### 7. Generate Video (costs 1 credit)
 ```bash
-curl -X POST http://localhost:3000/api/briefs/business \
+curl -X POST http://localhost:5000/api/videos/generate \
   -H "Authorization: Bearer {access_token}" \
   -H "Content-Type: application/json" \
   -d '{
     "project_id": "{project_id}",
-    "project_name": "Brand Video Q3",
-    "company_name": "Acme Corp",
-    "industry": "Technology",
-    "target_audience": "Developers aged 25-40",
-    "project_objective": "Increase brand awareness by 30%",
-    "key_message": "Innovation made simple",
-    "budget": "50000000",
-    "timeline": "4 weeks"
+    "storyboard_id": "{storyboard_id}"
   }'
 ```
 
-### 8. Generate Content Pillars
+### 8. View & Download Video
 ```bash
-curl -X POST http://localhost:3000/api/projects/{project_id}/content-pillars/generate \
-  -H "Authorization: Bearer {access_token}" \
-  -H "Content-Type: application/json" \
-  -d '{"project_id": "{project_id}"}'
-```
-
-### 9. List Content Pillars & Select One
-```bash
-curl http://localhost:3000/api/projects/{project_id}/content-pillars \
+curl http://localhost:5000/api/videos/{video_id} \
   -H "Authorization: Bearer {access_token}"
 
-curl -X POST http://localhost:3000/api/content-pillars/{pillar_id}/select \
+curl http://localhost:5000/api/videos/download/{video_id} \
   -H "Authorization: Bearer {access_token}"
 ```
 
-### 10. Select Content Theme
+### 9. Check Credits
 ```bash
-curl http://localhost:3000/api/content-pillars/{pillar_id}/themes \
-  -H "Authorization: Bearer {access_token}"
-
-curl -X POST http://localhost:3000/api/content-themes/{theme_id}/select \
+curl http://localhost:5000/api/credits \
   -H "Authorization: Bearer {access_token}"
 ```
 
-### 11. Generate Storyboards
+### 10. Admin: Add Credits to User
 ```bash
-curl -X POST http://localhost:3000/api/projects/{project_id}/storyboards/generate \
-  -H "Authorization: Bearer {access_token}" \
-  -H "Content-Type: application/json" \
-  -d '{"project_id": "{project_id}", "content_theme_id": "{theme_id}"}'
-```
-
-### 12. Select Storyboard & View Scenes
-```bash
-curl -X POST http://localhost:3000/api/storyboards/{storyboard_id}/select \
-  -H "Authorization: Bearer {access_token}"
-
-curl http://localhost:3000/api/storyboards/{storyboard_id}/scenes \
-  -H "Authorization: Bearer {access_token}"
-```
-
-### 13. Generate Video (costs 1 credit)
-```bash
-curl -X POST http://localhost:3000/api/videos/generate \
-  -H "Authorization: Bearer {access_token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "project_id": "{project_id}",
-    "storyboard_id": "{storyboard_id}",
-    "title": "My Brand Video",
-    "format": "mp4",
-    "resolution": "1080p"
-  }'
-```
-
-### 14. View & Download Video
-```bash
-curl http://localhost:3000/api/videos/{video_id} \
-  -H "Authorization: Bearer {access_token}"
-
-curl http://localhost:3000/api/videos/{video_id}/download \
-  -H "Authorization: Bearer {access_token}"
-```
-
-### 15. Check Credits
-```bash
-curl http://localhost:3000/api/credits \
-  -H "Authorization: Bearer {access_token}"
-```
-
-### 16. Admin: Add Credits to User
-```bash
-curl -X POST http://localhost:3000/api/admin/credits \
+curl -X POST http://localhost:5000/api/admin/credits \
   -H "Authorization: Bearer {access_token}" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "{target_user_id}", "amount": 10}'
@@ -712,7 +554,7 @@ curl -X POST http://localhost:3000/api/admin/credits \
 ### Register User
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "John Doe",
@@ -744,7 +586,7 @@ Response:
 ### Login
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john@example.com",
@@ -775,7 +617,7 @@ Response:
 ### Create Project
 
 ```bash
-curl -X POST http://localhost:3000/api/projects \
+curl -X POST http://localhost:5000/api/projects \
   -H "Authorization: Bearer {access_token}" \
   -H "Content-Type: application/json" \
   -d '{"name": "Brand Video Q3", "description": "Q3 campaign"}'
@@ -800,7 +642,7 @@ Response:
 ### Generate Content Pillars
 
 ```bash
-curl -X POST http://localhost:3000/api/projects/{project_id}/content-pillars/generate \
+curl -X POST http://localhost:5000/api/projects/{project_id}/content-pillars/generate \
   -H "Authorization: Bearer {access_token}" \
   -H "Content-Type: application/json" \
   -d '{"project_id": "{project_id}"}'
@@ -830,7 +672,7 @@ Response:
 ### Generate Video
 
 ```bash
-curl -X POST http://localhost:3000/api/videos/generate \
+curl -X POST http://localhost:5000/api/videos/generate \
   -H "Authorization: Bearer {access_token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -884,168 +726,21 @@ Error Response:
 
 ## Database Schema
 
-### Users Table
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  role VARCHAR(255) DEFAULT 'user',       -- user, admin
-  credits INTEGER DEFAULT 10,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
+All tables are auto-created via GORM AutoMigrate. See `cmd/main.go` for the 10 active models.
+For detailed field definitions, see `internal/model/*.go` source files.
 
-### Projects Table
-```sql
-CREATE TABLE projects (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id),
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  status VARCHAR(255) DEFAULT 'draft',    -- draft, in_progress, completed
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
-
-### Business Briefs Table
-```sql
-CREATE TABLE business_briefs (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id),
-  project_id UUID REFERENCES projects(id),
-  project_name VARCHAR(255) NOT NULL,
-  company_name VARCHAR(255),
-  industry VARCHAR(255),
-  target_audience VARCHAR(255),
-  project_objective TEXT,
-  key_message TEXT,
-  budget VARCHAR(255),
-  timeline VARCHAR(255),
-  competitors TEXT,
-  additional_notes TEXT,
-  status VARCHAR(255) DEFAULT 'draft',
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
-
-### Creative Briefs Table
-```sql
-CREATE TABLE creative_briefs (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id),
-  business_brief_id UUID NOT NULL REFERENCES business_briefs(id),
-  title VARCHAR(255) NOT NULL,
-  video_type VARCHAR(255),
-  duration INTEGER,
-  style VARCHAR(255),
-  tone VARCHAR(255),
-  script TEXT,
-  storyboard TEXT,
-  visual_references TEXT,
-  music_preference VARCHAR(255),
-  call_to_action VARCHAR(255),
-  output_format VARCHAR(255),
-  resolution VARCHAR(255),
-  additional_notes TEXT,
-  status VARCHAR(255) DEFAULT 'draft',
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
-
-### Content Pillars Table
-```sql
-CREATE TABLE content_pillars (
-  id UUID PRIMARY KEY,
-  project_id UUID NOT NULL REFERENCES projects(id),
-  user_id UUID NOT NULL REFERENCES users(id),
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  is_selected BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
-
-### Content Themes Table
-```sql
-CREATE TABLE content_themes (
-  id UUID PRIMARY KEY,
-  content_pillar_id UUID NOT NULL REFERENCES content_pillars(id),
-  user_id UUID NOT NULL REFERENCES users(id),
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  is_selected BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
-
-### Storyboards Table
-```sql
-CREATE TABLE storyboards (
-  id UUID PRIMARY KEY,
-  project_id UUID NOT NULL REFERENCES projects(id),
-  user_id UUID NOT NULL REFERENCES users(id),
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  is_selected BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
-
-### Scenes Table
-```sql
-CREATE TABLE scenes (
-  id UUID PRIMARY KEY,
-  storyboard_id UUID NOT NULL REFERENCES storyboards(id),
-  user_id UUID NOT NULL REFERENCES users(id),
-  scene_number INTEGER NOT NULL,
-  title VARCHAR(255),
-  description TEXT,
-  visual_description TEXT,
-  duration INTEGER,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
-
-### Videos Table
-```sql
-CREATE TABLE videos (
-  id UUID PRIMARY KEY,
-  project_id UUID NOT NULL REFERENCES projects(id),
-  user_id UUID NOT NULL REFERENCES users(id),
-  storyboard_id UUID NOT NULL REFERENCES storyboards(id),
-  title VARCHAR(255) NOT NULL,
-  status VARCHAR(255) DEFAULT 'pending',  -- pending, processing, completed, failed
-  video_url TEXT,
-  thumbnail_url TEXT,
-  duration INTEGER,
-  format VARCHAR(255) DEFAULT 'mp4',
-  resolution VARCHAR(255) DEFAULT '1080p',
-  file_size BIGINT,
-  credits_used INTEGER DEFAULT 1,
-  error_message TEXT,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
-);
-```
+| Table | Source Model | Purpose |
+|-------|--------------|---------|
+| users | `model.User` | Accounts, auth, credits |
+| projects | `model.Project` | Video project containers |
+| business_briefs | `model.BusinessBrief` | Institution & business context |
+| creative_briefs | `model.CreativeBrief` | Creative direction & copywriting |
+| storyboards | `model.Storyboard` | Storyboard blueprints |
+| storyboard_sections | `model.StoryboardSection` | 3-part sections (hook/value/cta) |
+| videos | `model.Video` | Generated video records |
+| generation_jobs | `model.GenerationJob` | Async job queue tracking |
+| video_variants | `model.VideoVariant` | 3 video variations per job |
+| scene_generations | `model.SceneGeneration` | Per-scene generation tracking |
 
 ## Project Architecture
 
@@ -1053,18 +748,17 @@ CREATE TABLE videos (
 Client/Frontend (Web/Mobile)
     |
     v
-Go Backend (Port 3000) - Sevima-AI-Content-Creator
+Go Backend (Port 5000) - Sevima-AI-Content-Creator
     |
     +-- Middleware Layer
     |   ├── JWT Validation (Protected routes)
     |   ├── Role-Based Access Control (user/admin)
     |   ├── CORS, Logger, Panic Recovery
     |
-    +-- Handler Layer (8 handlers)
+    +-- Handler Layer (7 handlers)
     |   ├── Auth Handler        --> Auth Service --> User Repository --> PostgreSQL
     |   ├── Project Handler     --> Project Service --> Project Repository --> PostgreSQL
     |   ├── Brief Handler       --> Brief Service --> Brief Repository --> PostgreSQL
-    |   ├── Content Handler     --> Content Service --> Content Repository --> PostgreSQL
     |   ├── Storyboard Handler  --> Storyboard Service --> Storyboard Repository --> PostgreSQL
     |   ├── Video Handler       --> Video Gen Service --> Job Queue --> Generation Workers
     |   ├── Credit Handler      --> Credit Service --> User Repository --> PostgreSQL
@@ -1074,21 +768,19 @@ Go Backend (Port 3000) - Sevima-AI-Content-Creator
     |   ├── Auth Service
     |   ├── Project Service
     |   ├── Brief Service
-    |   ├── Content Service
     |   ├── Storyboard Service
     |   ├── Video Generation Service
+    |   ├── Storage Service
     |   └── Credit Service
     |
     +-- Repository Layer (Data Access)
     |   ├── User Repository
     |   ├── Project Repository
     |   ├── Brief Repository (Business + Creative)
-    |   ├── Content Repository (Pillars + Themes)
-    |   ├── Storyboard Repository (Storyboards + Scenes)
+    |   ├── Storyboard Repository (Storyboards + Sections)
     |   ├── Generation Job Repository
     |   ├── Video Variant Repository
-    |   ├── Scene Generation Repository
-    |   └── Video Repository
+    |   └── Scene Generation Repository
     |
     +-- Queue System (Async Processing)
     |   └── Job Queue --> Background Workers --> Video Generation Providers
@@ -1100,13 +792,11 @@ Go Backend (Port 3000) - Sevima-AI-Content-Creator
     |   └── Open-source Models Provider
     |
     v
-PostgreSQL Database (12 tables)
+PostgreSQL Database (10 tables via AutoMigrate)
     |
     v
 Python AI Service (Port 8000) - FastAPI
     |
-    ├── Content Pillar Generation
-    ├── Storyboard Generation
     └── Video Generation (via provider integrations)
 ```
 
@@ -1124,42 +814,23 @@ Python AI Service (Port 8000) - FastAPI
 1. User registers/logs in (gets 10 credits by default)
         │
         ▼
-2. Create a Project (Dashboard)
-   POST /api/projects
+2. Initialize Project (FE Wizard - creates project + briefs atomically)
+   POST /api/projects/initialize
         │
         ▼
-3. Create Business Brief (project context, linked to Project)
-   POST /api/briefs/business
+3. Generate Storyboard Templates OR Create Manual Storyboard
+   POST /api/storyboard/templates/generate  (4 template options)
+   POST /api/storyboard/create              (manual 3-section)
         │
         ▼
-4. Generate Content Pillars (AI stub generates 3 pillars with themes)
-   POST /api/projects/:id/content-pillars/generate
-        │
-        ▼
-5. Browse & Select Content Pillar
-   POST /api/content-pillars/:id/select
-        │
-        ▼
-6. Browse & Select Content Theme
-   POST /api/content-themes/:id/select
-        │
-        ▼
-7. Generate Storyboards (AI stub generates 2 variations with scenes)
-   POST /api/projects/:id/storyboards/generate
-        │
-        ▼
-8. Review Scenes & Select Storyboard
-   GET /api/storyboards/:id/scenes
-   POST /api/storyboards/:id/select
-        │
-        ▼
-9. Generate Video (deducts 1 credit)
+4. Select Storyboard & Generate Video (deducts credits)
+   POST /api/storyboard/select
    POST /api/videos/generate
         │
         ▼
-10. Preview & Download Video
-    GET /api/videos/:id
-    GET /api/videos/:id/download
+5. Poll Status & Download Video
+   GET /api/videos/:id
+   GET /api/videos/download/:id
 ```
 
 ## Authorization & Middleware
@@ -1178,7 +849,7 @@ All protected routes are enforced through `middleware.Protected()` middleware th
 
 | Role | Default Credits | Capabilities |
 |------|----------------|--------------|
-| `user` | 10 | All standard endpoints (projects, briefs, content, storyboards, videos, credits) |
+| `user` | 10 | All standard endpoints (projects, storyboards, videos, credits) |
 | `admin` | 10 | All user capabilities + admin routes (`POST /api/admin/credits`) |
 
 Role enforcement via `middleware.RequireRole("admin")` middleware on admin routes.
@@ -1215,7 +886,7 @@ Role enforcement via `middleware.RequireRole("admin")` middleware on admin route
 
 For comprehensive API documentation with full request/response schemas, see:
 - [API Documentation](docs/API_DOCUMENTATION.md)
-- [Postman Collection](docs/postman_collection.json) — import into Postman for ready-to-use requests with auto-token-saving scripts
+- [API Collection](docs/API_collection.json) — import into Postman/Bruno for ready-to-use requests with auto-token-saving scripts
 
 ## Testing & Validation
 
@@ -1275,7 +946,7 @@ Import `/docs/API_COLLECTION.json` into Postman for ready-to-use requests with:
 - Verify token is from `/api/auth/login` or `/api/auth/register`, not refresh token
 
 **Problem: "Connection refused / Cannot connect to database"**
-- Go backend listening on port 3000
+- Go backend listening on port 5000
 - PostgreSQL running on configured `DB_HOST:DB_PORT` (default localhost:5432)
 - Check database credentials in .env file
 - Verify PostgreSQL service is running: verify in services (Windows) or `sudo systemctl status postgresql` (Linux)
