@@ -17,8 +17,10 @@ type BusinessBrief struct {
 	CompanyName      string         `json:"company_name"`
 	InstituteName    string         `json:"institute_name"`
 	Education        string         `json:"education"`
-	SchoolLevel      string         `json:"school_level"` // PreSchool, TK, SD, SMP, SMA, SMK, Perguruan Tinggi
-	Industry         string         `json:"industry"`
+	SchoolLevel        string         `json:"school_level"` // PreSchool, TK, SD, SMP, SMA, SMK, Perguruan Tinggi
+	OfferedDegrees     string         `gorm:"type:text" json:"offered_degrees"`
+	InstitutionHistory string         `gorm:"type:text" json:"institution_history"`
+	Industry           string         `json:"industry"`
 	TargetAudience   string         `json:"target_audience"`
 	ProjectObjective string         `gorm:"type:text" json:"project_objective"`
 	KeyMessage       string         `gorm:"type:text" json:"key_message"`
@@ -89,8 +91,10 @@ type CreateBusinessBriefRequest struct {
 	ProjectName      string    `json:"project_name" validate:"required"`
 	CompanyName      string    `json:"company_name"`
 	InstituteName    string    `json:"institute_name"`
-	Education        string    `json:"education"`
-	Industry         string    `json:"industry"`
+	Education          string    `json:"education"`
+	OfferedDegrees     string    `json:"offered_degrees"`
+	InstitutionHistory string    `json:"institution_history"`
+	Industry           string    `json:"industry"`
 	TargetAudience   string    `json:"target_audience"`
 	ProjectObjective string    `json:"project_objective"`
 	KeyMessage       string    `json:"key_message"`
@@ -105,8 +109,10 @@ type UpdateBusinessBriefRequest struct {
 	ProjectName      *string    `json:"project_name"`
 	CompanyName      *string    `json:"company_name"`
 	InstituteName    *string    `json:"institute_name"`
-	Education        *string    `json:"education"`
-	Industry         *string    `json:"industry"`
+	Education          *string    `json:"education"`
+	OfferedDegrees     *string    `json:"offered_degrees"`
+	InstitutionHistory *string    `json:"institution_history"`
+	Industry           *string    `json:"industry"`
 	TargetAudience   *string    `json:"target_audience"`
 	ProjectObjective *string    `json:"project_objective"`
 	KeyMessage       *string    `json:"key_message"`

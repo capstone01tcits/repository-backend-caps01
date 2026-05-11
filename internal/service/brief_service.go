@@ -64,8 +64,10 @@ func (s *briefService) CreateBusinessBrief(userID string, req *model.CreateBusin
 		ProjectName:      req.ProjectName,
 		CompanyName:      req.CompanyName,
 		InstituteName:    req.InstituteName,
-		Education:        req.Education,
-		Industry:         req.Industry,
+		Education:          req.Education,
+		OfferedDegrees:     req.OfferedDegrees,
+		InstitutionHistory: req.InstitutionHistory,
+		Industry:           req.Industry,
 		TargetAudience:   req.TargetAudience,
 		ProjectObjective: req.ProjectObjective,
 		KeyMessage:       req.KeyMessage,
@@ -122,6 +124,12 @@ func (s *briefService) UpdateBusinessBrief(userID, briefID string, req *model.Up
 	}
 	if req.Education != nil {
 		brief.Education = *req.Education
+	}
+	if req.OfferedDegrees != nil {
+		brief.OfferedDegrees = *req.OfferedDegrees
+	}
+	if req.InstitutionHistory != nil {
+		brief.InstitutionHistory = *req.InstitutionHistory
 	}
 	if req.Industry != nil {
 		brief.Industry = *req.Industry
@@ -403,15 +411,17 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		InstituteName:    req.InstitutionName,
 		SchoolLevel:      schoolLevel,
 		Education:        schoolLevel,
-		Industry:         "Education", // auto-fill default
-		TargetAudience:   "Students",  // auto-fill default
-		ProjectObjective: description,
-		KeyMessage:       req.SelectedKeyMessage,
-		Budget:           "",                 // optional
-		Timeline:         "",                 // optional
-		Competitors:      "",                 // optional
-		AdditionalNotes:  req.OfferedDegrees, // map from offered degrees
-		LogoPath:         logoURL,            // Store bucket URL instead of base64
+		Industry:           "Education", // auto-fill default
+		TargetAudience:     "Students",  // auto-fill default
+		ProjectObjective:   description,
+		OfferedDegrees:     req.OfferedDegrees,
+		InstitutionHistory: req.InstitutionHistory,
+		KeyMessage:         req.SelectedKeyMessage,
+		Budget:             "",      // optional
+		Timeline:           "",      // optional
+		Competitors:        "",      // optional
+		AdditionalNotes:    "",      // previously req.OfferedDegrees was here
+		LogoPath:           logoURL, // Store bucket URL instead of base64
 		EnvironmentPath:  envURL,             // Store bucket URL instead of base64
 		DocumentPath:     docURL,             // Store bucket URL instead of base64
 		Status:           "draft",

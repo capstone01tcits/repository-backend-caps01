@@ -301,17 +301,54 @@ func (s *storyboardService) GetVeo3TestPayload(userID, storyboardID string) (*mo
 		}
 	}
 
-	// Standard phrasing (kata-kata pakem)
-	prompt := fmt.Sprintf("Create a %s promotional video for %s about %s.\n\n", cb.Style, bb.InstituteName, cb.VideoType)
-	
-	currentTime := 0
-	prompt += fmt.Sprintf("SCENE 1 (%d–%ds): HOOK %s\n", currentTime, currentTime+hook.Duration, hook.Content)
-	currentTime += hook.Duration
-	prompt += fmt.Sprintf("SCENE 2 (%d–%ds): VALUE %s\n", currentTime, currentTime+value.Duration, value.Content)
-	currentTime += value.Duration
-	prompt += fmt.Sprintf("SCENE 3 (%d–%ds): CTA %s\n\n", currentTime, currentTime+cta.Duration, cta.Content)
-	
-	prompt += "Maintain cinematic continuity, same characters, smooth transitions."
+	// Standard phrasing (kata-kata pakem) menggunakan template yang lebih detail
+	prompt := fmt.Sprintf(
+		`Buatlah video promosi %s berkualitas tinggi untuk iklan institusi pendidikan.
+
+		Detail Institusi:
+		- Nama: %s
+		- Tingkat Pendidikan: %s
+		- Program Studi: %s
+		- Latar Belakang/Sejarah: %s
+		- Gunakan logo dan foto lingkungan kampus sebagai referensi visual.
+
+		Tujuan Video:
+		Membuat video promosi yang menarik, modern, profesional, dan membangun kepercayaan, dengan menonjolkan kualitas akademik, fasilitas, serta peluang masa depan.
+
+		Gaya & Tone:
+		%s
+		Target Audiens: Calon siswa/mahasiswa dan orang tua.
+		Gaya Visual: Sinematik, bersih, profesional, transisi halus, kualitas produksi tinggi.
+
+		SCENE STRUCTURE:
+
+		SCENE 1 (%ds–%ds): HOOK
+		%s
+
+		SCENE 2 (%ds–%ds): NILAI UNGGULAN
+		%s
+
+		SCENE 3 (%ds–%ds): CALL TO ACTION
+		%s
+
+		Panduan Teknis:
+		- Pertahankan kesinambungan sinematik
+		- Gunakan karakter yang konsisten di setiap scene
+		- Transisi antar scene harus halus dan natural
+		- Tampilkan nama institusi dengan jelas
+		- Tonjolkan kepercayaan, prestasi, dan masa depan cerah
+		- Tambahkan nuansa musik latar inspiratif
+		- Hindari klaim berlebihan atau tidak realistis`,
+		cb.Style,
+		bb.InstituteName,
+		bb.SchoolLevel,
+		bb.OfferedDegrees,
+		bb.InstitutionHistory,
+		cb.Style,
+		0, hook.Duration, hook.Content,
+		hook.Duration, hook.Duration+value.Duration, value.Content,
+		hook.Duration+value.Duration, hook.Duration+value.Duration+cta.Duration, cta.Content,
+	)
 
 	// Reference images from initial input (logo and environment)
 	var refImages []string
