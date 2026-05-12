@@ -20,7 +20,7 @@ type Storyboard struct {
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
-
+	
 	// Relations
 	User     User                `gorm:"foreignKey:UserID" json:"-"`
 	Project  *Project             `gorm:"foreignKey:ProjectID" json:"-"`
@@ -112,7 +112,6 @@ type SelectStoryboardRequest struct {
 }
 
 type Veo3TestPayload struct {
-	Model           string   `json:"model"`
 	Prompt          string   `json:"prompt"`
-	ReferenceImages []string `json:"reference_images"`
+
 }

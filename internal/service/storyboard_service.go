@@ -360,9 +360,9 @@ func (s *storyboardService) GetVeo3TestPayload(userID, storyboardID string) (*mo
 	}
 
 	return &model.Veo3TestPayload{
-		Model:           "veo3",
+		// Model:           "veo3",
 		Prompt:          prompt,
-		ReferenceImages: refImages,
+		// ReferenceImages: refImages,
 	}, nil
 }
 
