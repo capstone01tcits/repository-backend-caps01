@@ -101,9 +101,21 @@ func (s *storageService) UploadFile(ctx context.Context, bucketName, filePath st
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Detect Content-Type based on extension
+	contentType := "application/octet-stream"
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	case ".mp4":
+		contentType = "video/mp4"
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".png":
+		contentType = "image/png"
+	}
+
 	// Set headers
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.serviceRoleKey))
-	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("x-upsert", "true") // Allow overwrite if file exists
 
 	// Execute request

@@ -224,7 +224,7 @@ class AIVideoService:
                 job_id, provider.name,
             )
 
-            safe_provider = provider.name.replace(":", "_")
+            safe_provider = provider.name.replace(":", "_").replace("/", "_")
             filename = f"{job_id}__{safe_provider}.mp4"
             output_path = os.path.join(self._video_dir, filename)
 

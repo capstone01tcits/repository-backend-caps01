@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 # FIX 1: load_dotenv() dipanggil SEBELUM import local
 # agar env vars sudah ter-load saat module diinisialisasi
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
 
 # FIX 2: Import local SETELAH load_dotenv() — urutan ini penting
 from logging_config import setup_logging

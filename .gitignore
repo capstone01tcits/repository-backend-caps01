@@ -35,3 +35,8 @@ docker-compose.override.yml
 
 # Misc
 coverage.out
+
+# AI Service
+ai-service/outputs/
+__pycache__/
+*.pyc
