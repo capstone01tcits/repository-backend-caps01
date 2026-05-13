@@ -1,6 +1,6 @@
 # API Documentation - AI Video Generation Platform
 
-Version: 4.1.0 (May 2026 - Veo 3 Integration & Linear Automated Flow)
+Version: 5.0.0 (May 2026 - Google Veo 3.1 Lite Integration & Finalized Linear Flow)
 Base URL: http://localhost:5000
 AI Service URL: http://localhost:8000
 Collection Format: Bruno/Postman API Collection (docs/API_collection.json)
@@ -10,8 +10,8 @@ Collection Format: Bruno/Postman API Collection (docs/API_collection.json)
 ## Backend Status - Template Generator Ready
 
 LATEST UPDATE: May 2026
-- Veo 3 Integration: Real HTTP requests with specialized `Veo3Payload`, automated FFmpeg stitching, or direct aggregator integration via **Wavespeed**.
-- Linear Automated Flow: Auto-generates a 3-scene Storyboard (Hook, Value, CTA) directly during Project Initialization.
+- Google Veo 3.1 Lite Integration: Real-world video generation via Wavespeed with optimized 6s duration and 16:9 ratio.
+- Atomic Initialization: One endpoint (`/api/projects/initialize`) to create project, briefs, and storyboard.
 - Soft-delete and restore for projects and storyboards
 - Build Status: Compiles successfully with zero errors
 
@@ -111,7 +111,7 @@ Frontend (Next.js)
 │                   │                      │
 │  ┌────────────────┴───────────────────┐  │
 │  │  AI Provider Implementation        │  │
-│  │  - Veo 3 (Internal / Simulation)   │  │
+│  │  - Google Veo 3.1 Lite (High Coherence) │  │
 │  │  - Wavespeed (External Aggregator) │  │
 │  │  - FFmpeg Video Stitching          │  │
 │  └────────────────┬───────────────────┘  │

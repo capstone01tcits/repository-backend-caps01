@@ -1,6 +1,6 @@
 # Complete Workflow - Register to Video Generation
 
-Updated: May 2026 (Veo 3 Integration: Linear Automated Flow)
+Updated: May 2026 (Version 5.0.0 - Google Veo 3.1 Lite Integration)
 Complete flow from Registration through Video Generation
 
 Note: Use Bruno/Postman API Collection (docs/API_collection.json) for automatic variable population.
@@ -181,9 +181,9 @@ Response (201 Created):
 }
 
 Expected Processing Time:
-- Queued: 0-2 minutes (waiting for available worker)
-- Processing: 30-60 seconds per scene (3 scenes = 1.5-3 minutes)
-- Total: 2-5 minutes from job creation to completion
+- Queued: 0-1 minutes (waiting for available worker)
+- Processing: 15-30 seconds per scene (3 scenes = 45-90 seconds)
+- Total: 1.5-2.5 minutes from job creation to completion
 
 Credits Used:
 - Video generation: 1 credit per job
@@ -236,10 +236,10 @@ Response (200 OK - Completed):
     "video_url": "https://storage.example.com/videos/8da7b810.mp4",
     "thumbnail_url": "https://storage.example.com/thumbnails/8da7b810.jpg",
     "duration": 15,
-    "provider": "Veo3",
-    "model": "veo3",
-    "resolution": "1920x1080",
-    "file_size": 51234567,
+    "provider": "Wavespeed",
+    "model": "google/veo3.1-lite/text-to-video",
+    "resolution": "832*480",
+    "file_size": 12512345,
     "created_at": "2026-03-13T10:25:00Z",
     "updated_at": "2026-03-13T10:30:15Z",
     "scenes": [

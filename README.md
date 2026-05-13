@@ -2,7 +2,7 @@
 
 Go REST API backend untuk AI Video Content Creator platform — Capstone project dengan SEVIMA. Meliputi authentication, project management, storyboard generation, video generation, credit system, dan admin management.
 
-Status: Clean & Optimized (May 2026) - Veo 3 Integration: Linear Automated Flow with Real HTTP requests and FFmpeg Video Stitching.
+Status: Production Ready (May 2026) - Google Veo 3.1 Lite: High-coherence video generation with atomic project initialization and automated scene polling.
 
 ## Documentation
 
@@ -77,7 +77,6 @@ Sevima-BackEnd Ai Video Gen/
 │   │   └── video_generation.go             # Database migration helpers
 │   ├── model/
 │   │   ├── brief.go                        # BusinessBrief & CreativeBrief models
-│   │   ├── content.go                      # ContentPillar & ContentTheme models
 │   │   ├── generation_job.go               # GenerationJob, VideoVariant, SceneGeneration models
 │   │   ├── project.go                      # Project model
 │   │   ├── storyboard.go                   # Storyboard & Scene models
@@ -87,7 +86,6 @@ Sevima-BackEnd Ai Video Gen/
 │   │   └── job_queue.go                    # Asynchronous job queue system
 │   ├── repository/
 │   │   ├── brief_repository.go             # Brief database queries (business & creative)
-│   │   ├── content_repository.go           # Content pillar & theme database queries
 │   │   ├── generation_job_repository.go    # Generation job tracking queries
 │   │   ├── project_repository.go           # Project database queries
 │   │   ├── scene_generation_repository.go  # Scene generation tracking queries
@@ -178,9 +176,9 @@ Generate Video (Async)
 Background Worker Processing
   └─> UPDATE generation_jobs (status=generating_assets)
   ├─> Create Veo 3 JSON Payload
-  ├─> For each scene:
+  ├─> For each scene (Hook, Value, CTA):
   │   ├─> INSERT scene_generations (status=queued)
-  │   ├─> Call AI Service (Veo 3 integration)
+  │   ├─> Call AI Service (Google Veo 3.1 Lite)
   │   ├─> UPDATE scene_generations (status=completed, video_url)
   │   └─> UPDATE generation_jobs (progress++)
   ├─> UPDATE generation_jobs (status=stitching_video)
