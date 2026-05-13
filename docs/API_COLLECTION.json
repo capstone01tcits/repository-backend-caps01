@@ -1,106 +1,36 @@
 {
   "info": {
-    "name": "AI Video Generation Platform - Active Endpoints",
+    "name": "AI Video Generation Platform - Final v5.0",
     "version": "5.0.0",
-    "description": "Updated May 2026 - Google Veo 3.1 Lite Integration with Atomic Linear Flow. High-coherence video generation via Wavespeed.",
+    "description": "Updated May 2026 - Google Veo 3.1 Lite Integration with Atomic Linear Flow. All routes verified against Backend v1.0.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:5000"
-    },
-    {
-      "key": "access_token",
-      "value": ""
-    },
-    {
-      "key": "refresh_token",
-      "value": ""
-    },
-    {
-      "key": "project_id",
-      "value": ""
-    },
-    {
-      "key": "storyboard_id",
-      "value": ""
-    },
-    {
-      "key": "video_id",
-      "value": ""
-    },
-    {
-      "key": "scene_id",
-      "value": ""
-    },
-    {
-      "key": "user_id",
-      "value": ""
-    }
+    { "key": "base_url", "value": "http://localhost:5000" },
+    { "key": "access_token", "value": "" },
+    { "key": "refresh_token", "value": "" },
+    { "key": "project_id", "value": "" },
+    { "key": "storyboard_id", "value": "" },
+    { "key": "job_id", "value": "" },
+    { "key": "scene_id", "value": "" },
+    { "key": "user_id", "value": "" }
   ],
   "item": [
     {
       "name": "Health Check",
       "request": {
         "method": "GET",
-        "url": {
-          "raw": "{{base_url}}/health",
-          "protocol": "http",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "health"
-          ]
-        },
-        "header": []
+        "url": "{{base_url}}/health"
       }
     },
     {
-      "name": "Authentication",
+      "name": "Auth",
       "item": [
         {
           "name": "Register",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.body;",
-                  "if (jsonData.data && jsonData.data.user && jsonData.data.user.id) {",
-                  "  bru.setVar('user_id', jsonData.data.user.id);",
-                  "}",
-                  "if (jsonData.data && jsonData.data.access_token) {",
-                  "  bru.setVar('access_token', jsonData.data.access_token);",
-                  "}",
-                  "if (jsonData.data && jsonData.data.refresh_token) {",
-                  "  bru.setVar('refresh_token', jsonData.data.refresh_token);",
-                  "}"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/auth/register",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "register"
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "url": "{{base_url}}/api/auth/register",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"secure123456\"\n}"
@@ -109,45 +39,9 @@
         },
         {
           "name": "Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.body;",
-                  "if (jsonData.data && jsonData.data.access_token) {",
-                  "  bru.setVar('access_token', jsonData.data.access_token);",
-                  "}",
-                  "if (jsonData.data && jsonData.data.refresh_token) {",
-                  "  bru.setVar('refresh_token', jsonData.data.refresh_token);",
-                  "}",
-                  "if (jsonData.data && jsonData.data.user && jsonData.data.user.id) {",
-                  "  bru.setVar('user_id', jsonData.data.user.id);",
-                  "}"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/auth/login",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "url": "{{base_url}}/api/auth/login",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"secure123456\"\n}"
@@ -158,124 +52,8 @@
           "name": "Get Profile",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/auth/me",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "me"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Change Password",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/auth/change-password",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "change-password"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"old_password\": \"secure123456\",\n  \"new_password\": \"newsecure123456\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Refresh Token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.body;",
-                  "if (jsonData.data && jsonData.data.access_token) {",
-                  "  bru.setVar('access_token', jsonData.data.access_token);",
-                  "}",
-                  "if (jsonData.data && jsonData.data.refresh_token) {",
-                  "  bru.setVar('refresh_token', jsonData.data.refresh_token);",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/auth/refresh",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "refresh"
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Delete Account",
-          "request": {
-            "method": "DELETE",
-            "url": {
-              "raw": "{{base_url}}/api/auth/account",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "account"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
+            "url": "{{base_url}}/api/auth/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }]
           }
         }
       ]
@@ -284,50 +62,14 @@
       "name": "Projects",
       "item": [
         {
-          "name": "Initialize Project",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.body;",
-                  "if (jsonData.data && jsonData.data.project_id) {",
-                  "  bru.setVar('project_id', jsonData.data.project_id);",
-                  "}",
-                  "if (jsonData.data && jsonData.data.storyboard_id) {",
-                  "  bru.setVar('storyboard_id', jsonData.data.storyboard_id);",
-                  "}"
-                ]
-              }
-            }
-          ],
+          "name": "Initialize Project (Atomic)",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/projects/initialize",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "projects",
-                "initialize"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "url": "{{base_url}}/api/projects/initialize",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"institution_name\": \"SMA Negeri 1 Jakarta\",\n  \"institution_history\": \"Sekolah terkemuka dengan program pendidikan berkualitas tinggi\",\n  \"school_level\": \"SMA\",\n  \"offered_degrees\": \"IPA, IPS, Bahasa\",\n  \"event_content\": \"Penerimaan Siswa Baru\",\n  \"tone_of_voice\": \"Santai & Ramah\",\n  \"selected_key_message\": \"Bergabunglah dengan komunitas pembelajar yang dinamis\",\n  \"prompt\": \"Video yang engaging untuk Gen Z\",\n  \"selected_theme\": \"Tur Kampus Sinematik\",\n  \"video_duration\": \"6 detik\",\n  \"editable_copywriting\": \"Halo calon siswa baru!\",\n  \"editable_hashtags\": \"#SMANegeri1Jakarta\",\n  \"logo_base64\": \"\",\n  \"env_base64\": \"\",\n  \"document_base64\": \"\"\n}"
+              "raw": "{\n  \"institution_name\": \"SMA Negeri 1 Jakarta\",\n  \"school_level\": \"SMA\",\n  \"event_content\": \"Penerimaan Siswa Baru\",\n  \"tone_of_voice\": \"Santai & Ramah\",\n  \"selected_key_message\": \"Bergabunglah dengan komunitas pembelajar yang dinamis\",\n  \"video_duration\": \"6 detik\",\n  \"selected_theme\": \"Tur Kampus Sinematik\"\n}"
             }
           }
         },
@@ -335,289 +77,8 @@
           "name": "List Projects",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/projects/",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "projects",
-                ""
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Get Project",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/projects/{{project_id}}",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "projects",
-                "{{project_id}}"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Delete Project",
-          "request": {
-            "method": "DELETE",
-            "url": {
-              "raw": "{{base_url}}/api/projects/{{project_id}}",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "projects",
-                "{{project_id}}"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Restore Project",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/projects/{{project_id}}/restore",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "projects",
-                "{{project_id}}",
-                "restore"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "Storyboard",
-      "item": [
-        {
-          "name": "Get Storyboards by Project",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/{{project_id}}",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "{{project_id}}"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Get Storyboard Detail",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/detail/{{storyboard_id}}",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "detail",
-                "{{storyboard_id}}"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Select Storyboard",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/select",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "select"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"storyboard_id\": \"{{storyboard_id}}\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Update Storyboard",
-          "request": {
-            "method": "PUT",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "{{storyboard_id}}"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Title\",\n  \"sections\": [\n    {\n      \"section_type\": \"hook\",\n      \"content\": \"Updated hook content\",\n      \"duration\": 10\n    },\n    {\n      \"section_type\": \"value\",\n      \"content\": \"Updated value content\",\n      \"duration\": 10\n    },\n    {\n      \"section_type\": \"cta\",\n      \"content\": \"Updated CTA content\",\n      \"duration\": 10\n    }\n  ]\n}"
-            }
-          }
-        },
-        {
-          "name": "Get Storyboard Sections",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}/sections",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "{{storyboard_id}}",
-                "sections"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Delete Storyboard",
-          "request": {
-            "method": "DELETE",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "{{storyboard_id}}"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Restore Storyboard",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}/restore",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "{{storyboard_id}}",
-                "restore"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
+            "url": "{{base_url}}/api/projects",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }]
           }
         }
       ]
@@ -627,43 +88,10 @@
       "item": [
         {
           "name": "Generate Video",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.body;",
-                  "if (jsonData.data && jsonData.data.generation_job_id) {",
-                  "  bru.setVar('video_id', jsonData.data.generation_job_id);",
-                  "}"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/videos/generate",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "videos",
-                "generate"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "url": "{{base_url}}/api/videos/generate",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"storyboard_id\": \"{{storyboard_id}}\"\n}"
@@ -671,260 +99,35 @@
           }
         },
         {
-          "name": "Get Video",
+          "name": "Get Video Status (Polling)",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/videos/{{video_id}}",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "videos",
-                "{{video_id}}"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "List Videos",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/videos/",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "videos",
-                ""
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
+            "url": "{{base_url}}/api/videos/{{job_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }]
           }
         },
         {
           "name": "Download Video",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/videos/download/{{video_id}}",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "videos",
-                "download",
-                "{{video_id}}"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Regenerate Video Variant",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/videos/{{video_id}}/regenerate",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "videos",
-                "{{video_id}}",
-                "regenerate"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"new_prompt\": \"Alternative video with different style\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Regenerate Scene",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/videos/scene/{{scene_id}}/regenerate",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "videos",
-                "scene",
-                "{{scene_id}}",
-                "regenerate"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"new_prompt\": \"Show aerial campus views\"\n}"
-            }
+            "url": "{{base_url}}/api/videos/download/{{job_id}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }]
           }
         }
       ]
     },
     {
-      "name": "Credits",
+      "name": "Admin",
       "item": [
         {
-          "name": "Get My Credits",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/credits/",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "credits",
-                ""
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Admin Add Credits",
+          "name": "Add Credits",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/admin/credits",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "credits"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "url": "{{base_url}}/api/admin/credits",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"amount\": 100\n}"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "AI Gateway",
-      "item": [
-        {
-          "name": "AI Health Check",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/ai/health",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "ai",
-                "health"
-              ]
-            },
-            "header": []
-          }
-        },
-        {
-          "name": "Veo 3.1 Lite Generate (Direct)",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/ai/veo3/generate",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "ai",
-                "veo3",
-                "generate"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"model\": \"google/veo3.1-lite/text-to-video\",\n  \"prompt\": \"SCENE 1 (0-6s): HOOK [Visual description]\",\n  \"reference_images\": []\n}"
             }
           }
         }

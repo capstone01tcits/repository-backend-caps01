@@ -18,7 +18,7 @@ LATEST UPDATE: May 2026
 Core Workflow (4 Steps):
 1. User Registration/Login
 2. Project Initialization (Creates Briefs & Auto-Generates Storyboard)
-3. Video Generation (Sends payload to Veo 3)
+3. Video Generation (Sends payload to Veo 3.1)
 4. Video Retrieval and Download (polling `generating_assets` and `stitching_video` statuses)
 
 Total Active Endpoints: 27
@@ -26,9 +26,8 @@ Total Active Endpoints: 27
 - Projects: 5 endpoints
 - Storyboard: 6 endpoints (create, get by project, get detail, update, delete, restore)
 - Videos: 7 endpoints
-- Credits: 1 endpoint
-- Admin: 1 endpoint
-- Health/AI Gateway: 2 endpoints
+- Credits & Admin: 2 endpoints
+- Health Check: 1 endpoint
 
 **Database Tables (10 via AutoMigrate):**
 users, projects, business_briefs, creative_briefs, storyboards, storyboard_sections, videos, generation_jobs, video_variants, scene_generations
@@ -54,9 +53,8 @@ The AI Video Generation Platform Backend provides RESTful APIs for:
 - **User authentication** with role-based access (user / admin)
 - **Project management** (unified initialization from FE wizard, soft-delete/restore)
 - **Storyboard management** (manual create, CRUD with sections, linked 1:1 to Project)
-- **AI video generation** with Veo 3 / Wavespeed integration
+- **AI video generation** with Veo 3.1 / Wavespeed integration
 - **Credit management** (user balance & admin top-up)
-- **AI service gateway** (proxy to Python AI service at port 8000)
 
 ### Service Stack
 
@@ -114,10 +112,6 @@ Frontend (Next.js)
 │  │  - Google Veo 3.1 Lite (High Coherence) │  │
 │  │  - Wavespeed (External Aggregator) │  │
 │  │  - FFmpeg Video Stitching          │  │
-│  └────────────────┬───────────────────┘  │
-│                   │                      │
-│  ┌────────────────┴───────────────────┐  │
-│  │  AI Gateway (Proxy)                │──┼──► Python AI Service (Port 8000)
 │  └────────────────────────────────────┘  │
 └──────────────────────────────────────────┘
 ```
@@ -204,7 +198,7 @@ Content-Type: application/json
 ### Health Check (Public)
 
 ```http
-GET /health
+GET /api/health
 ```
 
 **Response (200 OK):**
@@ -381,6 +375,13 @@ Authorization: Bearer {access_token}
   "data": null
 }
 ```
+
+### Credits & Admin (2 endpoints - Protected)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/credits` | Protected | Get current user's credit balance |
+| POST | `/api/admin/credits` | Admin | Add credits to a user |
 
 ---
 
@@ -577,29 +578,12 @@ Content-Type: application/json
 
 {
   "title": "Updated Title",
-  "description": "Updated description",
   "sections": [
-    { "section_type": "hook", "content": "New hook", "duration": 10 },
-    { "section_type": "value", "content": "New value", "duration": 10 },
-    { "section_type": "cta", "content": "New CTA", "duration": 10 }
+    { "section_type": "hook", "content": "New hook", "duration": 6 },
+    { "section_type": "value", "content": "New value", "duration": 6 },
+    { "section_type": "cta", "content": "New CTA", "duration": 6 }
   ]
 }
-```
-
-#### Get Storyboard Sections
-
-```http
-GET /api/storyboard/{storyboard_id}/sections
-Authorization: Bearer {access_token}
-```
-
-#### Get Veo3 Test Payload
-
-Returns a payload formatted specifically for the Veo3 video generation model using data from the storyboard and briefs.
-
-```http
-GET /api/storyboard/{storyboard_id}/veo3-test
-Authorization: Bearer {access_token}
 ```
 
 **Response (200 OK):**
