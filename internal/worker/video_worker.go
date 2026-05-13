@@ -16,42 +16,72 @@ type Veo3Payload struct {
 
 // BuildVeo3Payload merangkai prompt sesuai dengan standar Veo 3 untuk video promosi pendidikan
 func BuildVeo3Payload(bb *model.BusinessBrief, cb *model.CreativeBrief, sections []model.StoryboardSection) Veo3Payload {
-	// 1. Identity Mapping & Context Awareness
-	contextKeywords := ""
-	schoolLevelStr := strings.ToLower(bb.SchoolLevel)
-	
-	if strings.Contains(schoolLevelStr, "university") || strings.Contains(schoolLevelStr, "perguruan tinggi") || strings.Contains(schoolLevelStr, "kampus") {
-		contextKeywords = "Higher Education, Campus Life, Research, Independent Learning"
-	} else {
-		contextKeywords = "Vibrant Classroom, Practical Skills, Student Discipline, Nurturing Environment"
+	// Identify the 3 scenes (hook, value, cta)
+	var hook, value, cta model.StoryboardSection
+	for _, sec := range sections {
+		switch strings.ToLower(sec.SectionType) {
+		case "hook":
+			hook = sec
+		case "value":
+			value = sec
+		case "cta":
+			cta = sec
+		}
 	}
 
-	// 2. Visual Quality Standard (Sesuai Prompt dari User)
-	visualDirection := "Realistic skin textures, natural cinematic lighting, 4K resolution, no plastic-look faces"
+	// Fallback jika tidak ada section (untuk amannya)
+	if hook.Duration == 0 { hook.Duration = 5 }
+	if value.Duration == 0 { value.Duration = 5 }
+	if cta.Duration == 0 { cta.Duration = 5 }
 
-	// 3. Merangkai Header Prompt
-	var promptBuilder strings.Builder
-	promptBuilder.WriteString(fmt.Sprintf(
-		"Create a cinematic promotional video for %s. Type: %s. Event: %s. Tone: %s. Theme: %s. Duration: %d seconds. Key message: %s. Core emotion: %s. Visual direction: %s.\n\n",
-		bb.InstituteName, bb.SchoolLevel, cb.VideoType, cb.Tone, cb.Style, cb.Duration, cb.CallToAction, contextKeywords, visualDirection,
-	))
+	// Standard phrasing (kata-kata pakem)
+	prompt := fmt.Sprintf(
+		`Buatlah video promosi %s berkualitas tinggi untuk iklan institusi pendidikan.
 
-	// 4. Memasukkan Scene (Hook, Value, CTA) beserta perhitungan detik
-	timeAccumulator := 0
-	for i, sec := range sections {
-		startTime := timeAccumulator
-		endTime := timeAccumulator + sec.Duration
-		timeAccumulator = endTime
-		
-		// Format: SCENE 1 (0-5s): HOOK [Visual description]
-		promptBuilder.WriteString(fmt.Sprintf(
-			"SCENE %d (%d–%ds): %s [%s]\n",
-			i+1, startTime, endTime, strings.ToUpper(sec.SectionType), sec.Content,
-		))
-	}
+		Detail Institusi:
+		- Nama: %s
+		- Tingkat Pendidikan: %s
+		- Program Studi: %s
+		- Latar Belakang/Sejarah: %s
+		- Gunakan logo dan foto lingkungan kampus sebagai referensi visual.
 
-	// 5. Aturan Transisi Wajib
-	promptBuilder.WriteString("\nMaintain cinematic continuity, same characters, natural skin textures, and smooth transitions.")
+		Tujuan Video:
+		Membuat video promosi yang menarik, modern, profesional, dan membangun kepercayaan, dengan menonjolkan kualitas akademik, fasilitas, serta peluang masa depan.
+
+		Gaya & Tone:
+		%s
+		Target Audiens: Calon siswa/mahasiswa dan orang tua.
+		Gaya Visual: Sinematik, bersih, profesional, transisi halus, kualitas produksi tinggi.
+
+		SCENE STRUCTURE:
+
+		SCENE 1 (%ds–%ds): HOOK
+		%s
+
+		SCENE 2 (%ds–%ds): NILAI UNGGULAN
+		%s
+
+		SCENE 3 (%ds–%ds): CALL TO ACTION
+		%s
+
+		Panduan Teknis:
+		- Pertahankan kesinambungan sinematik
+		- Gunakan karakter yang konsisten di setiap scene
+		- Transisi antar scene harus halus dan natural
+		- Tampilkan nama institusi dengan jelas
+		- Tonjolkan kepercayaan, prestasi, dan masa depan cerah
+		- Tambahkan nuansa musik latar inspiratif
+		- Hindari klaim berlebihan atau tidak realistis`,
+		cb.Theme,
+		bb.InstitutionName,
+		bb.SchoolLevel,
+		bb.OfferedDegrees,      
+		bb.InstitutionHistory,  
+		cb.Theme, // Style / Tone diwakili Theme atau ToneOfVoice
+		0, hook.Duration, hook.Content,
+		hook.Duration, hook.Duration+value.Duration, value.Content,
+		hook.Duration+value.Duration, hook.Duration+value.Duration+cta.Duration, cta.Content,
+	)
 
 	// 6. Validasi Reference Images (Minimal 1)
 	var images []string
@@ -65,7 +95,7 @@ func BuildVeo3Payload(bb *model.BusinessBrief, cb *model.CreativeBrief, sections
 
 	return Veo3Payload{
 		Model:           "veo3",
-		Prompt:          promptBuilder.String(),
+		Prompt:          prompt,
 		ReferenceImages: images,
 	}
 }

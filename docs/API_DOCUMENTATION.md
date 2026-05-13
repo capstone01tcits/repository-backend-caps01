@@ -25,7 +25,7 @@ Total Active Endpoints: 27
 - Authentication: 6 endpoints
 - Projects: 5 endpoints
 - Storyboard: 6 endpoints (create, get by project, get detail, update, delete, restore)
-- Videos: 6 endpoints
+- Videos: 7 endpoints
 - Credits: 1 endpoint
 - Admin: 1 endpoint
 - Health/AI Gateway: 2 endpoints
@@ -857,6 +857,22 @@ Authorization: Bearer {access_token}
   ]
 }
 ```
+
+---
+
+#### Preview Video
+
+```http
+GET /api/videos/preview/{id}
+Authorization: Bearer {access_token}
+```
+
+**Response (302 Redirect):**
+```
+HTTP/1.1 302 Found
+Location: https://{supabase_project_id}.supabase.co/storage/v1/object/public/videos/{id}.mp4
+```
+*Note: This endpoint acts as a proxy/redirect to the Supabase CDN public URL, allowing the frontend to stream videos directly using `<video src="/api/videos/preview/{id}">` without manually handling JSON responses.*
 
 ---
 

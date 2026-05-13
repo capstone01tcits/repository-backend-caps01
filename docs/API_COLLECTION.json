@@ -434,6 +434,38 @@
       "name": "Storyboard",
       "item": [
         {
+          "name": "Create Manual Storyboard",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"title\": \"Custom Campaign\",\n  \"description\": \"Manual storyboard\",\n  \"style\": \"Dynamic\",\n  \"sections\": [\n    {\n      \"section_type\": \"hook\",\n      \"content\": \"Watch this!\",\n      \"duration\": 5\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/storyboard/create",
+              "protocol": "http",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "storyboard",
+                "create"
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Storyboard by Project",
           "request": {
             "method": "GET",
@@ -587,56 +619,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "Get Veo3 Test Payload",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}/veo3-test",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "{{storyboard_id}}",
-                "veo3-test"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Send Veo3 Test Payload",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{base_url}}/api/storyboard/{{storyboard_id}}/veo3-test",
-              "protocol": "http",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "storyboard",
-                "{{storyboard_id}}",
-                "veo3-test"
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
         }
       ]
     },
@@ -750,6 +732,31 @@
                 "api",
                 "videos",
                 "download",
+                "{{video_id}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Preview Video (Redirects to CDN)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/videos/preview/{{video_id}}",
+              "protocol": "http",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "preview",
                 "{{video_id}}"
               ]
             },

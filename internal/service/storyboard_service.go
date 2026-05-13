@@ -3,6 +3,8 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/repository"
@@ -19,7 +21,6 @@ type StoryboardService interface {
 	DeleteStoryboard(userID, storyboardID string) error
 	RestoreStoryboard(userID, storyboardID string) error
 	AutoGenerateStoryboard(userID string, projectID uuid.UUID, bb *model.BusinessBrief, cb *model.CreativeBrief) (*model.Storyboard, error)
-	GetVeo3TestPayload(userID, storyboardID string) (*model.Veo3TestPayload, error)
 }
 
 type storyboardService struct {
@@ -203,15 +204,30 @@ func (s *storyboardService) RestoreStoryboard(userID, storyboardID string) error
 	return s.storyboardRepo.Restore(storyboardID)
 }
 
+// helper to parse duration safely
+func parseDurationStr(durStr string) int {
+	cleaned := strings.TrimSpace(strings.ToLower(durStr))
+	parts := strings.Fields(cleaned)
+	if len(parts) > 0 {
+		num, err := strconv.Atoi(parts[0])
+		if err == nil && num > 0 {
+			return num
+		}
+	}
+	return 30
+}
+
 func (s *storyboardService) AutoGenerateStoryboard(userID string, projectID uuid.UUID, bb *model.BusinessBrief, cb *model.CreativeBrief) (*model.Storyboard, error) {
+	durInt := parseDurationStr(cb.VideoDuration)
+	
 	// 1. Create Storyboard entity
 	storyboard := &model.Storyboard{
 		ProjectID:     projectID,
 		UserID:        uuid.MustParse(userID),
-		Title:         "Promotional Video: " + bb.InstituteName,
-		Description:   "Auto-generated 3-scene storyboard for " + cb.VideoType,
-		Style:         cb.Style,
-		TotalDuration: cb.Duration,
+		Title:         "Promotional Video: " + bb.InstitutionName,
+		Description:   "Auto-generated 3-scene storyboard for " + cb.EventContent,
+		Style:         cb.Theme,
+		TotalDuration: durInt,
 	}
 
 	if err := s.storyboardRepo.Create(storyboard); err != nil {
@@ -220,10 +236,10 @@ func (s *storyboardService) AutoGenerateStoryboard(userID string, projectID uuid
 
 	// 2. Allocate duration for Hook (0-5s), Value (5-12s), CTA (12-15s)
 	hookDur, valueDur, ctaDur := 5, 7, 3
-	if cb.Duration != 15 && cb.Duration > 0 {
-		hookDur = int(float64(cb.Duration) * 0.33)
-		ctaDur = int(float64(cb.Duration) * 0.20)
-		valueDur = cb.Duration - hookDur - ctaDur
+	if durInt != 15 && durInt > 0 {
+		hookDur = int(float64(durInt) * 0.33)
+		ctaDur = int(float64(durInt) * 0.20)
+		valueDur = durInt - hookDur - ctaDur
 	}
 
 	// 3. Construct 3 mandatory scenes
@@ -232,21 +248,21 @@ func (s *storyboardService) AutoGenerateStoryboard(userID string, projectID uuid
 			StoryboardID: storyboard.ID,
 			UserID:       uuid.MustParse(userID),
 			SectionType:  "hook",
-			Content:      fmt.Sprintf("Visual memukau menampilkan landmark/suasana %s. Tone: %s.", bb.InstituteName, cb.Tone),
+			Content:      fmt.Sprintf("Visual memukau menampilkan landmark/suasana %s. Tone: %s.", bb.InstitutionName, cb.ToneOfVoice),
 			Duration:     hookDur,
 		},
 		{
 			StoryboardID: storyboard.ID,
 			UserID:       uuid.MustParse(userID),
 			SectionType:  "value",
-			Content:      fmt.Sprintf("Sorot fasilitas dan keunggulan spesifik. Catatan: %s", cb.AdditionalNotes),
+			Content:      fmt.Sprintf("Sorot fasilitas dan keunggulan spesifik. Catatan: %s", cb.Prompt),
 			Duration:     valueDur,
 		},
 		{
 			StoryboardID: storyboard.ID,
 			UserID:       uuid.MustParse(userID),
 			SectionType:  "cta",
-			Content:      fmt.Sprintf("Pesan penutup: '%s'. %s", cb.CallToAction, cb.Copywriting),
+			Content:      fmt.Sprintf("Pesan penutup: '%s'. %s", cb.KeyMessage, cb.Copywriting),
 			Duration:     ctaDur,
 		},
 	}
@@ -260,109 +276,3 @@ func (s *storyboardService) AutoGenerateStoryboard(userID string, projectID uuid
 	storyboard.Sections = sections
 	return storyboard, nil
 }
-
-func (s *storyboardService) GetVeo3TestPayload(userID, storyboardID string) (*model.Veo3TestPayload, error) {
-	storyboard, err := s.storyboardRepo.FindByID(storyboardID)
-	if err != nil {
-		return nil, errors.New("storyboard tidak ditemukan")
-	}
-
-	if storyboard.UserID.String() != userID {
-		return nil, errors.New("unauthorized access")
-	}
-
-	// Fetch business brief and creative brief to get meta info
-	bb, err := s.briefRepo.FindBusinessBriefByProjectID(storyboard.ProjectID.String())
-	if err != nil {
-		return nil, errors.New("business brief tidak ditemukan")
-	}
-
-	cb, err := s.briefRepo.FindCreativeBriefByProjectID(storyboard.ProjectID.String())
-	if err != nil {
-		return nil, errors.New("creative brief tidak ditemukan")
-	}
-
-	// Fetch sections
-	sections, err := s.storyboardRepo.FindSectionsByStoryboardID(storyboardID)
-	if err != nil {
-		return nil, errors.New("gagal mengambil sections storyboard")
-	}
-
-	// Construct "Kata-kata Pakem" for Veo3 Prompt
-	var hook, value, cta model.StoryboardSection
-	for _, sec := range sections {
-		switch sec.SectionType {
-		case "hook":
-			hook = sec
-		case "value":
-			value = sec
-		case "cta":
-			cta = sec
-		}
-	}
-
-	// Standard phrasing (kata-kata pakem) menggunakan template yang lebih detail
-	prompt := fmt.Sprintf(
-		`Buatlah video promosi %s berkualitas tinggi untuk iklan institusi pendidikan.
-
-		Detail Institusi:
-		- Nama: %s
-		- Tingkat Pendidikan: %s
-		- Program Studi: %s
-		- Latar Belakang/Sejarah: %s
-		- Gunakan logo dan foto lingkungan kampus sebagai referensi visual.
-
-		Tujuan Video:
-		Membuat video promosi yang menarik, modern, profesional, dan membangun kepercayaan, dengan menonjolkan kualitas akademik, fasilitas, serta peluang masa depan.
-
-		Gaya & Tone:
-		%s
-		Target Audiens: Calon siswa/mahasiswa dan orang tua.
-		Gaya Visual: Sinematik, bersih, profesional, transisi halus, kualitas produksi tinggi.
-
-		SCENE STRUCTURE:
-
-		SCENE 1 (%ds–%ds): HOOK
-		%s
-
-		SCENE 2 (%ds–%ds): NILAI UNGGULAN
-		%s
-
-		SCENE 3 (%ds–%ds): CALL TO ACTION
-		%s
-
-		Panduan Teknis:
-		- Pertahankan kesinambungan sinematik
-		- Gunakan karakter yang konsisten di setiap scene
-		- Transisi antar scene harus halus dan natural
-		- Tampilkan nama institusi dengan jelas
-		- Tonjolkan kepercayaan, prestasi, dan masa depan cerah
-		- Tambahkan nuansa musik latar inspiratif
-		- Hindari klaim berlebihan atau tidak realistis`,
-		cb.Style,
-		bb.InstituteName,
-		bb.SchoolLevel,
-		bb.OfferedDegrees,
-		bb.InstitutionHistory,
-		cb.Style,
-		0, hook.Duration, hook.Content,
-		hook.Duration, hook.Duration+value.Duration, value.Content,
-		hook.Duration+value.Duration, hook.Duration+value.Duration+cta.Duration, cta.Content,
-	)
-
-	// Reference images from initial input (logo and environment)
-	var refImages []string
-	if bb.LogoPath != "" {
-		refImages = append(refImages, bb.LogoPath)
-	}
-	if bb.EnvironmentPath != "" {
-		refImages = append(refImages, bb.EnvironmentPath)
-	}
-
-	return &model.Veo3TestPayload{
-		// Model:           "veo3",
-		Prompt:          prompt,
-		// ReferenceImages: refImages,
-	}, nil
-}
-

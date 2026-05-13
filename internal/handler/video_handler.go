@@ -100,6 +100,28 @@ func (h *VideoHandler) DownloadVideo(c *fiber.Ctx) error {
 	})
 }
 
+// PreviewVideo godoc
+// GET /api/videos/preview/:id
+// Previews video directly by redirecting to public URL
+func (h *VideoHandler) PreviewVideo(c *fiber.Ctx) error {
+	variantIDStr := c.Params("id")
+	variantID, err := uuid.Parse(variantIDStr)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid video ID format")
+	}
+
+	variant, err := h.videoGenService.GetVideoVariant(c.Context(), variantID)
+	if err != nil {
+		return utils.NotFound(c, "Video not found")
+	}
+
+	if variant.VideoURL == "" {
+		return utils.NotFound(c, "Video file not available")
+	}
+
+	return c.Redirect(variant.VideoURL, fiber.StatusTemporaryRedirect)
+}
+
 // GenerateVideo godoc
 // POST /api/videos/generate
 // Generates video from storyboard
@@ -230,3 +252,54 @@ func (h *VideoHandler) ListVideos(c *fiber.Ctx) error {
 
 	return utils.OK(c, "Videos retrieved", videos)
 }
+
+// GetVideosByStoryboard godoc
+// GET /api/videos/storyboard/:storyboard_id
+// Lists all video variants for a given storyboard
+func (h *VideoHandler) GetVideosByStoryboard(c *fiber.Ctx) error {
+	storyboardIDStr := c.Params("storyboard_id")
+	storyboardID, err := uuid.Parse(storyboardIDStr)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid storyboard_id format")
+	}
+
+	variants, err := h.videoGenService.GetVideoVariants(c.Context(), storyboardID)
+	if err != nil {
+		return utils.InternalError(c, "Failed to retrieve video variants")
+	}
+
+	// Map to response structs
+	type variantResp struct {
+		ID            string `json:"id"`
+		VariantNumber int    `json:"variant_number"`
+		Status        string `json:"status"`
+		VideoURL      string `json:"video_url"`
+		ThumbnailURL  string `json:"thumbnail_url"`
+		PromptUsed    string `json:"prompt_used"`
+		Duration      int    `json:"duration"`
+		Provider      string `json:"provider"`
+		Model         string `json:"model"`
+		CreatedAt     interface{} `json:"created_at"`
+		UpdatedAt     interface{} `json:"updated_at"`
+	}
+
+	result := make([]variantResp, len(variants))
+	for i, v := range variants {
+		result[i] = variantResp{
+			ID:            v.ID.String(),
+			VariantNumber: v.VariantNumber,
+			Status:        v.Status,
+			VideoURL:      v.VideoURL,
+			ThumbnailURL:  v.ThumbnailURL,
+			PromptUsed:    v.PromptUsed,
+			Duration:      v.Duration,
+			Provider:      v.Provider,
+			Model:         v.Model,
+			CreatedAt:     v.CreatedAt,
+			UpdatedAt:     v.UpdatedAt,
+		}
+	}
+
+	return utils.OK(c, "Video variants retrieved", result)
+}
+

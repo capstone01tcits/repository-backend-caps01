@@ -10,85 +10,124 @@ import (
 	"strings"
 	"time"
 
+	"Sevima-AI-Content-Creator/config"
 	"Sevima-AI-Content-Creator/internal/model"
 )
 
 // BuildVeo3Prompt merangkai prompt sesuai dengan standar Veo 3 untuk video promosi pendidikan.
-// Logic ini dipindahkan dari video_worker.go untuk sentralisasi.
 func BuildVeo3Prompt(bb *model.BusinessBrief, cb *model.CreativeBrief, sections []model.StoryboardSection) string {
-	// 1. Identity Mapping & Context Awareness
-	contextKeywords := ""
-	schoolLevelStr := strings.ToLower(bb.SchoolLevel)
-
-	if strings.Contains(schoolLevelStr, "university") || strings.Contains(schoolLevelStr, "perguruan tinggi") || strings.Contains(schoolLevelStr, "kampus") {
-		contextKeywords = "Higher Education, Campus Life, Research, Independent Learning"
-	} else {
-		contextKeywords = "Vibrant Classroom, Practical Skills, Student Discipline, Nurturing Environment"
+	// Identify the 3 scenes (hook, value, cta)
+	var hook, value, cta model.StoryboardSection
+	for _, sec := range sections {
+		switch strings.ToLower(sec.SectionType) {
+		case "hook":
+			hook = sec
+		case "value":
+			value = sec
+		case "cta":
+			cta = sec
+		}
 	}
 
-	// 2. Visual Quality Standard
-	visualDirection := "Realistic skin textures, natural cinematic lighting, 4K resolution, no plastic-look faces"
-
-	// 3. Merangkai Header Prompt
-	var promptBuilder strings.Builder
-	promptBuilder.WriteString(fmt.Sprintf(
-		"Create a cinematic promotional video for %s. Type: %s. Event: %s. Tone: %s. Theme: %s. Duration: %d seconds. Key message: %s. Core emotion: %s. Visual direction: %s.\n\n",
-		bb.InstituteName, bb.SchoolLevel, cb.VideoType, cb.Tone, cb.Style, cb.Duration, cb.CallToAction, contextKeywords, visualDirection,
-	))
-
-	// 4. Memasukkan Scene (Hook, Value, CTA) beserta perhitungan detik
-	timeAccumulator := 0
-	for i, sec := range sections {
-		startTime := timeAccumulator
-		endTime := timeAccumulator + sec.Duration
-		timeAccumulator = endTime
-
-		promptBuilder.WriteString(fmt.Sprintf(
-			"SCENE %d (%d–%ds): %s [%s]\n",
-			i+1, startTime, endTime, strings.ToUpper(sec.SectionType), sec.Content,
-		))
+	// Fallback jika tidak ada section (untuk amannya)
+	if hook.Duration == 0 {
+		hook.Duration = 5
+	}
+	if value.Duration == 0 {
+		value.Duration = 5
+	}
+	if cta.Duration == 0 {
+		cta.Duration = 5
 	}
 
-	// 5. Aturan Transisi Wajib
-	promptBuilder.WriteString("\nMaintain cinematic continuity, same characters, natural skin textures, and smooth transitions.")
+	// Standard phrasing (kata-kata pakem)
+	prompt := fmt.Sprintf(
+		`Buatlah video promosi %s berkualitas tinggi untuk iklan institusi pendidikan.
 
-	return promptBuilder.String()
+		Detail Institusi:
+		- Nama: %s
+		- Tingkat Pendidikan: %s
+		- Program Studi: %s
+		- Latar Belakang/Sejarah: %s
+		- Gunakan logo dan foto lingkungan kampus sebagai referensi visual.
+
+		Tujuan Video:
+		Membuat video promosi yang menarik, modern, profesional, dan membangun kepercayaan, dengan menonjolkan kualitas akademik, fasilitas, serta peluang masa depan.
+
+		Gaya & Tone:
+		%s
+		Target Audiens: Calon siswa/mahasiswa dan orang tua.
+		Gaya Visual: Sinematik, bersih, profesional, transisi halus, kualitas produksi tinggi.
+
+		SCENE STRUCTURE:
+
+		SCENE 1 (%ds–%ds): HOOK
+		%s
+
+		SCENE 2 (%ds–%ds): NILAI UNGGULAN
+		%s
+
+		SCENE 3 (%ds–%ds): CALL TO ACTION
+		%s
+
+		Panduan Teknis:
+		- Pertahankan kesinambungan sinematik
+		- Gunakan karakter yang konsisten di setiap scene
+		- Transisi antar scene harus halus dan natural
+		- Tampilkan nama institusi dengan jelas
+		- Tonjolkan kepercayaan, prestasi, dan masa depan cerah
+		- Tambahkan nuansa musik latar inspiratif
+		- Hindari klaim berlebihan atau tidak realistis`,
+		cb.Theme,
+		bb.InstitutionName,
+		bb.SchoolLevel,
+		bb.OfferedDegrees,
+		bb.InstitutionHistory,
+		cb.Theme,
+		0, hook.Duration, hook.Content,
+		hook.Duration, hook.Duration+value.Duration, value.Content,
+		hook.Duration+value.Duration, hook.Duration+value.Duration+cta.Duration, cta.Content,
+	)
+
+	return prompt
 }
 
-// Veo3Provider implements VideoProvider for the new Veo 3 AI Service
+// Veo3Provider implements VideoProvider — forwards to the Python AI Service
+// which now routes all veo3/veo-3.1 requests to Wavespeed.
 type Veo3Provider struct {
-	baseURL string
+	aiServiceURL string
 }
 
 // NewVeo3Provider creates a new instance of Veo3Provider
 func NewVeo3Provider() VideoProvider {
 	return &Veo3Provider{
-		baseURL: "http://localhost:8000/api/veo3/generate",
+		aiServiceURL: strings.TrimRight(config.Cfg.AIServiceURL, "/"),
 	}
 }
 
-// GenerateScene sends the prompt and reference images to the AI Service
+// GenerateScene submits a video generation job to the Python AI Service.
+// The AI Service routes the "veo3" task_type to Wavespeed internally.
 func (p *Veo3Provider) GenerateScene(ctx context.Context, req VideoGenerationRequest) (*VideoGenerationResponse, error) {
-	// Create payload for the new endpoint
+	// POST /generate with task_type=veo3 → Python AI Service → Wavespeed
 	payload := map[string]interface{}{
-		"model":            req.Model,
-		"prompt":           req.Prompt,
-		"reference_images": req.ReferenceImages,
+		"prompt":    req.Prompt,
+		"duration":  req.Duration,
+		"ratio":     "16:9",
+		"task_type": "veo3",
 	}
 
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal veo3 payload: %w", err)
+		return nil, fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
-	// Create HTTP request
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL, bytes.NewBuffer(jsonData))
+	endpoint := fmt.Sprintf("%s/generate", p.aiServiceURL)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	// Execute request
 	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Do(httpReq)
 	if err != nil {
@@ -96,19 +135,16 @@ func (p *Veo3Provider) GenerateScene(ctx context.Context, req VideoGenerationReq
 	}
 	defer resp.Body.Close()
 
-	// Check status code
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("ai service error (%d): %s", resp.StatusCode, string(body))
 	}
 
-	// Decode response
 	var genResp struct {
 		JobID   string `json:"job_id"`
 		Status  string `json:"status"`
 		Message string `json:"message"`
 	}
-
 	if err := json.NewDecoder(resp.Body).Decode(&genResp); err != nil {
 		return nil, fmt.Errorf("failed to decode ai service response: %w", err)
 	}
@@ -121,10 +157,10 @@ func (p *Veo3Provider) GenerateScene(ctx context.Context, req VideoGenerationReq
 	}, nil
 }
 
-// GetJobStatus polls the AI Service for job status
+// GetJobStatus polls the Python AI Service for job status, then fetches result if done.
 func (p *Veo3Provider) GetJobStatus(ctx context.Context, jobID string) (*VideoGenerationResponse, error) {
-	// 1. Check status
-	statusURL := fmt.Sprintf("http://localhost:8000/status/%s", jobID)
+	// GET /status/{job_id}
+	statusURL := fmt.Sprintf("%s/status/%s", p.aiServiceURL, jobID)
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", statusURL, nil)
 	if err != nil {
 		return nil, err
@@ -142,14 +178,13 @@ func (p *Veo3Provider) GetJobStatus(ctx context.Context, jobID string) (*VideoGe
 		Status string `json:"status"`
 		Error  string `json:"error"`
 	}
-
 	if err := json.NewDecoder(resp.Body).Decode(&statusData); err != nil {
 		return nil, err
 	}
 
-	// 2. If done, get the result URL
+	// If done, fetch result to get video URL
 	if statusData.Status == "done" {
-		resultURL := fmt.Sprintf("http://localhost:8000/result/%s", jobID)
+		resultURL := fmt.Sprintf("%s/result/%s", p.aiServiceURL, jobID)
 		resReq, _ := http.NewRequestWithContext(ctx, "GET", resultURL, nil)
 		resResp, err := client.Do(resReq)
 		if err == nil {
@@ -158,7 +193,7 @@ func (p *Veo3Provider) GetJobStatus(ctx context.Context, jobID string) (*VideoGe
 				VideoURL string `json:"video_url"`
 			}
 			json.NewDecoder(resResp.Body).Decode(&resData)
-			
+
 			return &VideoGenerationResponse{
 				JobID:    jobID,
 				Status:   "completed",
@@ -168,10 +203,13 @@ func (p *Veo3Provider) GetJobStatus(ctx context.Context, jobID string) (*VideoGe
 		}
 	}
 
-	// Map Python status to Go standard
+	// Map Python statuses to our Go standard
 	goStatus := statusData.Status
-	if goStatus == "done" {
+	switch goStatus {
+	case "done":
 		goStatus = "completed"
+	case "pending", "processing":
+		// keep as-is
 	}
 
 	return &VideoGenerationResponse{
@@ -181,12 +219,12 @@ func (p *Veo3Provider) GetJobStatus(ctx context.Context, jobID string) (*VideoGe
 	}, nil
 }
 
-// CancelJob cancels an ongoing generation
+// CancelJob is a no-op for Wavespeed-backed jobs.
 func (p *Veo3Provider) CancelJob(ctx context.Context, jobID string) error {
 	return nil
 }
 
-// DownloadVideo downloads the final video file
+// DownloadVideo downloads the final video file from a URL.
 func (p *Veo3Provider) DownloadVideo(ctx context.Context, videoURL string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", videoURL, nil)
 	if err != nil {
@@ -203,17 +241,17 @@ func (p *Veo3Provider) DownloadVideo(ctx context.Context, videoURL string) ([]by
 	return io.ReadAll(resp.Body)
 }
 
-// GetProviderName returns "Veo3"
+// GetProviderName returns "Veo3/Wavespeed"
 func (p *Veo3Provider) GetProviderName() string {
-	return "Veo3"
+	return "Veo3/Wavespeed"
 }
 
-// GetModelName returns "veo3"
+// GetModelName returns "wavespeed"
 func (p *Veo3Provider) GetModelName() string {
-	return "veo3"
+	return "wavespeed"
 }
 
-// CalculateCredits returns fixed cost for Veo 3
+// CalculateCredits returns cost estimate (1 credit per second).
 func (p *Veo3Provider) CalculateCredits(duration int) int {
-	return duration * 10
+	return duration * 1
 }

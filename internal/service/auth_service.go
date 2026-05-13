@@ -55,6 +55,7 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.AuthResponse,
 		Email:    req.Email,
 		Password: string(hashed),
 		Role:     role,
+		Credits:  1000,
 	}
 
 	if err := s.userRepo.Create(user); err != nil {

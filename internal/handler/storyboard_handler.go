@@ -6,7 +6,6 @@ import (
 	"Sevima-AI-Content-Creator/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type StoryboardHandler struct {
@@ -206,73 +205,3 @@ func (h *StoryboardHandler) RestoreStoryboard(c *fiber.Ctx) error {
 
 	return utils.OK(c, "Storyboard restored successfully", nil)
 }
-
-// GetVeo3TestPayload godoc
-// GET /api/storyboard/:storyboard_id/veo3-test
-// Returns a payload for testing Veo3 video generation based on storyboard data
-func (h *StoryboardHandler) GetVeo3TestPayload(c *fiber.Ctx) error {
-	userID, ok := c.Locals("userID").(string)
-	if !ok || userID == "" {
-		return utils.Unauthorized(c, "Unauthorized")
-	}
-
-	storyboardID := c.Params("storyboard_id")
-	if storyboardID == "" {
-		return utils.BadRequest(c, "storyboard_id is required")
-	}
-
-	payload, err := h.storyboardService.GetVeo3TestPayload(userID, storyboardID)
-	if err != nil {
-		return utils.BadRequest(c, err.Error())
-	}
-
-	return utils.OK(c, "Veo3 test payload generated successfully", payload)
-}
-
-// SendVeo3TestPayload godoc
-// POST /api/storyboard/:storyboard_id/veo3-test
-// Generates and sends a Veo3 test payload to the AI service
-func (h *StoryboardHandler) SendVeo3TestPayload(c *fiber.Ctx) error {
-	userID, ok := c.Locals("userID").(string)
-	if !ok || userID == "" {
-		return utils.Unauthorized(c, "Unauthorized")
-	}
-
-	storyboardID := c.Params("storyboard_id")
-	if storyboardID == "" {
-		return utils.BadRequest(c, "storyboard_id is required")
-	}
-
-	// 1. Get the payload using the pakem logic
-	payload, err := h.storyboardService.GetVeo3TestPayload(userID, storyboardID)
-	if err != nil {
-		return utils.BadRequest(c, err.Error())
-	}
-
-	// 2. We can either trigger a standard job OR send it directly to the AI provider for "test"
-	// To keep it simple and truly "testing" the connection, let's trigger the standard generation job
-	// but using the generated prompt.
-
-	storyboardUUID, _ := uuid.Parse(storyboardID)
-	
-	// We need the ProjectID from the storyboard
-	storyboard, err := h.storyboardService.GetStoryboard(userID, storyboardID)
-	if err != nil {
-		return utils.BadRequest(c, "Gagal mengambil detail storyboard")
-	}
-
-	userUUID, _ := uuid.Parse(userID)
-	
-	// Trigger generation job
-	job, err := h.videoGenService.GenerateVideoVariants(c.Context(), userUUID, storyboard.ProjectID, storyboardUUID, payload.Prompt)
-	if err != nil {
-		return utils.BadRequest(c, "Gagal mengirim request ke AI Service: "+err.Error())
-	}
-
-	return utils.Created(c, "Veo3 test request sent successfully", map[string]interface{}{
-		"generation_job_id": job.ID,
-		"status":            job.Status,
-		"payload_sent":     payload,
-	})
-}
-

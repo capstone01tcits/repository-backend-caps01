@@ -62,11 +62,10 @@ func (pf *ProviderFactory) GetProvider(tier string, model string) VideoProvider 
 // GetProviderByModel returns provider based on specific model name
 func (pf *ProviderFactory) GetProviderByModel(model string) VideoProvider {
 	switch model {
-	case "veo3":
+	case "veo3", "veo-3.1", "wavespeed":
 		return NewVeo3Provider()
 	default:
-		// Fallback to Veo3 or return nil/error if preferred. 
-		// For now keeping it simple as per request to remove mocks.
+		// Fallback: all models go through Veo3Provider → Wavespeed
 		return NewVeo3Provider()
 	}
 }

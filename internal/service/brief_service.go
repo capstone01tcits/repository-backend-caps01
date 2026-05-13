@@ -9,7 +9,6 @@ import (
 
 	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/repository"
-	"Sevima-AI-Content-Creator/pkg/utils"
 
 	"github.com/google/uuid"
 )
@@ -59,24 +58,13 @@ func (s *briefService) CreateBusinessBrief(userID string, req *model.CreateBusin
 	}
 
 	brief := &model.BusinessBrief{
-		UserID:           uid,
-		ProjectID:        projectID,
-		ProjectName:      req.ProjectName,
-		CompanyName:      req.CompanyName,
-		InstituteName:    req.InstituteName,
-		Education:          req.Education,
-		OfferedDegrees:     req.OfferedDegrees,
+		UserID:             uid,
+		ProjectID:          projectID,
+		InstitutionName:    req.InstitutionName,
 		InstitutionHistory: req.InstitutionHistory,
-		Industry:           req.Industry,
-		TargetAudience:   req.TargetAudience,
-		ProjectObjective: req.ProjectObjective,
-		KeyMessage:       req.KeyMessage,
-		Budget:           req.Budget,
-		Timeline:         req.Timeline,
-		Deadline:         req.Deadline,
-		Competitors:      req.Competitors,
-		AdditionalNotes:  req.AdditionalNotes,
-		Status:           "draft",
+		SchoolLevel:        req.SchoolLevel,
+		OfferedDegrees:     req.OfferedDegrees,
+		Status:             "draft",
 	}
 
 	if err := s.briefRepo.CreateBusinessBrief(brief); err != nil {
@@ -113,50 +101,17 @@ func (s *briefService) UpdateBusinessBrief(userID, briefID string, req *model.Up
 		return nil, errors.New("unauthorized access to this brief")
 	}
 
-	if req.ProjectName != nil {
-		brief.ProjectName = *req.ProjectName
-	}
-	if req.CompanyName != nil {
-		brief.CompanyName = *req.CompanyName
-	}
-	if req.InstituteName != nil {
-		brief.InstituteName = *req.InstituteName
-	}
-	if req.Education != nil {
-		brief.Education = *req.Education
-	}
-	if req.OfferedDegrees != nil {
-		brief.OfferedDegrees = *req.OfferedDegrees
+	if req.InstitutionName != nil {
+		brief.InstitutionName = *req.InstitutionName
 	}
 	if req.InstitutionHistory != nil {
 		brief.InstitutionHistory = *req.InstitutionHistory
 	}
-	if req.Industry != nil {
-		brief.Industry = *req.Industry
+	if req.SchoolLevel != nil {
+		brief.SchoolLevel = *req.SchoolLevel
 	}
-	if req.TargetAudience != nil {
-		brief.TargetAudience = *req.TargetAudience
-	}
-	if req.ProjectObjective != nil {
-		brief.ProjectObjective = *req.ProjectObjective
-	}
-	if req.KeyMessage != nil {
-		brief.KeyMessage = *req.KeyMessage
-	}
-	if req.Budget != nil {
-		brief.Budget = *req.Budget
-	}
-	if req.Timeline != nil {
-		brief.Timeline = *req.Timeline
-	}
-	if req.Deadline != nil {
-		brief.Deadline = *req.Deadline
-	}
-	if req.Competitors != nil {
-		brief.Competitors = *req.Competitors
-	}
-	if req.AdditionalNotes != nil {
-		brief.AdditionalNotes = *req.AdditionalNotes
+	if req.OfferedDegrees != nil {
+		brief.OfferedDegrees = *req.OfferedDegrees
 	}
 	if req.Status != nil {
 		brief.Status = *req.Status
@@ -205,22 +160,18 @@ func (s *briefService) CreateCreativeBrief(userID string, req *model.CreateCreat
 	}
 
 	brief := &model.CreativeBrief{
-		UserID:           uid,
-		BusinessBriefID:  bbID,
-		Title:            req.Title,
-		VideoType:        req.VideoType,
-		Duration:         req.Duration,
-		Style:            req.Style,
-		Tone:             req.Tone,
-		Script:           req.Script,
-		Storyboard:       req.Storyboard,
-		VisualReferences: req.VisualReferences,
-		MusicPreference:  req.MusicPreference,
-		CallToAction:     req.CallToAction,
-		OutputFormat:     req.OutputFormat,
-		Resolution:       req.Resolution,
-		AdditionalNotes:  req.AdditionalNotes,
-		Status:           "draft",
+		UserID:          uid,
+		BusinessBriefID: bbID,
+		Title:           fmt.Sprintf("Creative Brief %s", bbID),
+		EventContent:    req.EventContent,
+		VideoDuration:   req.VideoDuration,
+		ToneOfVoice:     req.ToneOfVoice,
+		KeyMessage:      req.KeyMessage,
+		Prompt:          req.Prompt,
+		Theme:           req.Theme,
+		Copywriting:     req.Copywriting,
+		Hashtags:        req.Hashtags,
+		Status:          "draft",
 	}
 
 	if err := s.briefRepo.CreateCreativeBrief(brief); err != nil {
@@ -270,44 +221,29 @@ func (s *briefService) UpdateCreativeBrief(userID, briefID string, req *model.Up
 		return nil, errors.New("unauthorized access to this brief")
 	}
 
-	if req.Title != nil {
-		brief.Title = *req.Title
+	if req.EventContent != nil {
+		brief.EventContent = *req.EventContent
 	}
-	if req.VideoType != nil {
-		brief.VideoType = *req.VideoType
+	if req.VideoDuration != nil {
+		brief.VideoDuration = *req.VideoDuration
 	}
-	if req.Duration != nil {
-		brief.Duration = *req.Duration
+	if req.ToneOfVoice != nil {
+		brief.ToneOfVoice = *req.ToneOfVoice
 	}
-	if req.Style != nil {
-		brief.Style = *req.Style
+	if req.KeyMessage != nil {
+		brief.KeyMessage = *req.KeyMessage
 	}
-	if req.Tone != nil {
-		brief.Tone = *req.Tone
+	if req.Prompt != nil {
+		brief.Prompt = *req.Prompt
 	}
-	if req.Script != nil {
-		brief.Script = *req.Script
+	if req.Theme != nil {
+		brief.Theme = *req.Theme
 	}
-	if req.Storyboard != nil {
-		brief.Storyboard = *req.Storyboard
+	if req.Copywriting != nil {
+		brief.Copywriting = *req.Copywriting
 	}
-	if req.VisualReferences != nil {
-		brief.VisualReferences = *req.VisualReferences
-	}
-	if req.MusicPreference != nil {
-		brief.MusicPreference = *req.MusicPreference
-	}
-	if req.CallToAction != nil {
-		brief.CallToAction = *req.CallToAction
-	}
-	if req.OutputFormat != nil {
-		brief.OutputFormat = *req.OutputFormat
-	}
-	if req.Resolution != nil {
-		brief.Resolution = *req.Resolution
-	}
-	if req.AdditionalNotes != nil {
-		brief.AdditionalNotes = *req.AdditionalNotes
+	if req.Hashtags != nil {
+		brief.Hashtags = *req.Hashtags
 	}
 	if req.Status != nil {
 		brief.Status = *req.Status
@@ -403,28 +339,17 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 	}
 
 	businessBrief := &model.BusinessBrief{
-		ID:               uuid.New(),
-		UserID:           uid,
-		ProjectID:        project.ID,
-		ProjectName:      projectName,
-		CompanyName:      req.InstitutionName,
-		InstituteName:    req.InstitutionName,
-		SchoolLevel:      schoolLevel,
-		Education:        schoolLevel,
-		Industry:           "Education", // auto-fill default
-		TargetAudience:     "Students",  // auto-fill default
-		ProjectObjective:   description,
-		OfferedDegrees:     req.OfferedDegrees,
+		ID:                 uuid.New(),
+		UserID:             uid,
+		ProjectID:          project.ID,
+		InstitutionName:    req.InstitutionName,
 		InstitutionHistory: req.InstitutionHistory,
-		KeyMessage:         req.SelectedKeyMessage,
-		Budget:             "",      // optional
-		Timeline:           "",      // optional
-		Competitors:        "",      // optional
-		AdditionalNotes:    "",      // previously req.OfferedDegrees was here
-		LogoPath:           logoURL, // Store bucket URL instead of base64
-		EnvironmentPath:  envURL,             // Store bucket URL instead of base64
-		DocumentPath:     docURL,             // Store bucket URL instead of base64
-		Status:           "draft",
+		SchoolLevel:        schoolLevel,
+		OfferedDegrees:     req.OfferedDegrees,
+		LogoPath:           logoURL, 
+		EnvironmentPath:    envURL,             
+		DocumentPath:       docURL,             
+		Status:             "draft",
 	}
 	if err := s.briefRepo.CreateBusinessBrief(businessBrief); err != nil {
 		return nil, errors.New("failed to create business brief")
@@ -437,24 +362,19 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 	}
 
 	creativeBrief := &model.CreativeBrief{
-		ID:               uuid.New(),
-		UserID:           uid,
-		BusinessBriefID:  businessBrief.ID,
-		Title:            projectName,
-		VideoType:        utils.MapEventContentToVideoType(req.EventContent),
-		Duration:         duration,
-		Style:            utils.MapThemeToStyle(req.SelectedTheme),
-		Tone:             req.ToneOfVoice,
-		Script:           req.Prompt, // use custom prompt as script
-		VisualReferences: req.SelectedTheme,
-		MusicPreference:  utils.MapToneToMusicPreference(req.ToneOfVoice),
-		CallToAction:     req.SelectedKeyMessage,
-		Copywriting:      req.EditableCopywriting, // social media caption
-		Hashtags:         req.EditableHashtags,    // social media hashtags
-		OutputFormat:     "mp4",                   // auto-fill default
-		Resolution:       "1080p",                 // auto-fill default
-		AdditionalNotes:  req.Prompt,
-		Status:           "draft",
+		ID:              uuid.New(),
+		UserID:          uid,
+		BusinessBriefID: businessBrief.ID,
+		Title:           projectName,
+		EventContent:    req.EventContent,
+		VideoDuration:   req.VideoDuration,
+		ToneOfVoice:     req.ToneOfVoice,
+		KeyMessage:      req.SelectedKeyMessage,
+		Prompt:          req.Prompt,
+		Theme:           req.SelectedTheme,
+		Copywriting:     req.EditableCopywriting,
+		Hashtags:        req.EditableHashtags,
+		Status:          "draft",
 	}
 	if err := s.briefRepo.CreateCreativeBrief(creativeBrief); err != nil {
 		return nil, errors.New("failed to create creative brief")

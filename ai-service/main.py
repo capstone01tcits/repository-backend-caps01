@@ -106,7 +106,7 @@ def health_check():
 
 class Veo3Payload(BaseModel):
     """Request body untuk POST /api/veo3/generate."""
-    model: str = Field(default="veo3")
+    model: str = Field(default="veo-3.1")
     prompt: str = Field(..., description="Prompt lengkap dengan format SCENE")
     reference_images: List[str] = Field(default_factory=list)
 

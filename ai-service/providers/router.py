@@ -19,7 +19,6 @@ from typing import Dict, Optional
 from .base import VideoProvider, VideoRequest
 from .ltx_provider import LTXProvider
 from .runway_provider import RunwayProvider
-from .veo3_provider import Veo3Provider
 from .wavespeed_provider import WavespeedProvider
 
 logger = logging.getLogger(__name__)
@@ -31,26 +30,30 @@ logger = logging.getLogger(__name__)
 
 ROUTING_TABLE: Dict[str, Dict[str, str]] = {
     "text_to_video": {
-        "provider": "ltx",
-        "model": "ltx-2-3-fast",
+        "provider": "wavespeed",
+        "model": "wavespeed-ai/wan-2.1/t2v-480p",
     },
     "text_to_video_hq": {
-        "provider": "ltx",
-        "model": "ltx-2-3-pro",
+        "provider": "wavespeed",
+        "model": "wavespeed-ai/wan-2.1/t2v-480p",
     },
     "image_to_video": {
-        "provider": "runway",
-        "model": "gen4.5",
+        "provider": "wavespeed",
+        "model": "wavespeed-ai/wan-2.1/i2v-720p",
     },
     "veo3": {
         "provider": "wavespeed",
-        "model": "veo3",
+        "model": "google/veo3.1-lite/text-to-video",
+    },
+    "veo-3.1": {
+        "provider": "wavespeed",
+        "model": "google/veo3.1-lite/text-to-video",
     },
 }
 
 FALLBACK_ROUTE = {
-    "provider": "ltx",
-    "model": "ltx-2-3-fast",
+    "provider": "wavespeed",
+    "model": "wavespeed-ai/wan-2.1/t2v-480p",
 }
 
 
@@ -128,12 +131,21 @@ def build_provider(
             model=_model or "gen4.5",
         )
 
-    if _provider == "veo3":
-        return Veo3Provider(model=_model or "veo3")
-
     if _provider == "wavespeed":
-        return WavespeedProvider(model=_model or "veo3")
+        api_key = os.getenv("WAVESPEED_API_KEY", "").strip()
+        if not api_key:
+            raise EnvironmentError("WAVESPEED_API_KEY tidak ditemukan di environment")
+        return WavespeedProvider(
+            api_key=api_key,
+            model=_model or "google/veo3.1-lite/text-to-video",
+        )
+
+    # Last resort: try wavespeed
+    logger.warning("[FACTORY] Provider '%s' tidak dikenali — fallback ke wavespeed", _provider)
+    api_key = os.getenv("WAVESPEED_API_KEY", "").strip()
+    if api_key:
+        return WavespeedProvider(api_key=api_key, model="google/veo3.1-lite/text-to-video")
 
     raise ValueError(
-        f"Provider '{_provider}' tidak dikenali. Pilihan valid: ltx, runway, veo3, wavespeed"
+        f"Provider '{_provider}' tidak dikenali. Pilihan valid: wavespeed, ltx, runway"
     )

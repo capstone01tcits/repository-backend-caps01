@@ -27,7 +27,7 @@ import logging
 import os
 import sys
 import threading
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 # Add parent directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -52,7 +52,7 @@ class AIVideoService:
     def __init__(self, store: Optional[InMemoryJobStore] = None):
         self._store = store or InMemoryJobStore()
         self._video_dir = os.getenv("VIDEO_OUTPUT_DIR", "outputs/videos")
-        self._base_url = os.getenv("VIDEO_BASE_URL", "")
+        self._base_url = os.getenv("VIDEO_BASE_URL", "http://127.0.0.1:8000/video")
         os.makedirs(self._video_dir, exist_ok=True)
 
     # ------------------------------------------------------------------

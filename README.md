@@ -297,14 +297,15 @@ Service berjalan di `http://localhost:8000`
 | POST | `/api/storyboard/:storyboard_id/restore` | Restore soft-deleted storyboard |
 | GET | `/api/storyboard/:storyboard_id/sections` | Get sections for a storyboard |
 
-### Videos (6 endpoints - Protected)
+### Videos (7 endpoints - Protected)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/videos/generate` | Generate video from storyboard (creates job) |
 | GET | `/api/videos/:id` | Get video details with scenes |
 | GET | `/api/videos` | List user's videos |
-| GET | `/api/videos/download/:id` | Download generated video |
+| GET | `/api/videos/preview/:id` | Stream/Preview video directly via Supabase CDN |
+| GET | `/api/videos/download/:id` | Get video download URL and metadata |
 | POST | `/api/videos/:variantId/regenerate` | Regenerate video (using new prompt) |
 | POST | `/api/videos/scene/:sceneId/regenerate` | Regenerate individual scene |
 
@@ -372,9 +373,13 @@ Complete endpoints for video generation:
 | POST | `/api/videos/generate` | Generate video from storyboard (deducts 1 credit) |
 | GET | `/api/videos/:id` | Check generation status and get video details |
 | GET | `/api/videos` | List all user videos |
+| GET | `/api/videos/preview/:id` | Preview video directly via Supabase CDN (Great for `<video>` tags) |
 | GET | `/api/videos/download/:id` | Download video file |
 | POST | `/api/videos/:id/regenerate` | Regenerate entire video |
 | POST | `/api/videos/scene/:sceneId/regenerate` | Regenerate individual scene |
+
+**Video CDN Integration (Supabase Storage)**
+Semua video yang digenerate oleh AI Service akan secara otomatis di-download oleh Backend Go dan di-upload ke Supabase Storage Bucket. Frontend tidak perlu berurusan dengan local file path atau API AI secara langsung. FE cukup memanggil endpoint `GET /api/videos/preview/:id` yang akan otomatis merespon dengan `302 Redirect` ke **Public CDN URL** dari Supabase, sehingga video bisa langsung diputar di HTML `<video src="...">`.
 
 ### Quick Video Generation CLI Example
 
