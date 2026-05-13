@@ -381,27 +381,7 @@ Initialize Project (FE Wizard)
       └─ user_id (FK to users)
 ```
 
-### Step 4: Generate Storyboard
-```
-Generate Storyboard (AI Service call)
-  └─> INSERT storyboards
-      ├─ title, description
-      ├─ prompt (AI prompt used)
-      ├─ is_selected = false
-      ├─ project_id (FK to projects)
-      └─ user_id (FK to users)
-  
-  └─> INSERT scenes (3-5 rows, one per scene)
-      ├─ scene_number (1, 2, 3, ...)
-      ├─ title, description, visual_description
-      ├─ duration (calculated from total video_duration)
-      ├─ caption (narration/voiceover text)
-      ├─ regenerate_count = 0
-      ├─ storyboard_id (FK to storyboards)
-      └─ user_id (FK to users)
-```
-
-### Step 5: Generate Video (Enqueue)
+### Step 4: Generate Video (Enqueue)
 ```
 Generate Video (Async Job Submission)
   └─> INSERT generation_jobs
@@ -409,9 +389,9 @@ Generate Video (Async Job Submission)
       ├─ status = 'queued'
       ├─ priority = 0
       ├─ prompt (JSONB with all context)
-      ├─ scene_count, video_duration
-      ├─ provider = pending (to be assigned)
-      ├─ model = pending (to be assigned)
+      ├─ scene_count = 3
+      ├─ provider = pending
+      ├─ model = pending
       ├─ retry_count = 0, max_retries = 3
       ├─ created_at = NOW()
       ├─ project_id (FK to projects)
@@ -419,9 +399,9 @@ Generate Video (Async Job Submission)
       └─ user_id (FK to users)
   
   └─> INSERT video_variants (1 row)
-      ├─ Row 1: variant_number = 1, style = 'cinematic' (Veo 3 Standard)
+      ├─ Row 1: variant_number = 1, style = 'cinematic' (Google Veo 3.1 Lite)
       ├─ status = 'pending'
-      ├─ provider = 'veo3'
+      ├─ provider = 'wavespeed'
       ├─ project_id (FK to projects)
       ├─ storyboard_id (FK to storyboards)
       └─ user_id (FK to users)
@@ -433,7 +413,9 @@ Generate Video (Async Job Submission)
   └─> Enqueue job to background worker channel (non-blocking return to FE)
 ```
 
-### Step 6: Background Worker Processing (Async)
+
+
+### Step 5: Background Worker Processing (Async)
 ```
 Background Worker (3 concurrent goroutines)
   
@@ -442,26 +424,30 @@ Background Worker (3 concurrent goroutines)
       ├─ started_at = NOW()
       └─ WHERE id = job_id
   
-  ├─> Build Veo 3 JSON Payload (Identity Mapping, Prompting)
+  ├─> Build Veo 3.1 JSON Payload (Identity Mapping, Prompting)
   ├─> For each scene (loop):
   │   │
   │   ├─> INSERT scene_generations
   │   │   ├─ scene_number (from scene)
   │   │   ├─ scene_index
-  │   │   ├─ prompt (text description for LTX/Runway)
-  │   │   ├─ duration (in seconds)
+  │   │   ├─ prompt (text description for Veo)
+  │   │   ├─ duration = 6 (fixed for Veo 3.1 Lite)
   │   │   ├─ status = 'queued'
   │   │   ├─ external_job_id = null (to be filled)
   │   │   └─ variant_id (FK to video_variants)
   │   │
-  │   ├─> Call AI Service (LTX/Runway API)
-  │   │   ├─ POST /generate/video/scene
-  │   │   ├─ Send: scene_number, description, duration, theme, style
-  │   │   └─ Receive: video_url, external_job_id, metadata
+  │   ├─> Call AI Service (Wavespeed API)
+  │   │   ├─ POST /generate
+  │   │   ├─ Send: prompt, duration=6, ratio="16:9", task_type="veo3"
+  │   │   └─ Receive: job_id, status
+  │   │
+  │   ├─> Wait for Scene Completion
+  │   │   ├─ GET /status/{ai_job_id}
+  │   │   └─ Loop until status is "done", receive video_url
   │   │
   │   ├─> UPDATE scene_generations
   │   │   ├─ status = 'completed'
-  │   │   ├─ video_url (path to scene MP4)
+  │   │   ├─ video_url (URL to scene MP4)
   │   │   ├─ external_job_id (from AI Service)
   │   │   └─ completed_at = NOW()
   │   │
@@ -472,14 +458,14 @@ Background Worker (3 concurrent goroutines)
   │
   ├─> UPDATE generation_jobs (status = 'stitching_video')
   ├─> Merge all scene videos (FFmpeg concatenation)
-  │   └─ Output: /outputs/videos/merged_{variant_style}.mp4
+  │   └─ Output: /outputs/videos/merged_video.mp4
   │
   ├─> INSERT videos (final merged video)
   │   ├─ title (auto-generated from project)
   │   ├─ status = 'completed'
   │   ├─ video_url (path to final MP4)
   │   ├─ thumbnail_url (first frame thumbnail)
-  │   ├─ duration = total_duration
+  │   ├─ duration = 18
   │   ├─ resolution = '1920x1080'
   │   ├─ file_size (bytes of MP4)
   │   ├─ credits_used = 1
@@ -497,13 +483,13 @@ Background Worker (3 concurrent goroutines)
       ├─ status = 'completed'
       ├─ video_url (path to final MP4)
       ├─ file_size (bytes)
-      ├─ provider = 'ltx' (or actual provider used)
-      ├─ model = 'ltx-2-fast' (or actual model used)
-      ├─ resolution = '1920x1080'
+      ├─ provider = 'wavespeed'
+      ├─ model = 'google/veo3.1-lite/text-to-video'
+      ├─ resolution = '832x480'
       └─ updated_at = NOW()
 ```
 
-### Step 7: Check Video Status (Poll)
+### Step 6: Check Video Status (Poll)
 ```
 Check Video Status (Client polling every 5 seconds)
   
@@ -519,7 +505,7 @@ Check Video Status (Client polling every 5 seconds)
       └─ Allows display of "Generating scene 2 of 3"
 ```
 
-### Step 8: Download Video
+### Step 7: Download Video
 ```
 Download Video
   
@@ -697,39 +683,6 @@ FE: Store project_id locally and redirect to storyboard view
 
 ---
 
-### Phase 3: Storyboard Generation (FE ↔ BE → AI Service → DB)
-
-FE User clicks "Generate Storyboard" button
-  ↓
-BE POST /api/storyboard/generate (user authenticated)
-  ├─ Fetch Project + BusinessBrief + CreativeBrief from DB
-  ├─ Build prompt for AI with all context:
-  │  ├─ Institution info, key message, tone
-  │  ├─ Event details, copywriting, hashtags
-  │  ├─ Theme requirements, video duration
-  │  └─ Examples of good storytelling
-  │
-  ├─ Call AI Service: POST /generate/storyboard
-  │  └─ AI Service:
-  │     ├─ Process prompt with GPT-4/Claude
-  │     ├─ Generate 3-5 scenes with:
-  │     │  ├─ Scene descriptions (for video generation)
-  │     │  ├─ Narration/voiceover text
-  │     │  └─ Visual direction (lighting, mood, composition)
-  │     └─ Return scenes array to Backend
-  │
-  ├─ Create Storyboard row with status=ready
-  ├─ Create Scene rows (1 per scene) with:
-  │  ├─ scene_number, description, narration
-  │  ├─ duration (calculated from video_duration)
-  │  └─ storyboard_id (FK)
-  │
-  └─ Return storyboard_id + scenes to FE
-FE: Display storyboard in preview
-  ├─ Show each scene with description & narration
-  └─ User can edit descriptions/narration before video generation
-
----
 
 ### Phase 4: Video Generation (FE ↔ BE → Job Queue → AI Service → Storage)
 
@@ -745,11 +698,9 @@ BE POST /api/videos/generate
   │  ├─ project_id, storyboard_id, user_id
   │  └─ created_at timestamp
   │
-  ├─ Create VideoVariant rows (3 variants):
-  │  ├─ Variant 1: style=cinematic (dramatic, high-contrast)
-  │  ├─ Variant 2: style=vibrant (colorful, energetic)
-  │  ├─ Variant 3: style=professional (corporate, clean)
-  │  └─ Each with status=queued, provider=pending
+  ├─ Create VideoVariant rows (1 variant):
+  │  ├─ Variant 1: style=cinematic (Google Veo 3.1 Lite)
+  │  └─ status=queued, provider=wavespeed
   │
   ├─ Enqueue job to Channel (shared across 3 worker goroutines)
   └─ Return job_id to FE immediately (async processing)
@@ -771,32 +722,27 @@ BE Job Queue Worker (3 concurrent goroutines):
   ├─ For Each Scene in Storyboard:
   │  ├─ Create SceneGeneration row (status=queued, scene_id)
   │  │
-  │  ├─ Call AI Service: POST /generate/video/scene
+  │  ├─ Call AI Service: POST /generate
   │  │  │  Request:
   │  │  │  {
-  │  │  │    "scene_number": 1,
-  │  │  │    "description": "Wide shot of campus...",
-  │  │  │    "narration": "Halo generasi masa depan!",
-  │  │  │    "duration": 5,
-  │  │  │    "theme": "Tur Kampus Sinematik",
-  │  │  │    "style": "cinematic"
+  │  │  │    "prompt": "SCENE 1 (0-6s)...",
+  │  │  │    "duration": 6,
+  │  │  │    "ratio": "16:9",
+  │  │  │    "task_type": "veo3"
   │  │  │  }
   │  │  │
   │  │  │  AI Service:
-  │  │  │  ├─ Convert text description to visual prompt for LTX/Runway
-  │  │  │  ├─ Generate video via LTX API call
-  │  │  │  │  ├─ Model: ltx-2-fast
-  │  │  │  │  ├─ Duration: 5 seconds
-  │  │  │  │  └─ Resolution: 1920x1080
-  │  │  │  ├─ Optional: Add narration audio overlay
-  │  │  │  ├─ Save video to: ai-service/outputs/videos/scene_1_cinematic.mp4
-  │  │  │  └─ Return video_url + metadata
+  │  │  │  ├─ Receive request, format payload for Wavespeed
+  │  │  │  ├─ Generate video via Wavespeed API (google/veo3.1-lite/text-to-video)
+  │  │  │  ├─ Poll Wavespeed until status='completed'
+  │  │  │  ├─ Download MP4 to Python output path
+  │  │  │  └─ Return status to Backend
   │  │  │
-  │  │  └─ Backend receives video_url
+  │  │  └─ Backend polls Python Service GET /status/{job_id} until "done"
   │  │
   │  ├─ Update SceneGeneration:
   │  │  ├─ status=completed
-  │  │  ├─ video_url (local path or S3 URL)
+  │  │  ├─ video_url (local path)
   │  │  ├─ duration_actual
   │  │  └─ completed_at
   │  │

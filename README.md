@@ -39,8 +39,8 @@ Status: Production Ready (May 2026) - Google Veo 3.1 Lite: High-coherence video 
 **Python AI Service (Port 8000)**
 - Language: Python 3.8+
 - Framework: FastAPI + Uvicorn
-- Purpose: AI processing microservice for content pillars, storyboard, and video generation
-- Integrated with: Go backend via HTTP proxy gateway
+- Purpose: AI processing microservice for video generation (Wavespeed wrapper)
+- Integrated with: Go backend via HTTP calls in background worker
 
 **Database**
 - PostgreSQL (auto-created tables via GORM AutoMigrate on startup)
@@ -64,7 +64,6 @@ Sevima-BackEnd Ai Video Gen/
 │   │   ├── provider.go                      # Provider interface & models
 │   │   └── veo3_provider.go                 # Veo 3 production provider
 │   ├── handler/
-│   │   ├── ai_handler.go                   # AI proxy handler for external service
 │   │   ├── auth_handler.go                 # Auth endpoints (register, login, refresh, delete)
 │   │   ├── brief_handler.go                # Unified project initialization (creates all briefs)
 │   │   ├── credit_handler.go               # Credit management (balance, admin add)
@@ -169,7 +168,7 @@ Initialize Project (FE Wizard)
 
 Generate Video (Async)
   └─> INSERT generation_jobs (status=queued, create job)
-  └─> INSERT video_variants (3 variants: cinematic, vibrant, professional)
+  └─> INSERT video_variants (1 variant: cinematic/Google Veo 3.1 Lite)
   └─> UPDATE users (deduct 1 credit)
   └─> Enqueue to background worker channel
 
@@ -325,7 +324,7 @@ All AI gateway endpoints inject user context headers (`X-User-ID`, `X-User-Email
 
 ## Video Generation System
 
-The backend includes a **scene-based video generation system** that creates 3 video variations from a single storyboard:
+The backend includes a **scene-based video generation system** that creates a high-quality video variation from a single storyboard:
 
 ### Video Generation Overview
 
@@ -342,7 +341,7 @@ The backend includes a **scene-based video generation system** that creates 3 vi
 
 **Core Models** (in `internal/model/`):
 - `GenerationJob` - Video generation task (tracks status, provider, credits, retries)
-- `VideoVariant` - Individual video variant (one of 3 per storyboard)
+- `VideoVariant` - Individual video variant
 - `SceneGeneration` - Individual scene generation tracking (progress at scene level)
 - `Video` - Legacy model (can be deprecated in favor of VideoVariant)
 
@@ -457,14 +456,10 @@ GET /api/videos/{jobId} returns status: completed
 
 ### Credit Calculation
 
-**Standard Costs (single scene):**
-- LTX-2-Fast: 2 credits/second × duration
-- LTX-2-Pro: 3 credits/second × duration
-- Runway: Variable (model-dependent)
-- Open-source: 1 credit/second × duration
+**Standard Costs (single generation):**
+- Google Veo 3.1 Lite (Wavespeed): 1 credit per full video generation
 
-**Example (3 variants of 10-second video):**
-- 10 sec × 2 credits/sec (LTX-2-Fast) × 3 variants = 60 credits
+**Example (1 variant of 18-second video):**
 - Total deducted: 1 credit (fixed per generation call)
 
 ## Quick Copy-Paste Commands
@@ -642,35 +637,7 @@ Response:
 }
 ```
 
-### Generate Content Pillars
 
-```bash
-curl -X POST http://localhost:5000/api/projects/{project_id}/content-pillars/generate \
-  -H "Authorization: Bearer {access_token}" \
-  -H "Content-Type: application/json" \
-  -d '{"project_id": "{project_id}"}'
-```
-
-Response:
-```json
-{
-  "success": true,
-  "message": "Content pillars generated successfully",
-  "data": [
-    {
-      "id": "uuid",
-      "project_id": "uuid",
-      "title": "Educational Content",
-      "description": "Informative content that educates...",
-      "is_selected": false,
-      "content_themes": [
-        {"id": "uuid", "title": "How-To Tutorials", "is_selected": false},
-        {"id": "uuid", "title": "Industry Insights", "is_selected": false}
-      ]
-    }
-  ]
-}
-```
 
 ### Generate Video
 
@@ -742,7 +709,7 @@ For detailed field definitions, see `internal/model/*.go` source files.
 | storyboard_sections | `model.StoryboardSection` | 3-part sections (hook/value/cta) |
 | videos | `model.Video` | Generated video records |
 | generation_jobs | `model.GenerationJob` | Async job queue tracking |
-| video_variants | `model.VideoVariant` | 3 video variations per job |
+| video_variants | `model.VideoVariant` | video variations per job |
 | scene_generations | `model.SceneGeneration` | Per-scene generation tracking |
 
 ## Project Architecture
@@ -765,7 +732,6 @@ Go Backend (Port 5000) - Sevima-AI-Content-Creator
     |   ├── Storyboard Handler  --> Storyboard Service --> Storyboard Repository --> PostgreSQL
     |   ├── Video Handler       --> Video Gen Service --> Job Queue --> Generation Workers
     |   ├── Credit Handler      --> Credit Service --> User Repository --> PostgreSQL
-    |   └── AI Handler (Proxy)  --> Python AI Service (Port 8000)
     |
     +-- Service Layer (Business Logic)
     |   ├── Auth Service
@@ -789,10 +755,7 @@ Go Backend (Port 5000) - Sevima-AI-Content-Creator
     |   └── Job Queue --> Background Workers --> Video Generation Providers
     |
     +-- AI Provider Layer
-    |   ├── LTX-2-Fast Provider
-    |   ├── LTX-2-Pro Provider
-    |   ├── Runway Provider
-    |   └── Open-source Models Provider
+    |   └── Veo 3 Provider (Wavespeed API)
     |
     v
 PostgreSQL Database (10 tables via AutoMigrate)
