@@ -292,7 +292,7 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		Status:      "draft",
 	}
 	if err := s.projectRepo.Create(project); err != nil {
-		return nil, errors.New("failed to create project")
+		return nil, fmt.Errorf("failed to create project: %v", err)
 	}
 
 	// Step 2: Create Business Brief (auto-fill missing fields)
@@ -352,7 +352,8 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		Status:             "draft",
 	}
 	if err := s.briefRepo.CreateBusinessBrief(businessBrief); err != nil {
-		return nil, errors.New("failed to create business brief")
+		fmt.Printf("CreateBusinessBrief Error: %v\n", err)
+		return nil, fmt.Errorf("failed to create business brief: %v", err)
 	}
 
 	// Step 3: Create Creative Brief (auto-fill missing fields)
@@ -377,7 +378,7 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		Status:          "draft",
 	}
 	if err := s.briefRepo.CreateCreativeBrief(creativeBrief); err != nil {
-		return nil, errors.New("failed to create creative brief")
+		return nil, fmt.Errorf("failed to create creative brief: %v", err)
 	}
 
 	// Step 4: Auto-Generate Storyboard
