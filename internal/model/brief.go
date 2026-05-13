@@ -13,7 +13,7 @@ type BusinessBrief struct {
 	ID                 uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID             uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	ProjectID          uuid.UUID      `gorm:"type:uuid;not null;index" json:"project_id"`
-	InstitutionName    string         `gorm:"not null" json:"institution_name"`
+	InstitutionName    string         `gorm:"default:'-'" json:"institution_name"`
 	InstitutionHistory string         `gorm:"type:text" json:"institution_history"`
 	SchoolLevel        string         `json:"school_level"`
 	OfferedDegrees     string         `gorm:"type:text" json:"offered_degrees"`
