@@ -27,7 +27,7 @@ func main() {
 	db := config.ConnectDB()
 
 	// Auto migrate
-	fmt.Println("⏳ Running database migrations...")
+	fmt.Println("Running database migrations...")
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.Project{},
@@ -40,9 +40,9 @@ func main() {
 		&model.VideoVariant{},
 		&model.SceneGeneration{},
 	); err != nil {
-		log.Fatal("❌ Migration failed:", err)
+		log.Fatal("Migration failed:", err)
 	}
-	fmt.Println("✅ Database migration completed successfully!")
+	fmt.Println("Database migration completed successfully!")
 
 	// Init repositories
 	userRepo := repository.NewUserRepository(db)
