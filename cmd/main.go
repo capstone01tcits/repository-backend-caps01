@@ -158,6 +158,7 @@ func main() {
 	videos.Post("/generate", videoHandler.GenerateVideo)
 	videos.Get("/storyboard/:storyboard_id", videoHandler.GetVideosByStoryboard)
 	videos.Get("/download/:id", videoHandler.DownloadVideo)
+	videos.Get("/preview/:id", videoHandler.PreviewVideo)
 	videos.Post("/scene/:sceneId/regenerate", videoHandler.RegenerateScene)
 	videos.Post("/:variantId/regenerate", videoHandler.RegenerateVideoVariant)
 	videos.Get("/:id", videoHandler.GetVideo) // wildcard — must be last

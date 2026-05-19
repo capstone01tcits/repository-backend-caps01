@@ -137,14 +137,12 @@ func (s *storageService) UploadFile(ctx context.Context, bucketName, filePath st
 
 // UploadVideo uploads a video file
 func (s *storageService) UploadVideo(ctx context.Context, filename string, file []byte) (string, error) {
-	path := fmt.Sprintf("videos/%s", filename)
-	return s.UploadFile(ctx, s.bucketVideos, path, file)
+	return s.UploadFile(ctx, s.bucketVideos, filename, file)
 }
 
 // UploadThumbnail uploads a thumbnail file
 func (s *storageService) UploadThumbnail(ctx context.Context, filename string, file []byte) (string, error) {
-	path := fmt.Sprintf("thumbnails/%s", filename)
-	return s.UploadFile(ctx, s.bucketThumbnails, path, file)
+	return s.UploadFile(ctx, s.bucketThumbnails, filename, file)
 }
 
 // UploadAsset uploads an asset file (logo, environment, document)
