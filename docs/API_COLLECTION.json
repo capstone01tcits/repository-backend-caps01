@@ -6,15 +6,42 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url", "value": "http://localhost:5000" },
-    { "key": "access_token", "value": "" },
-    { "key": "refresh_token", "value": "" },
-    { "key": "project_id", "value": "" },
-    { "key": "storyboard_id", "value": "" },
-    { "key": "job_id", "value": "" },
-    { "key": "variant_id", "value": "" },
-    { "key": "scene_id", "value": "" },
-    { "key": "user_id", "value": "" }
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "project_id",
+      "value": ""
+    },
+    {
+      "key": "storyboard_id",
+      "value": ""
+    },
+    {
+      "key": "job_id",
+      "value": ""
+    },
+    {
+      "key": "variant_id",
+      "value": ""
+    },
+    {
+      "key": "scene_id",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -49,7 +76,10 @@
             "method": "POST",
             "url": "{{base_url}}/api/auth/register",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -84,7 +114,10 @@
             "method": "POST",
             "url": "{{base_url}}/api/auth/login",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -118,7 +151,10 @@
             "method": "POST",
             "url": "{{base_url}}/api/auth/refresh",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -137,7 +173,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/auth/me",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -147,8 +186,14 @@
             "method": "POST",
             "url": "{{base_url}}/api/auth/change-password",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -167,7 +212,10 @@
             "method": "DELETE",
             "url": "{{base_url}}/api/auth/account",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         }
@@ -197,8 +245,14 @@
             "method": "POST",
             "url": "{{base_url}}/api/projects/initialize",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -217,7 +271,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/projects",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -227,7 +284,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/projects/{{project_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -237,7 +297,10 @@
             "method": "DELETE",
             "url": "{{base_url}}/api/projects/{{project_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -247,7 +310,10 @@
             "method": "POST",
             "url": "{{base_url}}/api/projects/{{project_id}}/restore",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         }
@@ -276,8 +342,14 @@
             "method": "POST",
             "url": "{{base_url}}/api/storyboard/create",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -296,7 +368,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/storyboard/detail/{{storyboard_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -320,7 +395,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/storyboard/{{storyboard_id}}/sections",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -330,7 +408,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/storyboard/{{project_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -340,8 +421,14 @@
             "method": "PUT",
             "url": "{{base_url}}/api/storyboard/{{storyboard_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -360,7 +447,10 @@
             "method": "DELETE",
             "url": "{{base_url}}/api/storyboard/{{storyboard_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -370,7 +460,10 @@
             "method": "POST",
             "url": "{{base_url}}/api/storyboard/{{storyboard_id}}/restore",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         }
@@ -399,8 +492,14 @@
             "method": "POST",
             "url": "{{base_url}}/api/videos/generate",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -433,7 +532,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/videos/storyboard/{{storyboard_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -443,7 +545,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/videos/{{variant_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -453,7 +558,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/videos/download/{{variant_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -463,7 +571,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/videos/preview/{{variant_id}}",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -487,8 +598,14 @@
             "method": "POST",
             "url": "{{base_url}}/api/videos/{{variant_id}}/regenerate",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -521,8 +638,14 @@
             "method": "POST",
             "url": "{{base_url}}/api/videos/scene/{{scene_id}}/regenerate",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -541,7 +664,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/videos",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         }
@@ -556,7 +682,10 @@
             "method": "GET",
             "url": "{{base_url}}/api/credits",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
             ]
           }
         },
@@ -566,8 +695,14 @@
             "method": "POST",
             "url": "{{base_url}}/api/admin/credits",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -579,6 +714,36 @@
               }
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     }

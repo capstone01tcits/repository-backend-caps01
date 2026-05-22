@@ -724,6 +724,32 @@ Authorization: Bearer {access_token}
 
 ### Admin APIs
 
+#### Get All Users
+
+```http
+GET /api/admin/users
+Authorization: Bearer {admin_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Users retrieved",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Admin User",
+      "email": "admin@sevima.com",
+      "role": "admin",
+      "credits": 100,
+      "created_at": "2026-03-13T10:00:00Z",
+      "updated_at": "2026-03-13T10:00:00Z"
+    }
+  ]
+}
+```
+
 #### Add Credits to User
 
 ```http
@@ -785,6 +811,35 @@ Content-Type: application/json
     "status": "queued",
     "created_at": "2026-03-13T10:30:00Z"
   }
+}
+```
+
+---
+
+#### List Videos
+
+```http
+GET /api/videos
+Authorization: Bearer {access_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Videos retrieved successfully",
+  "data": [
+    {
+      "id": "8da7b810-9dad-11d1-80b4-00c04fd430c8",
+      "title": "Dynamic Campaign",
+      "status": "completed",
+      "video_url": "https://storage.example.com/videos/8da7b810.mp4",
+      "thumbnail_url": "...",
+      "duration": 10,
+      "created_at": "2026-03-13T10:30:00Z",
+      "updated_at": "2026-03-13T10:30:00Z"
+    }
+  ]
 }
 ```
 
