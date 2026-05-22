@@ -1,9 +1,7 @@
 """
 AI Video Service — Interface utama untuk divisi backend.
 
-Ini adalah satu-satunya class yang perlu diketahui backend dev.
-Backend tidak perlu tahu tentang LTX, Runway, routing, atau retry logic.
-
+Backend tidak perlu tahu tentang routing, atau retry logic.
 Cara pakai (dari sisi backend):
 
     service = AIVideoService()
@@ -203,12 +201,12 @@ class AIVideoService:
                 constraints={
                     "duration": duration,
                     "ratio": ratio,
-                    "resolution": os.getenv("LTX_RESOLUTION", "1920x1080"),
-                    "fps": int(os.getenv("LTX_FPS", "25")),
+                    "resolution": os.getenv("VIDEO_RESOLUTION", "1920x1080"),
+                    "fps": int(os.getenv("VIDEO_FPS", "25")),
                 },
                 routing={
                     "task_type": task_type,
-                    "fallback": "ltx:ltx-2-3-fast",
+                    "fallback": "wavespeed:wavespeed-ai/wan-2.1/t2v-480p",
                 },
             )
             request = enrich_routing(request)
@@ -236,11 +234,29 @@ class AIVideoService:
                     if self._base_url
                     else output_path
                 )
-                job.mark_done(video_url=video_url)
+                
+                # Ekstrak thumbnail di 00:00
+                thumb_filename = f"{job_id}__{safe_provider}_thumb.jpg"
+                thumb_path = os.path.join(self._video_dir, thumb_filename)
+                thumbnail_url = None
+                
+                try:
+                    import cv2
+                    cap = cv2.VideoCapture(output_path)
+                    if cap.isOpened():
+                        ret, frame = cap.read()
+                        if ret:
+                            cv2.imwrite(thumb_path, frame)
+                            thumbnail_url = f"{self._base_url}/{thumb_filename}" if self._base_url else thumb_path
+                        cap.release()
+                except Exception as e:
+                    logger.error("[SERVICE] Gagal ekstrak thumbnail job_id=%s error=%s", job_id, e)
+
+                job.mark_done(video_url=video_url, thumbnail_url=thumbnail_url)
                 self._store.update(job)
                 logger.info(
-                    "[SERVICE] Job done job_id=%s video_url=%s",
-                    job_id, video_url,
+                    "[SERVICE] Job done job_id=%s video_url=%s thumbnail_url=%s",
+                    job_id, video_url, thumbnail_url
                 )
             else:
                 job.mark_failed(error=response.error or "Unknown error")

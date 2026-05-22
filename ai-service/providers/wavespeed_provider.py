@@ -109,8 +109,8 @@ class WavespeedProvider(VideoProvider):
         """POST to Wavespeed; return (task_id, get_url)."""
         url = f"{WAVESPEED_BASE_URL}/{self._model}"
 
-        # Fixed duration of 6s to satisfy Veo 3.1 Lite strict constraints [4, 6, 8]
-        safe_duration = 6 
+        # Ensure duration is one of [4, 6, 8] to satisfy Veo 3.1 Lite strict constraints
+        safe_duration = duration if duration in [4, 6, 8] else 6
 
         payload = {
             "prompt": prompt,

@@ -220,6 +220,12 @@ func parseDurationStr(durStr string) int {
 func (s *storyboardService) AutoGenerateStoryboard(userID string, projectID uuid.UUID, bb *model.BusinessBrief, cb *model.CreativeBrief) (*model.Storyboard, error) {
 	durInt := parseDurationStr(cb.VideoDuration)
 	
+	// 0. Hapus storyboard lama jika ada (untuk fitur edit/update)
+	existing, err := s.storyboardRepo.FindByProjectID(projectID.String())
+	if err == nil && existing != nil {
+		s.storyboardRepo.Delete(existing.ID.String())
+	}
+
 	// 1. Create Storyboard entity
 	storyboard := &model.Storyboard{
 		ProjectID:     projectID,
@@ -234,35 +240,47 @@ func (s *storyboardService) AutoGenerateStoryboard(userID string, projectID uuid
 		return nil, fmt.Errorf("gagal membuat storyboard otomatis: %w", err)
 	}
 
-	// 2. Allocate duration for Hook (0-5s), Value (5-12s), CTA (12-15s)
-	hookDur, valueDur, ctaDur := 5, 7, 3
-	if durInt != 15 && durInt > 0 {
-		hookDur = int(float64(durInt) * 0.33)
-		ctaDur = int(float64(durInt) * 0.20)
-		valueDur = durInt - hookDur - ctaDur
+	// 2. Allocate duration for 3 scenes to fit total Veo 3 Lite video constraints [4, 6, 8]
+	hookDur, valueDur, ctaDur := 2, 3, 1 // default for 6s
+
+	if durInt == 4 {
+		hookDur, valueDur, ctaDur = 1, 2, 1
+	} else if durInt == 6 {
+		hookDur, valueDur, ctaDur = 2, 3, 1
+	} else if durInt == 8 {
+		hookDur, valueDur, ctaDur = 2, 4, 2
 	}
 
-	// 3. Construct 3 mandatory scenes
+	// 3. Construct 3 mandatory scenes (stored as JSON string to support frontend narration & visual fields)
+	hookNarration := fmt.Sprintf(`"Halo generasi masa depan! Tahukah kamu bahwa %s"`, strings.ToLower(cb.KeyMessage))
+	hookVisual := fmt.Sprintf("Visual bergaya %s. Menampilkan gerbang utama %s. Sesuai instruksi: %s.", cb.ToneOfVoice, bb.InstitutionName, cb.Prompt)
+
+	valueNarration := fmt.Sprintf(`"Di %s, kami siap membantumu mewujudkan impian itu melalui program unggulan kami."`, bb.InstitutionName)
+	valueVisual := fmt.Sprintf("Gaya visual: %s. Memperlihatkan mahasiswa sedang beraktivitas, fasilitas modern.", cb.Theme)
+
+	ctaNarration := fmt.Sprintf(`"Jangan lewatkan momen %s tahun ini. Yuk, raih mimpimu bersama kami!"`, cb.EventContent)
+	ctaVisual := fmt.Sprintf("Logo %s muncul di tengah layar dengan teks ajakan (Call to Action).", bb.InstitutionName)
+
 	sections := []model.StoryboardSection{
 		{
 			StoryboardID: storyboard.ID,
 			UserID:       uuid.MustParse(userID),
-			SectionType:  "hook",
-			Content:      fmt.Sprintf("Visual memukau menampilkan landmark/suasana %s. Tone: %s.", bb.InstitutionName, cb.ToneOfVoice),
+			SectionType:  "Intro & Hook",
+			Content:      fmt.Sprintf(`{"narration": %q, "visual": %q}`, hookNarration, hookVisual),
 			Duration:     hookDur,
 		},
 		{
 			StoryboardID: storyboard.ID,
 			UserID:       uuid.MustParse(userID),
-			SectionType:  "value",
-			Content:      fmt.Sprintf("Sorot fasilitas dan keunggulan spesifik. Catatan: %s", cb.Prompt),
+			SectionType:  "Suasana & Keunggulan Kampus",
+			Content:      fmt.Sprintf(`{"narration": %q, "visual": %q}`, valueNarration, valueVisual),
 			Duration:     valueDur,
 		},
 		{
 			StoryboardID: storyboard.ID,
 			UserID:       uuid.MustParse(userID),
-			SectionType:  "cta",
-			Content:      fmt.Sprintf("Pesan penutup: '%s'. %s", cb.KeyMessage, cb.Copywriting),
+			SectionType:  "Promosi & Call to Action",
+			Content:      fmt.Sprintf(`{"narration": %q, "visual": %q}`, ctaNarration, ctaVisual),
 			Duration:     ctaDur,
 		},
 	}

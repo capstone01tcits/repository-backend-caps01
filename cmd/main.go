@@ -37,8 +37,6 @@ func main() {
 		&model.StoryboardSection{},
 		&model.Video{},
 		&model.GenerationJob{},
-		&model.VideoVariant{},
-		&model.SceneGeneration{},
 	); err != nil {
 		log.Fatal("Migration failed:", err)
 	}
@@ -50,8 +48,7 @@ func main() {
 	briefRepo := repository.NewBriefRepository(db)
 	storyboardRepo := repository.NewStoryboardRepository(db)
 	jobRepo := repository.NewGenerationJobRepository(db)
-	variantRepo := repository.NewVideoVariantRepository(db)
-	sceneRepo := repository.NewSceneGenerationRepository(db)
+	videoRepo := repository.NewVideoRepository(db)
 
 	// Init services
 	authSvc := service.NewAuthService(userRepo)
@@ -60,7 +57,7 @@ func main() {
 	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, briefRepo)
 	briefSvc := service.NewBriefService(briefRepo, projectRepo, storyboardSvc, storageSvc)
 	creditSvc := service.NewCreditService(userRepo)
-	videoGenSvc := service.NewVideoGenerationService(jobRepo, variantRepo, sceneRepo, briefRepo, storyboardRepo, creditSvc, storageSvc)
+	videoGenSvc := service.NewVideoGenerationService(jobRepo, videoRepo, projectRepo, briefRepo, storyboardRepo, creditSvc, storageSvc)
 
 	// Init handlers
 	authHandler := handler.NewAuthHandler(authSvc)
@@ -88,7 +85,7 @@ func main() {
 	app.Use(logger.New())
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000",
+		AllowOrigins: config.Cfg.CORSAllowOrigins,
 		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowCredentials: true,
@@ -139,6 +136,7 @@ func main() {
 	projects.Post("/initialize", briefHandler.CreateProjectFromFE)
 	projects.Get("/", projectHandler.GetProjects)
 	projects.Get("/:id", projectHandler.GetProject)
+	projects.Put("/:id", projectHandler.UpdateProject)
 	projects.Delete("/:id", projectHandler.DeleteProject)
 	projects.Post("/:id/restore", projectHandler.RestoreProject)
 

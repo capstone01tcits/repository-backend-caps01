@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"Sevima-AI-Content-Creator/config"
 	"Sevima-AI-Content-Creator/internal/model"
+
+	"github.com/bregydoc/gtranslate"
 )
 
 // BuildVeo3Prompt merangkai prompt sesuai dengan standar Veo 3 untuk video promosi pendidikan.
@@ -109,9 +112,26 @@ func NewVeo3Provider() VideoProvider {
 // GenerateScene submits a video generation job to the Python AI Service.
 // The AI Service routes the "veo3" task_type to Wavespeed internally.
 func (p *Veo3Provider) GenerateScene(ctx context.Context, req VideoGenerationRequest) (*VideoGenerationResponse, error) {
+	translatedPrompt := req.Prompt
+
+	// Menerjemahkan prompt dari Bahasa Indonesia ke Bahasa Inggris menggunakan gtranslate
+	translated, err := gtranslate.TranslateWithParams(
+		req.Prompt,
+		gtranslate.TranslationParams{
+			From: "id",
+			To:   "en",
+		},
+	)
+	if err == nil {
+		translatedPrompt = translated
+		log.Printf("[Veo3Provider] Successfully translated prompt to English: %.100s...", translatedPrompt)
+	} else {
+		log.Printf("[Veo3Provider] Warning: translation failed (%v), using original prompt", err)
+	}
+
 	// POST /generate with task_type=veo3 → Python AI Service → Wavespeed
 	payload := map[string]interface{}{
-		"prompt":    req.Prompt,
+		"prompt":    translatedPrompt,
 		"duration":  req.Duration,
 		"ratio":     "16:9",
 		"task_type": "veo3",
@@ -191,15 +211,17 @@ func (p *Veo3Provider) GetJobStatus(ctx context.Context, jobID string) (*VideoGe
 		if err == nil {
 			defer resResp.Body.Close()
 			var resData struct {
-				VideoURL string `json:"video_url"`
+				VideoURL     string `json:"video_url"`
+				ThumbnailURL string `json:"thumbnail_url"`
 			}
 			json.NewDecoder(resResp.Body).Decode(&resData)
 
 			return &VideoGenerationResponse{
-				JobID:    jobID,
-				Status:   "completed",
-				VideoURL: resData.VideoURL,
-				Message:  "Video ready",
+				JobID:        jobID,
+				Status:       "completed",
+				VideoURL:     resData.VideoURL,
+				ThumbnailURL: resData.ThumbnailURL,
+				Message:      "Video ready",
 			}, nil
 		}
 	}

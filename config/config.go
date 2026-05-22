@@ -26,6 +26,7 @@ type Config struct {
 	JWTRefreshSecret      string
 	JWTRefreshExpireHours string
 	AIServiceURL          string
+	CORSAllowOrigins      string
 }
 
 var Cfg Config
@@ -74,6 +75,7 @@ func Load() {
 		JWTRefreshSecret:      jwtRefreshSecret,
 		JWTRefreshExpireHours: getEnv("JWT_REFRESH_EXPIRE_HOURS", "168"),
 		AIServiceURL:          getEnv("AI_SERVICE_URL", "http://localhost:8000"),
+		CORSAllowOrigins:      getEnv("CORS_ALLOW_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000"),
 	}
 
 	// Validate JWT expire hours

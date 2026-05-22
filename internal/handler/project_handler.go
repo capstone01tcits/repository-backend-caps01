@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Sevima-AI-Content-Creator/internal/model"
 	"Sevima-AI-Content-Creator/internal/service"
 	"Sevima-AI-Content-Creator/pkg/utils"
 
@@ -63,6 +64,28 @@ func (h *ProjectHandler) DeleteProject(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Project deleted successfully", nil)
+}
+
+// UpdateProject godoc
+// PUT /api/projects/:id
+func (h *ProjectHandler) UpdateProject(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+	projectID := c.Params("id")
+
+	var req model.UpdateProjectRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	project, err := h.projectService.UpdateProject(userID, projectID, &req)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Project updated successfully", project)
 }
 
 // RestoreProject godoc

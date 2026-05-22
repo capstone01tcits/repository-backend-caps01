@@ -11,6 +11,7 @@ type VideoRepository interface {
 	Create(video *model.Video) error
 	FindByID(id string) (*model.Video, error)
 	FindByProjectID(projectID string) ([]model.Video, error)
+	FindByStoryboardID(storyboardID string) (*model.Video, error)
 	FindByUserID(userID string) ([]model.Video, error)
 	Update(video *model.Video) error
 	Delete(id string) error
@@ -49,6 +50,19 @@ func (r *videoRepository) FindByProjectID(projectID string) ([]model.Video, erro
 	}
 	err = r.db.Where("project_id = ?", pid).Order("created_at DESC").Find(&videos).Error
 	return videos, err
+}
+
+func (r *videoRepository) FindByStoryboardID(storyboardID string) (*model.Video, error) {
+	var video model.Video
+	sid, err := uuid.Parse(storyboardID)
+	if err != nil {
+		return nil, err
+	}
+	err = r.db.Where("storyboard_id = ?", sid).Order("created_at DESC").First(&video).Error
+	if err != nil {
+		return nil, err
+	}
+	return &video, nil
 }
 
 func (r *videoRepository) FindByUserID(userID string) ([]model.Video, error) {

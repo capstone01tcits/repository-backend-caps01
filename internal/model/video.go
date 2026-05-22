@@ -23,6 +23,7 @@ type Video struct {
 	CreditsUsed     int            `gorm:"default:1" json:"credits_used"`
 	RegenerateCount int            `gorm:"default:0" json:"regenerate_count"` // max 3
 	ErrorMessage    string         `gorm:"type:text" json:"error_message,omitempty"`
+	ExternalJobID   string         `json:"external_job_id,omitempty"` // job ID from provider (Wavespeed)
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
@@ -31,6 +32,11 @@ type Video struct {
 	User       User       `gorm:"foreignKey:UserID" json:"-"`
 	Project    Project    `gorm:"foreignKey:ProjectID" json:"-"`
 	Storyboard Storyboard `gorm:"foreignKey:StoryboardID" json:"-"`
+}
+
+func (v *Video) BeforeCreate(tx *gorm.DB) error {
+	v.ID = uuid.New()
+	return nil
 }
 
 // ==================== Request Types ====================

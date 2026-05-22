@@ -9,7 +9,7 @@ Endpoint yang disepakati dengan divisi backend:
   GET  /health            → health check (untuk load balancer / monitoring)
 
 Backend (Go/FastAPI lain) tinggal hit endpoint ini.
-Tidak perlu tahu apapun tentang LTX, Runway, atau routing.
+Tidak perlu tahu apapun tentang routing.
 """
 
 import sys
@@ -39,7 +39,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="AI Video Generator — ITS Marketing",
-    description="Service untuk generate video promosi kampus menggunakan LTX / Runway ML.",
+    description="Service untuk generate video promosi kampus.",
     version="1.0.0",
 )
 
@@ -120,14 +120,14 @@ def health_check():
 
 class Veo3Payload(BaseModel):
     """Request body untuk POST /api/veo3/generate."""
-    model: str = Field(default="veo-3.1")
+    model: str = Field(default="veo-3.1-lite")
     prompt: str = Field(..., description="Prompt lengkap dengan format SCENE")
     reference_images: List[str] = Field(default_factory=list)
 
 @app.post("/generate", response_model=GenerateResponse, status_code=202)
 def generate_video(body: GenerateRequest):
     """
-    Submit job generate video (LTX/Runway).
+    Submit job generate video.
     """
     logger.info("[API] POST /generate prompt_preview=%.60s", body.prompt)
     try:
@@ -230,7 +230,8 @@ def serve_video(filename: str):
     filepath = os.path.join(video_dir, filename)
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="File tidak ditemukan")
-    return FileResponse(filepath, media_type="video/mp4")
+    media_type = "image/jpeg" if filename.endswith(".jpg") else "video/mp4"
+    return FileResponse(filepath, media_type=media_type)
 
 
 # ===== RUN SERVER =====

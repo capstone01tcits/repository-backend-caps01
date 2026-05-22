@@ -1,6 +1,9 @@
 package migrations
 
-import "gorm.io/gorm"
+import (
+	"Sevima-AI-Content-Creator/internal/model"
+	"gorm.io/gorm"
+)
 
 // MigrateVideoGeneration creates tables for video generation system
 // Note: Models are now defined in internal/model and handled via AutoMigrate in main.go
@@ -168,10 +171,13 @@ const dropSceneGenerationTable = `DROP TABLE IF EXISTS scene_generations CASCADE
 const dropStoryboardSectionTable = `DROP TABLE IF EXISTS storyboard_sections CASCADE;`
 
 func RollbackVideoGeneration(db *gorm.DB) error {
-	if err := db.Exec(dropStoryboardSectionTable).Error; err != nil {
-		return err
-	}
-	if err := db.Exec(dropSceneGenerationTable).Error; err != nil {
+	if err := db.AutoMigrate(
+		&model.Storyboard{},
+		&model.StoryboardSection{},
+		&model.Project{},
+		&model.Video{},
+		&model.GenerationJob{},
+	); err != nil {
 		return err
 	}
 	if err := db.Exec(dropVideoVariantTable).Error; err != nil {

@@ -38,6 +38,7 @@ class VideoJob:
     prompt: str
     status: JobStatus = JobStatus.PENDING
     video_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
     error: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -61,6 +62,7 @@ class VideoJob:
             "prompt": self.prompt,
             "status": self.status.value,
             "video_url": self.video_url,
+            "thumbnail_url": self.thumbnail_url,
             "error": self.error,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
@@ -81,9 +83,10 @@ class VideoJob:
         self.model = model
         self._touch()
 
-    def mark_done(self, video_url: str):
+    def mark_done(self, video_url: str, thumbnail_url: Optional[str] = None):
         self.status = JobStatus.DONE
         self.video_url = video_url
+        self.thumbnail_url = thumbnail_url
         self._touch()
 
     def mark_failed(self, error: str):

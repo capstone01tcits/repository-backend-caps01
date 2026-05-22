@@ -278,21 +278,46 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 	}
 
 	// Step 1: Create Project
-	projectName := req.EventContent + " for " + req.InstitutionName
+	projectName := req.ProjectName
+	if projectName == "" {
+		projectName = req.EventContent + " for " + req.InstitutionName
+	}
 	description := req.InstitutionHistory
 	if description == "" {
 		description = "Video production project for " + req.InstitutionName
 	}
 
-	project := &model.Project{
-		UserID:      uid,
-		Name:        projectName,
-		Description: description,
-		Theme:       req.SelectedTheme,
-		Status:      "draft",
+	var project *model.Project
+	isUpdate := false
+
+	if req.ProjectID != "" {
+		_, err := uuid.Parse(req.ProjectID)
+		if err == nil {
+			project, _ = s.projectRepo.FindByID(req.ProjectID)
+			if project != nil && project.UserID == uid {
+				isUpdate = true
+			}
+		}
 	}
-	if err := s.projectRepo.Create(project); err != nil {
-		return nil, fmt.Errorf("failed to create project: %v", err)
+
+	if isUpdate {
+		project.Name = projectName
+		project.Description = description
+		project.Theme = req.SelectedTheme
+		if err := s.projectRepo.Update(project); err != nil {
+			return nil, fmt.Errorf("failed to update project: %v", err)
+		}
+	} else {
+		project = &model.Project{
+			UserID:      uid,
+			Name:        projectName,
+			Description: description,
+			Theme:       req.SelectedTheme,
+			Status:      "draft",
+		}
+		if err := s.projectRepo.Create(project); err != nil {
+			return nil, fmt.Errorf("failed to create project: %v", err)
+		}
 	}
 
 	// Step 2: Create Business Brief (auto-fill missing fields)
@@ -338,22 +363,42 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		}
 	}
 
-	businessBrief := &model.BusinessBrief{
-		ID:                 uuid.New(),
-		UserID:             uid,
-		ProjectID:          project.ID,
-		InstitutionName:    req.InstitutionName,
-		InstitutionHistory: req.InstitutionHistory,
-		SchoolLevel:        schoolLevel,
-		OfferedDegrees:     req.OfferedDegrees,
-		LogoPath:           logoURL, 
-		EnvironmentPath:    envURL,             
-		DocumentPath:       docURL,             
-		Status:             "draft",
-	}
-	if err := s.briefRepo.CreateBusinessBrief(businessBrief); err != nil {
-		fmt.Printf("CreateBusinessBrief Error: %v\n", err)
-		return nil, fmt.Errorf("failed to create business brief: %v", err)
+	var businessBrief *model.BusinessBrief
+	if isUpdate && len(project.BusinessBriefs) > 0 {
+		businessBrief = &project.BusinessBriefs[0]
+		businessBrief.InstitutionName = req.InstitutionName
+		businessBrief.InstitutionHistory = req.InstitutionHistory
+		businessBrief.SchoolLevel = schoolLevel
+		businessBrief.OfferedDegrees = req.OfferedDegrees
+		if logoURL != "" {
+			businessBrief.LogoPath = logoURL
+		}
+		if envURL != "" {
+			businessBrief.EnvironmentPath = envURL
+		}
+		if docURL != "" {
+			businessBrief.DocumentPath = docURL
+		}
+		if err := s.briefRepo.UpdateBusinessBrief(businessBrief); err != nil {
+			return nil, fmt.Errorf("failed to update business brief: %v", err)
+		}
+	} else {
+		businessBrief = &model.BusinessBrief{
+			ID:                 uuid.New(),
+			UserID:             uid,
+			ProjectID:          project.ID,
+			InstitutionName:    req.InstitutionName,
+			InstitutionHistory: req.InstitutionHistory,
+			SchoolLevel:        schoolLevel,
+			OfferedDegrees:     req.OfferedDegrees,
+			LogoPath:           logoURL, 
+			EnvironmentPath:    envURL,             
+			DocumentPath:       docURL,             
+			Status:             "draft",
+		}
+		if err := s.briefRepo.CreateBusinessBrief(businessBrief); err != nil {
+			return nil, fmt.Errorf("failed to create business brief: %v", err)
+		}
 	}
 
 	// Step 3: Create Creative Brief (auto-fill missing fields)
@@ -362,23 +407,40 @@ func (s *briefService) CreateProjectFromFE(userID string, req *model.CreateProje
 		duration = 30 // default to 30 seconds if not provided
 	}
 
-	creativeBrief := &model.CreativeBrief{
-		ID:              uuid.New(),
-		UserID:          uid,
-		BusinessBriefID: businessBrief.ID,
-		Title:           projectName,
-		EventContent:    req.EventContent,
-		VideoDuration:   req.VideoDuration,
-		ToneOfVoice:     req.ToneOfVoice,
-		KeyMessage:      req.SelectedKeyMessage,
-		Prompt:          req.Prompt,
-		Theme:           req.SelectedTheme,
-		Copywriting:     req.EditableCopywriting,
-		Hashtags:        req.EditableHashtags,
-		Status:          "draft",
-	}
-	if err := s.briefRepo.CreateCreativeBrief(creativeBrief); err != nil {
-		return nil, fmt.Errorf("failed to create creative brief: %v", err)
+	var creativeBrief *model.CreativeBrief
+	if isUpdate && businessBrief != nil && len(businessBrief.CreativeBriefs) > 0 {
+		creativeBrief = &businessBrief.CreativeBriefs[0]
+		creativeBrief.Title = projectName
+		creativeBrief.EventContent = req.EventContent
+		creativeBrief.VideoDuration = req.VideoDuration
+		creativeBrief.ToneOfVoice = req.ToneOfVoice
+		creativeBrief.KeyMessage = req.SelectedKeyMessage
+		creativeBrief.Prompt = req.Prompt
+		creativeBrief.Theme = req.SelectedTheme
+		creativeBrief.Copywriting = req.EditableCopywriting
+		creativeBrief.Hashtags = req.EditableHashtags
+		if err := s.briefRepo.UpdateCreativeBrief(creativeBrief); err != nil {
+			return nil, fmt.Errorf("failed to update creative brief: %v", err)
+		}
+	} else {
+		creativeBrief = &model.CreativeBrief{
+			ID:              uuid.New(),
+			UserID:          uid,
+			BusinessBriefID: businessBrief.ID,
+			Title:           projectName,
+			EventContent:    req.EventContent,
+			VideoDuration:   req.VideoDuration,
+			ToneOfVoice:     req.ToneOfVoice,
+			KeyMessage:      req.SelectedKeyMessage,
+			Prompt:          req.Prompt,
+			Theme:           req.SelectedTheme,
+			Copywriting:     req.EditableCopywriting,
+			Hashtags:        req.EditableHashtags,
+			Status:          "draft",
+		}
+		if err := s.briefRepo.CreateCreativeBrief(creativeBrief); err != nil {
+			return nil, fmt.Errorf("failed to create creative brief: %v", err)
+		}
 	}
 
 	// Step 4: Auto-Generate Storyboard

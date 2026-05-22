@@ -22,8 +22,7 @@ services:
       - JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production-min-32-chars
       - JWT_REFRESH_EXPIRE_HOURS=168
       - AI_SERVICE_URL=http://ai-service:8000
-      - LTX_API_KEY=dev-key-placeholder
-      - RUNWAY_API_KEY=dev-key-placeholder
+
       - WAN2_API_KEY=dev-key-placeholder
     depends_on:
       postgres:
@@ -70,8 +69,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - LTX_API_KEY=dev-key-placeholder
-      - RUNWAY_API_KEY=dev-key-placeholder
+
       - WAN2_API_KEY=dev-key-placeholder
     restart: unless-stopped
     networks:
