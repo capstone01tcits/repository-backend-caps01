@@ -187,6 +187,7 @@ func main() {
 	credits.Get("/", creditHandler.GetMyCredits)
 
 	admin := api.Group("/admin", middleware.Protected(), middleware.RequireRole("admin"))
+	admin.Get("/users", authHandler.GetAllUsers)
 	admin.Post("/credits", creditHandler.AddCredits)
 
 	// ══════════════════════════════════════════════════════════════════════════

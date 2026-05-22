@@ -18,6 +18,7 @@ type AuthService interface {
 	ChangePassword(userID string, req *model.ChangePasswordRequest) error
 	DeleteAccount(userID string) error
 	RestoreAccount(refreshToken string) (*model.UserInfo, error)
+	GetAllUsers() ([]model.UserInfo, error)
 }
 
 type authService struct {
@@ -179,6 +180,28 @@ func (s *authService) RestoreAccount(refreshToken string) (*model.UserInfo, erro
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}, nil
+}
+
+func (s *authService) GetAllUsers() ([]model.UserInfo, error) {
+	users, err := s.userRepo.FindAll()
+	if err != nil {
+		return nil, errors.New("failed to retrieve users")
+	}
+
+	var userInfos []model.UserInfo
+	for _, user := range users {
+		userInfos = append(userInfos, model.UserInfo{
+			ID:        user.ID.String(),
+			Name:      user.Name,
+			Email:     user.Email,
+			Role:      user.Role,
+			Credits:   user.Credits,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		})
+	}
+
+	return userInfos, nil
 }
 
 func (s *authService) generateTokenResponse(user *model.User) (*model.AuthResponse, error) {

@@ -123,6 +123,17 @@ func (h *AuthHandler) GetUserProfile(c *fiber.Ctx) error {
 	return utils.OK(c, "User profile retrieved", profile)
 }
 
+// GetAllUsers godoc
+// GET /api/admin/users (Protected, Admin)
+func (h *AuthHandler) GetAllUsers(c *fiber.Ctx) error {
+	users, err := h.authService.GetAllUsers()
+	if err != nil {
+		return utils.InternalError(c, err.Error())
+	}
+
+	return utils.OK(c, "Users retrieved", users)
+}
+
 // ChangePassword godoc
 // POST /api/auth/change-password (Protected)
 func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {

@@ -19,6 +19,7 @@ type UserRepository interface {
 	Delete(id string) error
 	Restore(id string) error
 	FindByIDIncludeDeleted(id string) (*model.User, error)
+	FindAll() ([]model.User, error)
 	Count() (int64, error)
 }
 
@@ -123,6 +124,12 @@ func (r *userRepository) FindByIDIncludeDeleted(id string) (*model.User, error) 
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) FindAll() ([]model.User, error) {
+	var users []model.User
+	err := r.db.Find(&users).Error
+	return users, err
 }
 
 func (r *userRepository) Count() (int64, error) {
