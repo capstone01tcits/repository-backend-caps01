@@ -76,13 +76,29 @@ func main() {
 	})
 
 	// Global Middleware
+	// app.Use(recover.New())
+	// app.Use(logger.New())
+	// app.Use(cors.New(cors.Config{
+	// 	AllowOrigins: "*",
+	// 	AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+	// 	AllowMethods: "GET, POST, PUT, DELETE",
+	// }))
+	// Global Middleware
 	app.Use(recover.New())
 	app.Use(logger.New())
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
+		AllowOrigins: "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000",
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET, POST, PUT, DELETE",
+		AllowCredentials: true,
+		ExposeHeaders: "Content-Length",
+		MaxAge: 86400,
 	}))
+
+	app.Options("/*", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusNoContent)
+	})
 
 	// ══════════════════════════════════════════════════════════════════════════
 	// HEALTH

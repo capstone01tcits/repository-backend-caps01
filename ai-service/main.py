@@ -17,6 +17,9 @@ import os
 import logging
 from typing import List
 
+
+
+
 # Add current directory to Python path for imports
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -32,6 +35,23 @@ from services.ai_video_service import AIVideoService
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(
+    title="AI Video Generator — ITS Marketing",
+    description="Service untuk generate video promosi kampus menggunakan LTX / Runway ML.",
+    version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 setup_logging(
     log_dir=os.getenv("LOG_DIR", "outputs/logs"),
@@ -39,12 +59,6 @@ setup_logging(
 )
 
 logger = logging.getLogger(__name__)
-
-app = FastAPI(
-    title="AI Video Generator — ITS Marketing",
-    description="Service untuk generate video promosi kampus menggunakan LTX / Runway ML.",
-    version="1.0.0",
-)
 
 service = AIVideoService()
 

@@ -77,7 +77,8 @@ func BuildVeo3Prompt(bb *model.BusinessBrief, cb *model.CreativeBrief, sections 
 		- Tampilkan nama institusi dengan jelas
 		- Tonjolkan kepercayaan, prestasi, dan masa depan cerah
 		- Tambahkan nuansa musik latar inspiratif
-		- Hindari klaim berlebihan atau tidak realistis`,
+		- Hindari klaim berlebihan atau tidak realistis
+		- tolong hasilkan video dengan kualitas produksi tinggi, fokus pada detail visual dan storytelling yang kuat.`,
 		cb.Theme,
 		bb.InstitutionName,
 		bb.SchoolLevel,

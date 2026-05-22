@@ -103,8 +103,10 @@ func (h *VideoHandler) DownloadVideo(c *fiber.Ctx) error {
 // PreviewVideo godoc
 // GET /api/videos/preview/:id
 // Previews video directly by redirecting to public URL
+
 func (h *VideoHandler) PreviewVideo(c *fiber.Ctx) error {
 	variantIDStr := c.Params("id")
+
 	variantID, err := uuid.Parse(variantIDStr)
 	if err != nil {
 		return utils.BadRequest(c, "Invalid video ID format")
@@ -119,8 +121,29 @@ func (h *VideoHandler) PreviewVideo(c *fiber.Ctx) error {
 		return utils.NotFound(c, "Video file not available")
 	}
 
-	return c.Redirect(variant.VideoURL, fiber.StatusTemporaryRedirect)
+	return utils.OK(c, "Preview URL retrieved", map[string]interface{}{
+		"preview_url": variant.VideoURL,
+	})
 }
+
+// func (h *VideoHandler) PreviewVideo(c *fiber.Ctx) error {
+// 	variantIDStr := c.Params("id")
+// 	variantID, err := uuid.Parse(variantIDStr)
+// 	if err != nil {
+// 		return utils.BadRequest(c, "Invalid video ID format")
+// 	}
+
+// 	variant, err := h.videoGenService.GetVideoVariant(c.Context(), variantID)
+// 	if err != nil {
+// 		return utils.NotFound(c, "Video not found")
+// 	}
+
+// 	if variant.VideoURL == "" {
+// 		return utils.NotFound(c, "Video file not available")
+// 	}
+
+// 	return c.Redirect(variant.VideoURL, fiber.StatusTemporaryRedirect)
+// }
 
 // GenerateVideo godoc
 // POST /api/videos/generate

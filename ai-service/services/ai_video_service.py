@@ -52,7 +52,7 @@ class AIVideoService:
     def __init__(self, store: Optional[InMemoryJobStore] = None):
         self._store = store or InMemoryJobStore()
         self._video_dir = os.getenv("VIDEO_OUTPUT_DIR", "outputs/videos")
-        self._base_url = os.getenv("VIDEO_BASE_URL", "http://127.0.0.1:8000/video")
+        self._base_url = os.getenv("VIDEO_BASE_URL", "http://127.0.0.1:8000/video").rstrip("/")
         os.makedirs(self._video_dir, exist_ok=True)
 
     # ------------------------------------------------------------------
