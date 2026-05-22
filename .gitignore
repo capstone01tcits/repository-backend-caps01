@@ -40,3 +40,7 @@ coverage.out
 ai-service/outputs/
 __pycache__/
 *.pyc
+
+.venv/
+venv/
+__pycache__/
