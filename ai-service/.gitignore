@@ -1,0 +1,10 @@
+# Python junk
+__pycache__/
+*.pyc
+
+# Personal data
+.env
+
+# AI Outputs (Biar video nggak menuh-menuhin repo)
+outputs/
+
