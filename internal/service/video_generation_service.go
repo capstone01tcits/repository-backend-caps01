@@ -35,6 +35,9 @@ type VideoGenerationService interface {
 	// Get single video variant
 	GetVideoVariant(ctx context.Context, variantID uuid.UUID) (*model.VideoVariant, error)
 
+	// Get all video variants by user ID
+	GetVideoVariantsByUserID(ctx context.Context, userID uuid.UUID) ([]model.VideoVariant, error)
+
 	// Get video variant with scenes
 	GetVideoVariantWithScenes(ctx context.Context, variantID uuid.UUID) (*model.VideoVariant, []model.SceneGeneration, error)
 
@@ -336,6 +339,10 @@ func (s *videoGenerationService) GetVideoVariants(ctx context.Context, storyboar
 
 func (s *videoGenerationService) GetVideoVariant(ctx context.Context, variantID uuid.UUID) (*model.VideoVariant, error) {
 	return s.variantRepo.GetByID(ctx, variantID)
+}
+
+func (s *videoGenerationService) GetVideoVariantsByUserID(ctx context.Context, userID uuid.UUID) ([]model.VideoVariant, error) {
+	return s.variantRepo.GetByUserID(ctx, userID)
 }
 
 func (s *videoGenerationService) GetVideoVariantWithScenes(ctx context.Context, variantID uuid.UUID) (*model.VideoVariant, []model.SceneGeneration, error) {

@@ -246,11 +246,48 @@ func (h *VideoHandler) ListVideos(c *fiber.Ctx) error {
 		return utils.Unauthorized(c, "Unauthorized")
 	}
 
-	// TODO: Implement video listing from database
-	// For now return empty list - this would query all VideoVariants owned by user
-	videos := make([]interface{}, 0)
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid user ID format")
+	}
 
-	return utils.OK(c, "Videos retrieved", videos)
+	variants, err := h.videoGenService.GetVideoVariantsByUserID(c.Context(), userUUID)
+	if err != nil {
+		return utils.InternalError(c, "Failed to retrieve videos")
+	}
+
+	type variantResp struct {
+		ID            string      `json:"id"`
+		VariantNumber int         `json:"variant_number"`
+		Status        string      `json:"status"`
+		VideoURL      string      `json:"video_url"`
+		ThumbnailURL  string      `json:"thumbnail_url"`
+		PromptUsed    string      `json:"prompt_used"`
+		Duration      int         `json:"duration"`
+		Provider      string      `json:"provider"`
+		Model         string      `json:"model"`
+		CreatedAt     interface{} `json:"created_at"`
+		UpdatedAt     interface{} `json:"updated_at"`
+	}
+
+	result := make([]variantResp, len(variants))
+	for i, v := range variants {
+		result[i] = variantResp{
+			ID:            v.ID.String(),
+			VariantNumber: v.VariantNumber,
+			Status:        v.Status,
+			VideoURL:      v.VideoURL,
+			ThumbnailURL:  v.ThumbnailURL,
+			PromptUsed:    v.PromptUsed,
+			Duration:      v.Duration,
+			Provider:      v.Provider,
+			Model:         v.Model,
+			CreatedAt:     v.CreatedAt,
+			UpdatedAt:     v.UpdatedAt,
+		}
+	}
+
+	return utils.OK(c, "Videos retrieved", result)
 }
 
 // GetVideosByStoryboard godoc

@@ -20,6 +20,7 @@ type VideoVariantRepository interface {
 	Update(ctx context.Context, variant *model.VideoVariant) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetByExternalJobID(ctx context.Context, externalJobID string) (*model.VideoVariant, error)
+	GetByUserID(ctx context.Context, userID uuid.UUID) ([]model.VideoVariant, error)
 }
 
 type videoVariantRepository struct {
@@ -138,4 +139,16 @@ func (r *videoVariantRepository) GetByExternalJobID(ctx context.Context, externa
 		return nil, result.Error
 	}
 	return &variant, nil
+}
+
+func (r *videoVariantRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]model.VideoVariant, error) {
+	var variants []model.VideoVariant
+	result := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Find(&variants)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return variants, nil
 }

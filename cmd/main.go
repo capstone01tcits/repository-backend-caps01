@@ -156,6 +156,7 @@ func main() {
 	// ══════════════════════════════════════════════════════════════════════════
 	videos := api.Group("/videos", middleware.Protected())
 	videos.Post("/generate", videoHandler.GenerateVideo)
+	videos.Get("/", videoHandler.ListVideos)
 	videos.Get("/storyboard/:storyboard_id", videoHandler.GetVideosByStoryboard)
 	videos.Get("/download/:id", videoHandler.DownloadVideo)
 	videos.Get("/preview/:id", videoHandler.PreviewVideo)
