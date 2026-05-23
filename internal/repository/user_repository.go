@@ -96,6 +96,30 @@ func (r *userRepository) DeductCredits(id string, amount int) error {
 	return nil
 }
 
+func (r *userRepository) UpdatePreferences(id string, req *model.UpdatePreferencesRequest) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	updates := map[string]interface{}{}
+	if req.EmailAlerts != nil {
+		updates["email_alerts"] = *req.EmailAlerts
+	}
+	if req.Newsletter != nil {
+		updates["newsletter"] = *req.Newsletter
+	}
+	if req.PublicProfile != nil {
+		updates["public_profile"] = *req.PublicProfile
+	}
+	if req.DataTraining != nil {
+		updates["data_training"] = *req.DataTraining
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+	return r.db.Model(&model.User{}).Where("id = ?", uid).Updates(updates).Error
+}
+
 func (r *userRepository) Delete(id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
