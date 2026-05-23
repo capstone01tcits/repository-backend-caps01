@@ -12,11 +12,15 @@ type User struct {
 	Name      string         `gorm:"not null" json:"name"`
 	Email     string         `gorm:"uniqueIndex;not null" json:"email"`
 	Password  string         `gorm:"not null" json:"-"`
-	Role	  string 		 `gorm:"default:user" json:"role"`   // user, admin
-	Credits   int            `gorm:"default:1000" json:"credits"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Role          string         `gorm:"default:user" json:"role"`   // user, admin
+	Credits       int            `gorm:"default:1000" json:"credits"`
+	EmailAlerts   bool           `gorm:"default:true" json:"email_alerts"`
+	Newsletter    bool           `gorm:"default:false" json:"newsletter"`
+	PublicProfile bool           `gorm:"default:false" json:"public_profile"`
+	DataTraining  bool           `gorm:"default:true" json:"data_training"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
@@ -45,13 +49,24 @@ type AuthResponse struct {
 }
 
 type UserInfo struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	Credits   int       `json:"credits"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	Email         string    `json:"email"`
+	Role          string    `json:"role"`
+	Credits       int       `json:"credits"`
+	EmailAlerts   bool      `json:"email_alerts"`
+	Newsletter    bool      `json:"newsletter"`
+	PublicProfile bool      `json:"public_profile"`
+	DataTraining  bool      `json:"data_training"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type UpdatePreferencesRequest struct {
+	EmailAlerts   *bool `json:"email_alerts"`
+	Newsletter    *bool `json:"newsletter"`
+	PublicProfile *bool `json:"public_profile"`
+	DataTraining  *bool `json:"data_training"`
 }
 
 type ChangePasswordRequest struct {

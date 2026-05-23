@@ -16,6 +16,7 @@ type UserRepository interface {
 	UpdatePassword(id string, newPassword string) error
 	UpdateCredits(id string, credits int) error
 	DeductCredits(id string, amount int) error
+	UpdatePreferences(id string, req *model.UpdatePreferencesRequest) error
 	Delete(id string) error
 	Restore(id string) error
 	FindByIDIncludeDeleted(id string) (*model.User, error)

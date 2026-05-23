@@ -121,6 +121,7 @@ func main() {
 	auth.Post("/login", authHandler.Login)
 	auth.Post("/refresh", authHandler.RefreshToken)
 	auth.Get("/me", middleware.Protected(), authHandler.GetProfile)
+	auth.Put("/preferences", middleware.Protected(), authHandler.UpdatePreferences)
 	auth.Post("/change-password", middleware.Protected(), authHandler.ChangePassword)
 	auth.Delete("/account", middleware.Protected(), authHandler.DeleteAccount)
 

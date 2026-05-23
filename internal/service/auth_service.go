@@ -16,6 +16,7 @@ type AuthService interface {
 	RefreshToken(refreshToken string) (*model.AuthResponse, error)
 	GetProfile(userID string) (*model.UserInfo, error)
 	ChangePassword(userID string, req *model.ChangePasswordRequest) error
+	UpdatePreferences(userID string, req *model.UpdatePreferencesRequest) error
 	DeleteAccount(userID string) error
 	RestoreAccount(refreshToken string) (*model.UserInfo, error)
 	GetAllUsers() ([]model.UserInfo, error)
@@ -100,13 +101,17 @@ func (s *authService) GetProfile(userID string) (*model.UserInfo, error) {
 	}
 
 	return &model.UserInfo{
-		ID:        user.ID.String(),
-		Name:      user.Name,
-		Email:     user.Email,
-		Role:      user.Role,
-		Credits:   user.Credits,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		ID:            user.ID.String(),
+		Name:          user.Name,
+		Email:         user.Email,
+		Role:          user.Role,
+		Credits:       user.Credits,
+		EmailAlerts:   user.EmailAlerts,
+		Newsletter:    user.Newsletter,
+		PublicProfile: user.PublicProfile,
+		DataTraining:  user.DataTraining,
+		CreatedAt:     user.CreatedAt,
+		UpdatedAt:     user.UpdatedAt,
 	}, nil
 }
 
@@ -133,6 +138,13 @@ func (s *authService) ChangePassword(userID string, req *model.ChangePasswordReq
 		return errors.New("failed to update password")
 	}
 
+	return nil
+}
+
+func (s *authService) UpdatePreferences(userID string, req *model.UpdatePreferencesRequest) error {
+	if err := s.userRepo.UpdatePreferences(userID, req); err != nil {
+		return errors.New("failed to update preferences")
+	}
 	return nil
 }
 
