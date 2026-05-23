@@ -1,751 +1,751 @@
 {
-  "info": {
-    "name": "AI Video Generation Platform - Complete Bruno Collection",
-    "version": "5.0.0",
-    "description": "Koleksi API Lengkap dengan Post-Response Script untuk Bruno & Postman. Otomatis mengisi token, ID proyek, storyboard, adegan, dan job ID.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:5000"
+    "info": {
+        "name": "AI Video Generation Platform - Complete Bruno Collection",
+        "version": "5.0.0",
+        "description": "Koleksi API Lengkap dengan Post-Response Script untuk Bruno & Postman. Otomatis mengisi token, ID proyek, storyboard, adegan, dan job ID.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
-    {
-      "key": "access_token",
-      "value": ""
-    },
-    {
-      "key": "refresh_token",
-      "value": ""
-    },
-    {
-      "key": "project_id",
-      "value": ""
-    },
-    {
-      "key": "storyboard_id",
-      "value": ""
-    },
-    {
-      "key": "job_id",
-      "value": ""
-    },
-    {
-      "key": "variant_id",
-      "value": ""
-    },
-    {
-      "key": "scene_id",
-      "value": ""
-    },
-    {
-      "key": "user_id",
-      "value": ""
-    }
-  ],
-  "item": [
-    {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "url": "{{base_url}}/health"
-      }
-    },
-    {
-      "name": "1. Authentication",
-      "item": [
+    "variable": [
         {
-          "name": "Register User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data) {",
-                  "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
-                  "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
-                  "  if (jsonData.data.user && jsonData.data.user.id) bru.setVar('user_id', jsonData.data.user.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/auth/register",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"secure123456\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
+            "key": "base_url",
+            "value": "http://localhost:5000"
         },
         {
-          "name": "Login User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data) {",
-                  "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
-                  "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
-                  "  if (jsonData.data.user && jsonData.data.user.id) bru.setVar('user_id', jsonData.data.user.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/auth/login",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"secure123456\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
+            "key": "access_token",
+            "value": ""
         },
         {
-          "name": "Refresh Token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data) {",
-                  "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
-                  "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/auth/refresh",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
+            "key": "refresh_token",
+            "value": ""
         },
         {
-          "name": "Get Profile",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/auth/me",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
+            "key": "project_id",
+            "value": ""
         },
         {
-          "name": "Change Password",
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/auth/change-password",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"old_password\": \"secure123456\",\n  \"new_password\": \"newsecure123456\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
+            "key": "storyboard_id",
+            "value": ""
         },
         {
-          "name": "Delete Account (Soft Delete)",
-          "request": {
-            "method": "DELETE",
-            "url": "{{base_url}}/api/auth/account",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
+            "key": "job_id",
+            "value": ""
+        },
+        {
+            "key": "variant_id",
+            "value": ""
+        },
+        {
+            "key": "scene_id",
+            "value": ""
+        },
+        {
+            "key": "user_id",
+            "value": ""
         }
-      ]
-    },
-    {
-      "name": "2. Projects",
-      "item": [
+    ],
+    "item": [
         {
-          "name": "Initialize Project (FE Wizard Unified)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data) {",
-                  "  if (jsonData.data.project_id) bru.setVar('project_id', jsonData.data.project_id);",
-                  "  if (jsonData.data.storyboard_id) bru.setVar('storyboard_id', jsonData.data.storyboard_id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
+            "name": "Health Check",
+            "request": {
+                "method": "GET",
+                "url": "{{base_url}}/health"
             }
-          ],
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/projects/initialize",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"institution_name\": \"SMA Negeri 1 Jakarta\",\n  \"school_level\": \"SMA\",\n  \"event_content\": \"Penerimaan Siswa Baru\",\n  \"tone_of_voice\": \"Santai & Ramah\",\n  \"selected_key_message\": \"Bergabunglah dengan keluarga besar kami yang dinamis\",\n  \"video_duration\": \"15 detik\",\n  \"selected_theme\": \"Tur Kampus Sinematik\",\n  \"prompt\": \"Buat video promosi cinematic berkualitas tinggi\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+        },
+        {
+            "name": "1. Authentication",
+            "item": [
+                {
+                    "name": "Register User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data) {",
+                                    "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
+                                    "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                                    "  if (jsonData.data.user && jsonData.data.user.id) bru.setVar('user_id', jsonData.data.user.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/auth/register",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"secure123456\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Login User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data) {",
+                                    "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
+                                    "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                                    "  if (jsonData.data.user && jsonData.data.user.id) bru.setVar('user_id', jsonData.data.user.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"secure123456\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data) {",
+                                    "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
+                                    "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/auth/refresh",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Get Profile",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/auth/me",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/auth/change-password",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"old_password\": \"secure123456\",\n  \"new_password\": \"newsecure123456\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Account (Soft Delete)",
+                    "request": {
+                        "method": "DELETE",
+                        "url": "{{base_url}}/api/auth/account",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
                 }
-              }
-            }
-          }
+            ]
         },
         {
-          "name": "List Projects",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/projects",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
+            "name": "2. Projects",
+            "item": [
+                {
+                    "name": "Initialize Project (FE Wizard Unified)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data) {",
+                                    "  if (jsonData.data.project_id) bru.setVar('project_id', jsonData.data.project_id);",
+                                    "  if (jsonData.data.storyboard_id) bru.setVar('storyboard_id', jsonData.data.storyboard_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/projects/initialize",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"institution_name\": \"SMA Negeri 1 Jakarta\",\n  \"school_level\": \"SMA\",\n  \"event_content\": \"Penerimaan Siswa Baru\",\n  \"tone_of_voice\": \"Santai & Ramah\",\n  \"selected_key_message\": \"Bergabunglah dengan keluarga besar kami yang dinamis\",\n  \"video_duration\": \"15 detik\",\n  \"selected_theme\": \"Tur Kampus Sinematik\",\n  \"prompt\": \"Buat video promosi cinematic berkualitas tinggi\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "List Projects",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/projects",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Project Detail",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/projects/{{project_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Delete Project",
+                    "request": {
+                        "method": "DELETE",
+                        "url": "{{base_url}}/api/projects/{{project_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Restore Project",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/projects/{{project_id}}/restore",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                }
             ]
-          }
         },
         {
-          "name": "Get Project Detail",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/projects/{{project_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
+            "name": "3. Storyboards",
+            "item": [
+                {
+                    "name": "Create Manual Storyboard",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data) {",
+                                    "  if (jsonData.data.id) bru.setVar('storyboard_id', jsonData.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/storyboard/create",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"title\": \"Manual Storyboard ITS\",\n  \"total_duration\": 18,\n  \"style\": \"Cinematic\",\n  \"sections\": [\n    {\n      \"section_type\": \"hook\",\n      \"content\": \"Welcome to the future of learning at SMAN 1!\",\n      \"duration\": 6\n    },\n    {\n      \"section_type\": \"value\",\n      \"content\": \"State-of-the-art facilities and modern classrooms.\",\n      \"duration\": 6\n    },\n    {\n      \"section_type\": \"cta\",\n      \"content\": \"Register today at sman1.sch.id\",\n      \"duration\": 6\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Get Storyboard Detail",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/storyboard/detail/{{storyboard_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Storyboard Sections",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
+                                    "  bru.setVar('scene_id', jsonData.data[0].id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/storyboard/{{storyboard_id}}/sections",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Storyboard By Project",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/storyboard/{{project_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Update Storyboard Text",
+                    "request": {
+                        "method": "PUT",
+                        "url": "{{base_url}}/api/storyboard/{{storyboard_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Updated Storyboard Title\",\n  \"sections\": [\n    {\n      \"section_type\": \"hook\",\n      \"content\": \"Updated Hook: Discover SMAN 1!\",\n      \"duration\": 6\n    },\n    {\n      \"section_type\": \"value\",\n      \"content\": \"Updated Value: Advanced engineering program.\",\n      \"duration\": 6\n    },\n    {\n      \"section_type\": \"cta\",\n      \"content\": \"Updated CTA: Join SMAN 1 Now!\",\n      \"duration\": 6\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Storyboard",
+                    "request": {
+                        "method": "DELETE",
+                        "url": "{{base_url}}/api/storyboard/{{storyboard_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Restore Storyboard",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/storyboard/{{storyboard_id}}/restore",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                }
             ]
-          }
         },
         {
-          "name": "Delete Project",
-          "request": {
-            "method": "DELETE",
-            "url": "{{base_url}}/api/projects/{{project_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
+            "name": "4. Videos Pipeline",
+            "item": [
+                {
+                    "name": "Generate Video Varian (Wavespeed)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data) {",
+                                    "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/videos/generate",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"storyboard_id\": \"{{storyboard_id}}\",\n  \"custom_prompt\": \"Cinematic Campus promotion video\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Get Storyboard Video Variants",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
+                                    "  bru.setVar('variant_id', jsonData.data[0].id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/videos/storyboard/{{storyboard_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Check Status / Get Video Detail (Polling)",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/videos/{{variant_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Download Video Metadata",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/videos/download/{{variant_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Stream/Preview Video (302 Redirect)",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/videos/preview/{{variant_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Regenerate Entire Video Variant",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data) {",
+                                    "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/videos/{{variant_id}}/regenerate",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"new_prompt\": \"Alternative epic promotional style\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Regenerate Single Scene",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = res.getBody();",
+                                    "if (jsonData.success && jsonData.data) {",
+                                    "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/videos/scene/{{scene_id}}/regenerate",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"new_prompt\": \"Add closeup drone view of SMAN 1 high-tech building\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "List All User Videos",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/videos",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                }
             ]
-          }
         },
         {
-          "name": "Restore Project",
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/projects/{{project_id}}/restore",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
+            "name": "5. Credits & Administration",
+            "item": [
+                {
+                    "name": "Check My Credit Balance",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/api/credits",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Admin Top Up Credits",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/api/admin/credits",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"amount\": 500\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
             ]
-          }
+        },
+        {
+            "name": "Admin",
+            "item": [
+                {
+                    "name": "Get All Users",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/admin/users",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "users"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
-      ]
-    },
-    {
-      "name": "3. Storyboards",
-      "item": [
-        {
-          "name": "Create Manual Storyboard",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data) {",
-                  "  if (jsonData.data.id) bru.setVar('storyboard_id', jsonData.data.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/storyboard/create",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"title\": \"Manual Storyboard ITS\",\n  \"total_duration\": 18,\n  \"style\": \"Cinematic\",\n  \"sections\": [\n    {\n      \"section_type\": \"hook\",\n      \"content\": \"Welcome to the future of learning at SMAN 1!\",\n      \"duration\": 6\n    },\n    {\n      \"section_type\": \"value\",\n      \"content\": \"State-of-the-art facilities and modern classrooms.\",\n      \"duration\": 6\n    },\n    {\n      \"section_type\": \"cta\",\n      \"content\": \"Register today at sman1.sch.id\",\n      \"duration\": 6\n    }\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "Get Storyboard Detail",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/storyboard/detail/{{storyboard_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Get Storyboard Sections",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
-                  "  bru.setVar('scene_id', jsonData.data[0].id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/storyboard/{{storyboard_id}}/sections",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Get Storyboard By Project",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/storyboard/{{project_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Update Storyboard Text",
-          "request": {
-            "method": "PUT",
-            "url": "{{base_url}}/api/storyboard/{{storyboard_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Storyboard Title\",\n  \"sections\": [\n    {\n      \"section_type\": \"hook\",\n      \"content\": \"Updated Hook: Discover SMAN 1!\",\n      \"duration\": 6\n    },\n    {\n      \"section_type\": \"value\",\n      \"content\": \"Updated Value: Advanced engineering program.\",\n      \"duration\": 6\n    },\n    {\n      \"section_type\": \"cta\",\n      \"content\": \"Updated CTA: Join SMAN 1 Now!\",\n      \"duration\": 6\n    }\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "Delete Storyboard",
-          "request": {
-            "method": "DELETE",
-            "url": "{{base_url}}/api/storyboard/{{storyboard_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Restore Storyboard",
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/storyboard/{{storyboard_id}}/restore",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "4. Videos Pipeline",
-      "item": [
-        {
-          "name": "Generate Video Varian (Wavespeed)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data) {",
-                  "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/videos/generate",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"storyboard_id\": \"{{storyboard_id}}\",\n  \"custom_prompt\": \"Cinematic Campus promotion video\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "Get Storyboard Video Variants",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
-                  "  bru.setVar('variant_id', jsonData.data[0].id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/videos/storyboard/{{storyboard_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Check Status / Get Video Detail (Polling)",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/videos/{{variant_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Download Video Metadata",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/videos/download/{{variant_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Stream/Preview Video (302 Redirect)",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/videos/preview/{{variant_id}}",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Regenerate Entire Video Variant",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data) {",
-                  "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/videos/{{variant_id}}/regenerate",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"new_prompt\": \"Alternative epic promotional style\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "Regenerate Single Scene",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = res.getBody();",
-                  "if (jsonData.success && jsonData.data) {",
-                  "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/videos/scene/{{scene_id}}/regenerate",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"new_prompt\": \"Add closeup drone view of SMAN 1 high-tech building\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "List All User Videos",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/videos",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "5. Credits & Administration",
-      "item": [
-        {
-          "name": "Check My Credit Balance",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/credits",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "Admin Top Up Credits",
-          "request": {
-            "method": "POST",
-            "url": "{{base_url}}/api/admin/credits",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"amount\": 500\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Admin",
-      "item": [
-        {
-          "name": "Get All Users",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/admin/users",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "users"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    }
-  ]
+    ]
 }
