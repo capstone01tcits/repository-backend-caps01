@@ -61,11 +61,11 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data) {",
-                                    "  if (jsonData.data.access_token) pm.collectionVariables.set('access_token', jsonData.data.access_token);",
-                                    "  if (jsonData.data.refresh_token) pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
-                                    "  if (jsonData.data.user && jsonData.data.user.id) pm.collectionVariables.set('user_id', jsonData.data.user.id);",
+                                    "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
+                                    "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                                    "  if (jsonData.data.user && jsonData.data.user.id) bru.setVar('user_id', jsonData.data.user.id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -99,11 +99,11 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data) {",
-                                    "  if (jsonData.data.access_token) pm.collectionVariables.set('access_token', jsonData.data.access_token);",
-                                    "  if (jsonData.data.refresh_token) pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
-                                    "  if (jsonData.data.user && jsonData.data.user.id) pm.collectionVariables.set('user_id', jsonData.data.user.id);",
+                                    "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
+                                    "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
+                                    "  if (jsonData.data.user && jsonData.data.user.id) bru.setVar('user_id', jsonData.data.user.id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -137,10 +137,10 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data) {",
-                                    "  if (jsonData.data.access_token) pm.collectionVariables.set('access_token', jsonData.data.access_token);",
-                                    "  if (jsonData.data.refresh_token) pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                                    "  if (jsonData.data.access_token) bru.setVar('access_token', jsonData.data.access_token);",
+                                    "  if (jsonData.data.refresh_token) bru.setVar('refresh_token', jsonData.data.refresh_token);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -231,10 +231,10 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data) {",
-                                    "  if (jsonData.data.project_id) pm.collectionVariables.set('project_id', jsonData.data.project_id);",
-                                    "  if (jsonData.data.storyboard_id) pm.collectionVariables.set('storyboard_id', jsonData.data.storyboard_id);",
+                                    "  if (jsonData.data.project_id) bru.setVar('project_id', jsonData.data.project_id);",
+                                    "  if (jsonData.data.storyboard_id) bru.setVar('storyboard_id', jsonData.data.storyboard_id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -329,9 +329,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data) {",
-                                    "  if (jsonData.data.id) pm.collectionVariables.set('storyboard_id', jsonData.data.id);",
+                                    "  if (jsonData.data.id) bru.setVar('storyboard_id', jsonData.data.id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -382,9 +382,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
-                                    "  pm.collectionVariables.set('scene_id', jsonData.data[0].id);",
+                                    "  bru.setVar('scene_id', jsonData.data[0].id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -479,9 +479,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data) {",
-                                    "  if (jsonData.data.generation_job_id) pm.collectionVariables.set('job_id', jsonData.data.generation_job_id);",
+                                    "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -519,9 +519,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data && jsonData.data.length > 0) {",
-                                    "  pm.collectionVariables.set('variant_id', jsonData.data[0].id);",
+                                    "  bru.setVar('variant_id', jsonData.data[0].id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -585,9 +585,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data) {",
-                                    "  if (jsonData.data.generation_job_id) pm.collectionVariables.set('job_id', jsonData.data.generation_job_id);",
+                                    "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -625,9 +625,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "var jsonData = pm.response.json();",
+                                    "var jsonData = res.getBody();",
                                     "if (jsonData.success && jsonData.data) {",
-                                    "  if (jsonData.data.generation_job_id) pm.collectionVariables.set('job_id', jsonData.data.generation_job_id);",
+                                    "  if (jsonData.data.generation_job_id) bru.setVar('job_id', jsonData.data.generation_job_id);",
                                     "}"
                                 ],
                                 "type": "text/javascript"
