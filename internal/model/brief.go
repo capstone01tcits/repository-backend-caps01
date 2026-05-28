@@ -32,7 +32,9 @@ type BusinessBrief struct {
 }
 
 func (b *BusinessBrief) BeforeCreate(tx *gorm.DB) error {
-	b.ID = uuid.New()
+	if b.ID == uuid.Nil {
+		b.ID = uuid.New()
+	}
 	return nil
 }
 
@@ -62,7 +64,9 @@ type CreativeBrief struct {
 }
 
 func (c *CreativeBrief) BeforeCreate(tx *gorm.DB) error {
-	c.ID = uuid.New()
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
 	return nil
 }
 

@@ -35,7 +35,9 @@ type Video struct {
 }
 
 func (v *Video) BeforeCreate(tx *gorm.DB) error {
-	v.ID = uuid.New()
+	if v.ID == uuid.Nil {
+		v.ID = uuid.New()
+	}
 	return nil
 }
 
