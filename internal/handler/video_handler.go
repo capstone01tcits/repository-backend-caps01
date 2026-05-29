@@ -202,13 +202,13 @@ func (h *VideoHandler) GetVideosByStoryboard(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "Invalid storyboard_id format")
 	}
 
-	video, err := h.videoGenService.GetVideoByStoryboard(c.Context(), storyboardID)
-	if err != nil {
+	videos, err := h.videoGenService.GetVideosByStoryboard(c.Context(), storyboardID)
+	if err != nil || len(videos) == 0 {
 		// Return empty list to match frontend expectations if not found
 		return utils.OK(c, "No video found for storyboard", []interface{}{})
 	}
 
-	// Map to response struct (return array of 1 element to maintain some backward compatibility if needed)
+	// Map to response struct
 	type videoResp struct {
 		ID           string      `json:"id"`
 		Status       string      `json:"status"`
@@ -219,8 +219,9 @@ func (h *VideoHandler) GetVideosByStoryboard(c *fiber.Ctx) error {
 		UpdatedAt    interface{} `json:"updated_at"`
 	}
 
-	result := []videoResp{
-		{
+	var result []videoResp
+	for _, video := range videos {
+		result = append(result, videoResp{
 			ID:           video.ID.String(),
 			Status:       video.Status,
 			VideoURL:     video.VideoURL,
@@ -228,10 +229,10 @@ func (h *VideoHandler) GetVideosByStoryboard(c *fiber.Ctx) error {
 			Duration:     video.Duration,
 			CreatedAt:    video.CreatedAt,
 			UpdatedAt:    video.UpdatedAt,
-		},
+		})
 	}
 
-	return utils.OK(c, "Video retrieved", result)
+	return utils.OK(c, "Videos retrieved", result)
 }
 
 // Stubs for removed methods to avoid compilation errors if referenced elsewhere

@@ -26,6 +26,9 @@ type VideoGenerationService interface {
 	// Get video by storyboard ID
 	GetVideoByStoryboard(ctx context.Context, storyboardID uuid.UUID) (*model.Video, error)
 
+	// Get all videos by storyboard ID
+	GetVideosByStoryboard(ctx context.Context, storyboardID uuid.UUID) ([]model.Video, error)
+
 	// Get video by ID
 	GetVideoByID(ctx context.Context, videoID uuid.UUID) (*model.Video, error)
 
@@ -79,11 +82,8 @@ func (s *videoGenerationService) GenerateVideo(ctx context.Context, userID, proj
 	existingVideos, _ := s.videoRepo.FindByProjectID(projectID.String())
 	for _, v := range existingVideos {
 		if v.StoryboardID == storyboardID {
-			if v.Status == "pending" || v.Status == "processing" {
+			if v.Status == "pending" || v.Status == "processing" || v.Status == "stitching_video" {
 				return nil, errors.New("sedang ada proses generate video yang berjalan untuk storyboard ini")
-			}
-			if v.Status == "completed" {
-				return nil, errors.New("video untuk storyboard ini sudah selesai di-generate")
 			}
 			if v.Status == "failed" {
 				// Delete failed videos to allow retry
@@ -182,6 +182,10 @@ func (s *videoGenerationService) GetJobStatus(ctx context.Context, jobID uuid.UU
 
 func (s *videoGenerationService) GetVideoByStoryboard(ctx context.Context, storyboardID uuid.UUID) (*model.Video, error) {
 	return s.videoRepo.FindByStoryboardID(storyboardID.String())
+}
+
+func (s *videoGenerationService) GetVideosByStoryboard(ctx context.Context, storyboardID uuid.UUID) ([]model.Video, error) {
+	return s.videoRepo.FindAllByStoryboardID(storyboardID.String())
 }
 
 func (s *videoGenerationService) GetVideoByID(ctx context.Context, videoID uuid.UUID) (*model.Video, error) {
