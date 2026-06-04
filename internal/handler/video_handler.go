@@ -54,16 +54,33 @@ func (h *VideoHandler) GenerateVideo(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "Invalid storyboard_id format")
 	}
 
-	job, err := h.videoGenService.GenerateVideo(c.Context(), userUUID, projectUUID, storyboardUUID, req.CustomPrompt)
+	jobs, err := h.videoGenService.GenerateVideo(c.Context(), userUUID, projectUUID, storyboardUUID, req)
 	if err != nil {
 		return utils.BadRequest(c, err.Error())
 	}
 
-	return utils.Created(c, "Video generation job created", map[string]interface{}{
-		"generation_job_id": job.ID,
-		"status":            job.Status,
-		"video_id":          job.VideoID,
-		"created_at":        job.CreatedAt,
+	type sceneJobResp struct {
+		GenerationJobID string      `json:"generation_job_id"`
+		VideoID         interface{} `json:"video_id"`
+		Status          string      `json:"status"`
+	}
+	videos := make([]sceneJobResp, len(jobs))
+	for i, job := range jobs {
+		videos[i] = sceneJobResp{
+			GenerationJobID: job.ID.String(),
+			VideoID:         job.VideoID,
+			Status:          job.Status,
+		}
+	}
+
+	createdAt := ""
+	if len(jobs) > 0 {
+		createdAt = jobs[0].CreatedAt.String()
+	}
+
+	return utils.Created(c, "Video generation jobs created", map[string]interface{}{
+		"videos":     videos,
+		"created_at": createdAt,
 	})
 }
 
@@ -136,14 +153,16 @@ func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Video retrieved", map[string]interface{}{
-		"id":             video.ID.String(),
-		"title":          video.Title,
-		"status":         video.Status,
-		"video_url":      video.VideoURL,
-		"thumbnail_url":  video.ThumbnailURL,
-		"duration":       video.Duration,
-		"created_at":     video.CreatedAt,
-		"updated_at":     video.UpdatedAt,
+		"id":           video.ID.String(),
+		"title":        video.Title,
+		"status":       video.Status,
+		"video_url":    video.VideoURL,
+		"thumbnail_url": video.ThumbnailURL,
+		"duration":     video.Duration,
+		"section_type": video.SectionType,
+		"scene_index":  video.SceneIndex,
+		"created_at":   video.CreatedAt,
+		"updated_at":   video.UpdatedAt,
 	})
 }
 
@@ -235,11 +254,42 @@ func (h *VideoHandler) GetVideosByStoryboard(c *fiber.Ctx) error {
 	return utils.OK(c, "Videos retrieved", result)
 }
 
-// Stubs for removed methods to avoid compilation errors if referenced elsewhere
 func (h *VideoHandler) RegenerateVideoVariant(c *fiber.Ctx) error {
 	return utils.BadRequest(c, "Endpoint removed")
 }
 
+// RegenerateScene godoc
+// POST /api/videos/scene/:sceneId/regenerate
 func (h *VideoHandler) RegenerateScene(c *fiber.Ctx) error {
-	return utils.BadRequest(c, "Endpoint removed")
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+
+	sceneIDStr := c.Params("sceneId")
+	sceneID, err := uuid.Parse(sceneIDStr)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid scene ID format")
+	}
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return utils.BadRequest(c, "Invalid user ID format")
+	}
+
+	var body struct {
+		CustomPrompt string `json:"custom_prompt"`
+	}
+	c.BodyParser(&body)
+
+	job, err := h.videoGenService.RegenerateScene(c.Context(), userUUID, sceneID, body.CustomPrompt)
+	if err != nil {
+		return utils.BadRequest(c, err.Error())
+	}
+
+	return utils.OK(c, "Scene regeneration started", map[string]interface{}{
+		"video_id": sceneID.String(),
+		"job_id":   job.ID.String(),
+		"status":   job.Status,
+	})
 }

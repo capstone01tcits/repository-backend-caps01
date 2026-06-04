@@ -203,6 +203,6 @@ func main() {
 
 	// Start server
 	addr := fmt.Sprintf(":%s", config.Cfg.AppPort)
-	fmt.Printf("✓ Sevima AI Video Gen API running on http://localhost%s\n", addr)
+	fmt.Printf("Sevima AI Video Gen API running on http://localhost%s\n", addr)
 	log.Fatal(app.Listen(addr))
 }

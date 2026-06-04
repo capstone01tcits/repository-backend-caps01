@@ -96,6 +96,132 @@ func BuildVeo3Prompt(bb *model.BusinessBrief, cb *model.CreativeBrief, sections 
 	return prompt
 }
 
+// BuildScenePrompt builds a rich, scene-specific video generation prompt for WaveSpeed/Veo.
+// It parses the storyboard section content (stored as JSON {narration, visual}) and
+// combines all brief fields into a structured cinematic prompt.
+func BuildScenePrompt(bb *model.BusinessBrief, cb *model.CreativeBrief, section model.StoryboardSection, sceneIndex int) string {
+	duration := section.Duration
+	if duration <= 0 {
+		duration = 6
+	}
+
+	// Parse narration & visual from JSON content (saved by FE as {narration, visual})
+	var narration, visualDesc string
+	var contentJSON struct {
+		Narration string `json:"narration"`
+		Visual    string `json:"visual"`
+	}
+	if err := json.Unmarshal([]byte(section.Content), &contentJSON); err == nil {
+		narration = contentJSON.Narration
+		visualDesc = contentJSON.Visual
+	} else {
+		narration = section.Content
+	}
+
+	sceneType := strings.ToLower(section.SectionType)
+
+	// Per-scene cinematic direction
+	sceneDirections := map[string]string{
+		"hook":  fmt.Sprintf("OPENING HOOK — Establish %s's identity immediately. Captivate within the first second. Wide cinematic establishing shot transitioning to a revealing close-up.", bb.InstitutionName),
+		"value": fmt.Sprintf("VALUE SHOWCASE — Highlight the excellence and unique strengths of %s. Tracking shots, close-ups of facilities and engaged students, dynamic movement.", bb.InstitutionName),
+		"cta":   fmt.Sprintf("CALL TO ACTION — Clear brand moment for %s. Logo reveal, institution name displayed prominently. End on a motivating, action-driving visual.", bb.InstitutionName),
+	}
+	direction := sceneDirections[sceneType]
+	if direction == "" {
+		direction = "Dynamic scene with smooth transitions and professional cinematography."
+	}
+
+	// Theme-specific visual style
+	themeStyles := map[string]string{
+		"Tur Kampus Sinematik":       "Cinematic aerial drone and ground-level shots. Golden hour warm lighting, smooth slow-motion camera movements. Architectural focus on campus beauty and landmarks.",
+		"Cerita Kehidupan Mahasiswa": "Authentic student life moments. Warm natural color grading, slightly handheld naturalistic footage. Social, communal, genuine emotions.",
+		"Keunggulan Akademik":        "State-of-the-art laboratory and research environments. Professional studio lighting, technical precision. Achievement trophies, publications, rankings visible.",
+		"Tren & Gaya Hidup Cepat":   "Fast-cut energetic editing, vibrant saturated colors. Social media vertical-style aesthetic. Gen Z energy, dynamic quick movements, trending visual style.",
+	}
+	visualStyle := themeStyles[cb.Theme]
+	if visualStyle == "" {
+		visualStyle = "Professional cinematic quality with smooth transitions and warm, inviting color palette."
+	}
+
+	// Tone guidance
+	toneGuides := map[string]string{
+		"Santai & Ramah":         "Warm, approachable, and friendly atmosphere. Bright, welcoming visuals. People smiling naturally. Inclusive and supportive environment.",
+		"Profesional & Formal":   "Authoritative and polished. Clean, structured composition. Professional gravitas. Confident and trustworthy visual language.",
+		"Kreatif & Inovatif":     "Creative energy and innovation. Unexpected angles, bold compositions, innovative visual storytelling. Inspiring and forward-thinking.",
+		"Berwibawa & Meyakinkan": "Prestigious and commanding presence. Sophisticated color palette, measured confident pacing. Excellence and tradition radiating from every frame.",
+	}
+	toneGuide := toneGuides[cb.ToneOfVoice]
+	if toneGuide == "" {
+		toneGuide = "Professional, engaging, and inspiring tone."
+	}
+
+	// Build the prompt — structured for WaveSpeed Veo 3.1 video generation
+	prompt := fmt.Sprintf(
+		`Create a high-quality %d-second promotional video scene for %s, a %s institution in Indonesia.
+
+SCENE %d OF 3 — %s
+%s
+
+INSTITUTION DETAILS:
+- Name: %s
+- Level: %s
+- Programs: %s
+- Background: %s
+
+CAMPAIGN:
+- Event: %s
+- Key Message: "%s"
+- Additional Direction: %s
+
+VISUAL STYLE: %s
+MOOD & TONE: %s
+
+WHAT TO SHOW (Visual Prompt):
+%s
+
+NARRATION / VOICEOVER:
+%s
+
+TECHNICAL SPECS:
+- Duration: exactly %d seconds
+- Resolution: 1080p, cinematic widescreen
+- Show institution name "%s" clearly at least once
+- Smooth transitions, no abrupt cuts
+- Professional color grading consistent throughout
+- High production value — broadcast quality`,
+		duration,
+		bb.InstitutionName, bb.SchoolLevel,
+		sceneIndex, strings.ToUpper(sceneType),
+		direction,
+		bb.InstitutionName, bb.SchoolLevel, bb.OfferedDegrees, bb.InstitutionHistory,
+		cb.EventContent, cb.KeyMessage,
+		func() string {
+			if cb.Prompt != "" {
+				return cb.Prompt
+			}
+			return "None"
+		}(),
+		visualStyle,
+		toneGuide,
+		func() string {
+			if visualDesc != "" {
+				return visualDesc
+			}
+			return fmt.Sprintf("Cinematic scene showcasing %s campus and student life.", bb.InstitutionName)
+		}(),
+		func() string {
+			if narration != "" {
+				return narration
+			}
+			return cb.KeyMessage
+		}(),
+		duration,
+		bb.InstitutionName,
+	)
+
+	return prompt
+}
+
 // Veo3Provider implements VideoProvider — forwards to the Python AI Service
 // which now routes all veo3/veo-3.1 requests to Wavespeed.
 type Veo3Provider struct {
@@ -129,12 +255,47 @@ func (p *Veo3Provider) GenerateScene(ctx context.Context, req VideoGenerationReq
 		log.Printf("[Veo3Provider] Warning: translation failed (%v), using original prompt", err)
 	}
 
-	// POST /generate with task_type=veo3 → Python AI Service → Wavespeed
+	// Resolve resolution (default 480p if not set)
+	resolution := req.Resolution
+	if resolution == "" {
+		resolution = "480p"
+	}
+
+	// Seed: use 0 as default when caller passes 0 (means "random")
+	seed := req.Seed
+	if seed == 0 {
+		seed = -1
+	}
+
+	videoMode := req.VideoMode
+	if videoMode == "" {
+		videoMode = "text-to-video"
+	}
+
+	// POST /generate → Python AI Service → Wavespeed
 	payload := map[string]interface{}{
-		"prompt":    translatedPrompt,
-		"duration":  req.Duration,
-		"ratio":     "16:9",
-		"task_type": "veo3",
+		"prompt":         translatedPrompt,
+		"duration":       req.Duration,
+		"ratio":          "16:9",
+		"task_type":      "veo3",
+		"video_mode":     videoMode,
+		"resolution":     resolution,
+		"generate_audio": req.GenerateAudio,
+		"seed":           seed,
+	}
+	// Only include images when mode explicitly requires them
+	if videoMode == "image-to-video" || videoMode == "start-end-to-video" {
+		if req.StartImage != "" {
+			payload["start_image"] = req.StartImage
+		}
+	}
+	if videoMode == "start-end-to-video" {
+		if req.EndImage != "" {
+			payload["end_image"] = req.EndImage
+		}
+	}
+	if req.NegativePrompt != "" {
+		payload["negative_prompt"] = req.NegativePrompt
 	}
 
 	jsonData, err := json.Marshal(payload)

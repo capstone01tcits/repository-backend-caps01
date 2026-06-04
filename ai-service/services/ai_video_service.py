@@ -64,6 +64,13 @@ class AIVideoService:
         ratio: str = "16:9",
         task_type: str = "text_to_video",
         reference_images: List[str] = None,
+        video_mode: str = "text-to-video",
+        start_image: str = "",
+        end_image: str = "",
+        negative_prompt: str = "",
+        generate_audio: bool = False,
+        seed: int = -1,
+        resolution: str = "480p",
     ) -> VideoJob:
         """
         Submit job baru ke AI engine.
@@ -92,7 +99,8 @@ class AIVideoService:
         # Di production: ganti dengan Celery task / message queue
         thread = threading.Thread(
             target=self._run_inference,
-            args=(job_id, prompt, duration, ratio, task_type, reference_images),
+            args=(job_id, prompt, duration, ratio, task_type, reference_images,
+                  video_mode, start_image, end_image, negative_prompt, generate_audio, seed, resolution),
             daemon=True,
         )
         thread.start()
@@ -178,6 +186,13 @@ class AIVideoService:
         ratio: str,
         task_type: str,
         reference_images: List[str] = None,
+        video_mode: str = "text-to-video",
+        start_image: str = "",
+        end_image: str = "",
+        negative_prompt: str = "",
+        generate_audio: bool = False,
+        seed: int = -1,
+        resolution: str = "480p",
     ) -> None:
         """
         Jalankan AI inference di background.
@@ -195,8 +210,15 @@ class AIVideoService:
                 instruction=task_type,
                 input=prompt,
                 context={
-                    "job_id": job_id,
-                    "reference_images": reference_images or []
+                    "job_id":           job_id,
+                    "reference_images": reference_images or [],
+                    "video_mode":       video_mode,
+                    "start_image":      start_image,
+                    "end_image":        end_image,
+                    "negative_prompt":  negative_prompt,
+                    "generate_audio":   generate_audio,
+                    "seed":             seed,
+                    "resolution":       resolution,
                 },
                 constraints={
                     "duration": duration,

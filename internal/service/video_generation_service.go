@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"Sevima-AI-Content-Creator/internal/ai"
@@ -17,8 +18,11 @@ import (
 )
 
 type VideoGenerationService interface {
-	// Generate video from a storyboard
-	GenerateVideo(ctx context.Context, userID, projectID, storyboardID uuid.UUID, customPrompt string) (*model.GenerationJob, error)
+	// Generate video from a storyboard — creates one job per scene (3 total)
+	GenerateVideo(ctx context.Context, userID, projectID, storyboardID uuid.UUID, req model.GenerateVideoRequest) ([]*model.GenerationJob, error)
+
+	// Regenerate a single scene video in-place
+	RegenerateScene(ctx context.Context, userID uuid.UUID, videoID uuid.UUID, customPrompt string) (*model.GenerationJob, error)
 
 	// Get generation job status
 	GetJobStatus(ctx context.Context, jobID uuid.UUID) (*model.GenerationJob, error)
@@ -77,8 +81,29 @@ func NewVideoGenerationService(
 	}
 }
 
-func (s *videoGenerationService) GenerateVideo(ctx context.Context, userID, projectID, storyboardID uuid.UUID, customPrompt string) (*model.GenerationJob, error) {
-	// 1. Check if there's already an active or completed video for this storyboard
+func creditMultiplierForMode(mode string) int {
+	switch mode {
+	case "image-to-video":
+		return 2
+	case "start-end-to-video":
+		return 3
+	default:
+		return 1
+	}
+}
+
+func (s *videoGenerationService) GenerateVideo(ctx context.Context, userID, projectID, storyboardID uuid.UUID, req model.GenerateVideoRequest) ([]*model.GenerationJob, error) {
+	// Normalize video mode
+	videoMode := req.VideoMode
+	if videoMode == "" {
+		videoMode = "text-to-video"
+	}
+	resolution := req.Resolution
+	if resolution == "" {
+		resolution = "1080p"
+	}
+
+	// 1. Check for any active videos on this storyboard
 	existingVideos, _ := s.videoRepo.FindByProjectID(projectID.String())
 	for _, v := range existingVideos {
 		if v.StoryboardID == storyboardID {
@@ -86,90 +111,230 @@ func (s *videoGenerationService) GenerateVideo(ctx context.Context, userID, proj
 				return nil, errors.New("sedang ada proses generate video yang berjalan untuk storyboard ini")
 			}
 			if v.Status == "failed" {
-				// Delete failed videos to allow retry
 				s.videoRepo.Delete(v.ID.String())
 			}
 		}
 	}
 
-	// 2. Validate credits
-	credits, err := s.creditService.GetUserCredits(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user credits: %w", err)
-	}
-
-	// 2.5 Get Storyboard duration
+	// 2. Get storyboard sections
 	storyboardSections, err := s.storyboardRepo.FindSectionsByStoryboardID(storyboardID.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get storyboard sections: %w", err)
 	}
-	
-	videoDuration := 0
+
+	// 3. Calculate total credits needed (multiplied by mode)
+	totalDuration := 0
 	for _, sec := range storyboardSections {
-		videoDuration += sec.Duration
+		totalDuration += sec.Duration
 	}
-	if videoDuration == 0 {
-		videoDuration = 15 // fallback
-	}
-	
-	creditsNeeded := videoDuration
-
-	if credits < creditsNeeded {
-		return nil, errors.New("insufficient credits for video generation")
+	if totalDuration == 0 {
+		totalDuration = 18 // fallback: 3 scenes × 6 sec
 	}
 
-	// 3. Get Project Title for Video Name
-	projectName := "Generated Video"
+	multiplier := creditMultiplierForMode(videoMode)
+	requiredCredits := totalDuration * multiplier
 
-	// 4. Create Video record
-	video := &model.Video{
-		UserID:       userID,
-		ProjectID:    projectID,
-		StoryboardID: storyboardID,
-		Title:        projectName,
-		Status:       "pending",
-		Duration:     videoDuration,
-		Resolution:   "1080p",
-		Format:       "mp4",
-		CreditsUsed:  creditsNeeded,
+	credits, err := s.creditService.GetUserCredits(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user credits: %w", err)
+	}
+	if credits < requiredCredits {
+		return nil, fmt.Errorf("insufficient credits: need %d, have %d", requiredCredits, credits)
 	}
 
-	if err := s.videoRepo.Create(video); err != nil {
-		return nil, fmt.Errorf("failed to create video record: %w", err)
-	}
+	// 4. Create one Video + GenerationJob per scene (hook, value, cta)
+	sectionOrder := []string{"hook", "value", "cta"}
+	jobs := make([]*model.GenerationJob, 0, 3)
 
-	// 5. Create Job
-	job := &model.GenerationJob{
-		UserID:          userID,
-		ProjectID:       projectID,
-		StoryboardID:    storyboardID,
-		VideoID:         &video.ID,
-		JobType:         "generate",
-		Status:          "queued",
-		Priority:        1,
-		VideoDuration:   videoDuration,
-		Provider:        "wavespeed",
-		Model:           "veo-3.1-lite",
-		Resolution:      "1080p",
-		CreditsRequired: creditsNeeded,
-		MaxRetries:      3,
-	}
+	for idx, sectionType := range sectionOrder {
+		var section *model.StoryboardSection
+		for i := range storyboardSections {
+			if strings.ToLower(storyboardSections[i].SectionType) == sectionType {
+				section = &storyboardSections[i]
+				break
+			}
+		}
 
-	if customPrompt != "" {
+		sceneDuration := 6
+		sectionContent := ""
+		if section != nil {
+			if section.Duration > 0 {
+				sceneDuration = section.Duration
+			}
+			sectionContent = section.Content
+		}
+
+		video := &model.Video{
+			UserID:       userID,
+			ProjectID:    projectID,
+			StoryboardID: storyboardID,
+			Title:        fmt.Sprintf("Scene %d - %s", idx+1, sectionType),
+			Status:       "pending",
+			Duration:     sceneDuration,
+			Resolution:   resolution,
+			Format:       "mp4",
+			CreditsUsed:  sceneDuration * multiplier,
+			SectionType:  sectionType,
+			SceneIndex:   idx + 1,
+			VideoMode:    videoMode,
+		}
+
+		if err := s.videoRepo.Create(video); err != nil {
+			return nil, fmt.Errorf("failed to create video record for scene %d: %w", idx+1, err)
+		}
+
 		promptData := map[string]interface{}{
-			"custom_prompt": customPrompt,
-			"timestamp":     time.Now(),
+			"section_type":    sectionType,
+			"scene_index":     idx + 1,
+			"section_content": sectionContent,
+			"video_mode":      videoMode,
+			"start_image":     req.StartImage,
+			"end_image":       req.EndImage,
+			"negative_prompt": req.NegativePrompt,
+			"generate_audio":  req.GenerateAudio,
+			"seed":            req.Seed,
+			"resolution":      resolution,
+		}
+		if req.CustomPrompt != "" {
+			promptData["custom_prompt"] = req.CustomPrompt
 		}
 		promptJSON, _ := json.Marshal(promptData)
-		job.Prompt = promptJSON
+
+		job := &model.GenerationJob{
+			UserID:          userID,
+			ProjectID:       projectID,
+			StoryboardID:    storyboardID,
+			VideoID:         &video.ID,
+			JobType:         "generate",
+			Status:          "queued",
+			Priority:        1,
+			VideoDuration:   sceneDuration,
+			Provider:        "wavespeed",
+			Model:           "veo-3.1-lite",
+			Resolution:      resolution,
+			CreditsRequired: sceneDuration * multiplier,
+			MaxRetries:      3,
+			Prompt:          promptJSON,
+		}
+
+		if err := s.jobRepo.Create(ctx, job); err != nil {
+			return nil, fmt.Errorf("failed to create generation job for scene %d: %w", idx+1, err)
+		}
+
+		jobs = append(jobs, job)
 	}
 
+	// 5. Deduct Credits
+	modeLabel := map[string]string{
+		"text-to-video":      "Text-to-Video",
+		"image-to-video":     "Image-to-Video",
+		"start-end-to-video": "Start-End-to-Video",
+	}[videoMode]
+	deductReason := fmt.Sprintf("Generate Video 3 Scenes (%s)", modeLabel)
+	if err := s.creditService.DeductCredits(ctx, userID, requiredCredits, deductReason); err != nil {
+		return nil, fmt.Errorf("failed to deduct credits: %w", err)
+	}
+
+	return jobs, nil
+}
+
+func (s *videoGenerationService) RegenerateScene(ctx context.Context, userID uuid.UUID, videoID uuid.UUID, customPrompt string) (*model.GenerationJob, error) {
+	video, err := s.videoRepo.FindByID(videoID.String())
+	if err != nil {
+		return nil, fmt.Errorf("video not found: %w", err)
+	}
+
+	if video.UserID != userID {
+		return nil, errors.New("unauthorized: video does not belong to user")
+	}
+
+	switch video.Status {
+	case "pending", "processing", "stitching_video", "generating_assets":
+		return nil, errors.New("scene is already being processed")
+	}
+
+	multiplier := creditMultiplierForMode(video.VideoMode)
+	creditsRequired := video.Duration * multiplier
+	if creditsRequired == 0 {
+		creditsRequired = 6 * multiplier
+	}
+
+	credits, err := s.creditService.GetUserCredits(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get credits: %w", err)
+	}
+	if credits < creditsRequired {
+		return nil, fmt.Errorf("insufficient credits: need %d, have %d", creditsRequired, credits)
+	}
+
+	// Get latest section content from storyboard
+	storyboardSections, _ := s.storyboardRepo.FindSectionsByStoryboardID(video.StoryboardID.String())
+	var sectionContent string
+	for _, sec := range storyboardSections {
+		if strings.EqualFold(sec.SectionType, video.SectionType) {
+			sectionContent = sec.Content
+			break
+		}
+	}
+
+	// Get images from business brief for image-based modes
+	var startImage, endImage string
+	if video.VideoMode == "image-to-video" || video.VideoMode == "start-end-to-video" {
+		if bb, err := s.briefRepo.FindBusinessBriefByProjectID(video.ProjectID.String()); err == nil && bb != nil {
+			startImage = bb.LogoPath
+			if video.VideoMode == "start-end-to-video" {
+				endImage = bb.EnvironmentPath
+			}
+		}
+	}
+
+	// Reset video in-place
+	video.Status = "pending"
+	video.VideoURL = ""
+	video.ThumbnailURL = ""
+	video.ErrorMessage = ""
+	video.ExternalJobID = ""
+	video.RegenerateCount++
+	if err := s.videoRepo.Update(video); err != nil {
+		return nil, fmt.Errorf("failed to reset video status: %w", err)
+	}
+
+	promptData := map[string]interface{}{
+		"section_type":    video.SectionType,
+		"scene_index":     video.SceneIndex,
+		"section_content": sectionContent,
+		"video_mode":      video.VideoMode,
+		"start_image":     startImage,
+		"end_image":       endImage,
+		"resolution":      video.Resolution,
+	}
+	if customPrompt != "" {
+		promptData["custom_prompt"] = customPrompt
+	}
+	promptJSON, _ := json.Marshal(promptData)
+
+	job := &model.GenerationJob{
+		UserID:          userID,
+		ProjectID:       video.ProjectID,
+		StoryboardID:    video.StoryboardID,
+		VideoID:         &video.ID,
+		JobType:         "regenerate_scene",
+		Status:          "queued",
+		Priority:        2,
+		VideoDuration:   video.Duration,
+		Provider:        "wavespeed",
+		Model:           "veo-3.1-lite",
+		Resolution:      video.Resolution,
+		CreditsRequired: creditsRequired,
+		MaxRetries:      3,
+		Prompt:          promptJSON,
+	}
 	if err := s.jobRepo.Create(ctx, job); err != nil {
-		return nil, fmt.Errorf("failed to create generation job: %w", err)
+		return nil, fmt.Errorf("failed to create regeneration job: %w", err)
 	}
 
-	// 6. Deduct Credits
-	if err := s.creditService.DeductCredits(ctx, userID, creditsNeeded, "Generate Video"); err != nil {
+	deductReason := fmt.Sprintf("Regenerate Scene %d (%s)", video.SceneIndex, video.SectionType)
+	if err := s.creditService.DeductCredits(ctx, userID, creditsRequired, deductReason); err != nil {
 		return nil, fmt.Errorf("failed to deduct credits: %w", err)
 	}
 
@@ -243,21 +408,85 @@ func (s *videoGenerationService) ProcessGenerationJob(ctx context.Context, jobID
 
 	provider := s.providerFactory.GetProviderByModel(job.Model)
 	storyboardSections, _ := s.storyboardRepo.FindSectionsByStoryboardID(job.StoryboardID.String())
-	
+
+	// Read per-scene info from job prompt
+	var promptData struct {
+		SectionType    string `json:"section_type"`
+		SceneIndex     int    `json:"scene_index"`
+		SectionContent string `json:"section_content"`
+		VideoMode      string `json:"video_mode"`
+		StartImage     string `json:"start_image"`
+		EndImage       string `json:"end_image"`
+		NegativePrompt string `json:"negative_prompt"`
+		GenerateAudio  bool   `json:"generate_audio"`
+		Seed           int    `json:"seed"`
+		Resolution     string `json:"resolution"`
+		CustomPrompt   string `json:"custom_prompt"`
+	}
+	if len(job.Prompt) > 0 {
+		json.Unmarshal(job.Prompt, &promptData)
+	}
+	if promptData.VideoMode == "" {
+		promptData.VideoMode = "text-to-video"
+	}
+	if promptData.Resolution == "" {
+		promptData.Resolution = "1080p"
+	}
+
 	fullPrompt := "Generate video based on storyboard"
-	if bb != nil && cb != nil {
+	if bb != nil && cb != nil && promptData.SectionType != "" {
+		// Find the specific section for this job
+		var targetSection model.StoryboardSection
+		for _, sec := range storyboardSections {
+			if strings.ToLower(sec.SectionType) == promptData.SectionType {
+				targetSection = sec
+				break
+			}
+		}
+		// Fallback: use content stored in job prompt
+		if targetSection.SectionType == "" {
+			targetSection = model.StoryboardSection{
+				SectionType: promptData.SectionType,
+				Content:     promptData.SectionContent,
+				Duration:    job.VideoDuration,
+			}
+		}
+		fullPrompt = ai.BuildScenePrompt(bb, cb, targetSection, promptData.SceneIndex)
+	} else if bb != nil && cb != nil {
 		fullPrompt = ai.BuildVeo3Prompt(bb, cb, storyboardSections)
+	} else if promptData.SectionContent != "" {
+		fullPrompt = promptData.SectionContent
 	} else if len(storyboardSections) > 0 {
 		fullPrompt = storyboardSections[0].Content
 	}
 
+	if promptData.CustomPrompt != "" {
+		fullPrompt = fullPrompt + ". Additional instructions: " + promptData.CustomPrompt
+	}
+
+	// Images are only passed to the provider when the mode explicitly requires them.
+	// text-to-video must never receive images even if business brief has logo/environment.
+	var startImage, endImage string
+	switch promptData.VideoMode {
+	case "image-to-video":
+		startImage = promptData.StartImage
+	case "start-end-to-video":
+		startImage = promptData.StartImage
+		endImage = promptData.EndImage
+	}
+
 	req := ai.VideoGenerationRequest{
-		Prompt:          fullPrompt,
-		Duration:        job.VideoDuration,
-		Resolution:      job.Resolution,
-		FPS:             30,
-		Model:           job.Model,
-		ReferenceImages: refImages,
+		Prompt:         fullPrompt,
+		Duration:       job.VideoDuration,
+		Resolution:     promptData.Resolution,
+		FPS:            30,
+		Model:          job.Model,
+		VideoMode:      promptData.VideoMode,
+		StartImage:     startImage,
+		EndImage:       endImage,
+		NegativePrompt: promptData.NegativePrompt,
+		GenerateAudio:  promptData.GenerateAudio,
+		Seed:           promptData.Seed,
 	}
 
 	resp, err := provider.GenerateScene(ctx, req)

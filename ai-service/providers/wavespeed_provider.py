@@ -13,6 +13,10 @@ WAVESPEED_BASE_URL = "https://api.wavespeed.ai/api/v3"
 # Text-to-video model available on Wavespeed (free-tier friendly)
 DEFAULT_VIDEO_MODEL = "google/veo3.1-lite/text-to-video"
 
+# MODE=test  → skip Wavespeed, hanya log request (hemat quota)
+# MODE=production → kirim ke Wavespeed seperti biasa
+_SERVICE_MODE = os.getenv("MODE", "production").strip().lower()
+
 
 class WavespeedProvider(VideoProvider):
     """
@@ -53,17 +57,45 @@ class WavespeedProvider(VideoProvider):
         1. Submit job to Wavespeed
         2. Poll until completed or failed
         3. Download video bytes → save to output_path
+
+        Jika MODE=test, request TIDAK dikirim ke Wavespeed.
+        Hanya di-log agar bisa di-verifikasi tanpa membuang quota.
         """
-        prompt = request.input
         duration = request.constraints.get("duration", 5)
+        ctx = request.context or {}
+
+        # ── TEST MODE: skip Wavespeed ──────────────────────────────────
+        if _SERVICE_MODE == "test":
+            logger.info(
+                "[Wavespeed][TEST MODE] Request diterima — TIDAK dikirim ke Wavespeed.\n"
+                "  prompt      : %.120s\n"
+                "  duration    : %s detik\n"
+                "  video_mode  : %s\n"
+                "  start_image : %s\n"
+                "  end_image   : %s\n"
+                "  resolution  : %s\n"
+                "  negative    : %s",
+                request.input,
+                duration,
+                ctx.get("video_mode", "text-to-video"),
+                ctx.get("start_image", "—"),
+                ctx.get("end_image",   "—"),
+                ctx.get("resolution",  "—"),
+                ctx.get("negative_prompt", "—"),
+            )
+            return VideoResponse.success(
+                self.name,
+                {"video_url": "", "video_path": output_path, "test_mode": True},
+            )
+        # ──────────────────────────────────────────────────────────────
 
         logger.info(
-            "[Wavespeed] Submitting job model=%s duration=%s prompt_preview=%.80s",
-            self._model, duration, prompt,
+            "[Wavespeed] Submitting job duration=%s prompt_preview=%.80s",
+            duration, request.input,
         )
 
         # ── 1. Submit ──────────────────────────────────────────────────
-        task_id, get_url = self._submit(prompt, duration)
+        task_id, get_url = self._submit(request, duration)
         if not task_id:
             return VideoResponse.failure(self.name, "Failed to submit job to Wavespeed")
 
@@ -105,18 +137,60 @@ class WavespeedProvider(VideoProvider):
             "Content-Type": "application/json",
         }
 
-    def _submit(self, prompt: str, duration: int) -> tuple[Optional[str], Optional[str]]:
+    # Maps resolution string → Wavespeed size parameter
+    _SIZE_MAP = {
+        "1080p": "1920*1080",
+        "720p":  "1280*720",
+        "480p":  "832*480",
+    }
+
+    def _submit(self, request: VideoRequest, duration: int) -> tuple[Optional[str], Optional[str]]:
         """POST to Wavespeed; return (task_id, get_url)."""
-        url = f"{WAVESPEED_BASE_URL}/{self._model}"
+        ctx = request.context or {}
+        video_mode      = ctx.get("video_mode", "text-to-video")
+        start_image     = ctx.get("start_image", "")
+        end_image       = ctx.get("end_image", "")
+        negative_prompt = ctx.get("negative_prompt", "")
+        generate_audio  = ctx.get("generate_audio", False)
+        seed            = ctx.get("seed", -1)
+        resolution      = ctx.get("resolution", "480p")
+
+        # Select model slug based on explicit video_mode (not image presence)
+        if video_mode == "start-end-to-video":
+            model = "google/veo3.1-lite/start-end-to-video"
+        elif video_mode == "image-to-video":
+            model = "google/veo3.1-lite/image-to-video"
+        else:
+            model = self._model  # text-to-video
+
+        url = f"{WAVESPEED_BASE_URL}/{model}"
 
         # Ensure duration is one of [4, 6, 8] to satisfy Veo 3.1 Lite strict constraints
         safe_duration = duration if duration in [4, 6, 8] else 6
 
-        payload = {
-            "prompt": prompt,
+        size = self._SIZE_MAP.get(resolution, "832*480")
+
+        payload: dict = {
+            "prompt":   request.input,
             "duration": safe_duration,
-            "size": "832*480",  # Landscape resolution required by Wavespeed v3
+            "size":     size,
         }
+
+        # Only add image fields when the mode requires them
+        if video_mode in ("image-to-video", "start-end-to-video") and start_image:
+            payload["image_url"] = start_image
+        if video_mode == "start-end-to-video" and end_image:
+            payload["last_frame_image_url"] = end_image
+        if negative_prompt:
+            payload["negative_prompt"] = negative_prompt
+        # generate_audio only supported on text-to-video
+        if generate_audio and video_mode == "text-to-video":
+            payload["generate_audio"] = True
+        if seed != -1:
+            payload["seed"] = seed
+
+        logger.info("[Wavespeed] model=%s size=%s video_mode=%s",
+                    model, size, video_mode)
 
         try:
             resp = requests.post(url, json=payload, headers=self._headers(), timeout=30)

@@ -24,6 +24,9 @@ type Video struct {
 	RegenerateCount int            `gorm:"default:0" json:"regenerate_count"` // max 3
 	ErrorMessage    string         `gorm:"type:text" json:"error_message,omitempty"`
 	ExternalJobID   string         `json:"external_job_id,omitempty"` // job ID from provider (Wavespeed)
+	SectionType     string         `gorm:"default:''" json:"section_type"` // hook, value, cta
+	SceneIndex      int            `gorm:"default:0" json:"scene_index"`   // 1, 2, 3
+	VideoMode       string         `gorm:"default:'text-to-video'" json:"video_mode"` // text-to-video | image-to-video | start-end-to-video
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
