@@ -14,9 +14,52 @@ import (
 	"Sevima-AI-Content-Creator/internal/model"
 )
 
+// themeVisualStyle maps frontend theme selection to Veo 3 cinematographic descriptors.
+// Each theme produces a distinctly different visual style in the generated video.
+var themeVisualStyle = map[string]struct {
+	globalStyle string
+	hookLabel   string
+	valueLabel  string
+	ctaLabel    string
+}{
+	"tur kampus sinematik": {
+		globalStyle: "Cinematic 4K, aerial drone shots, golden hour lighting, smooth dolly movements, epic orchestral score",
+		hookLabel:   "aerial drone reveal sweeping over campus at golden hour",
+		valueLabel:  "smooth cinematic walkthrough showcasing facilities and campus spaces",
+		ctaLabel:    "dramatic wide campus shot with logo reveal, orchestral crescendo",
+	},
+	"cerita kehidupan mahasiswa": {
+		globalStyle: "Documentary-cinematic, warm natural lighting, handheld intimate shots, emotional acoustic score",
+		hookLabel:   "intimate close-up of student face, warm natural light, personal story opening",
+		valueLabel:  "candid documentary moments — students in labs, libraries, and collaborative spaces",
+		ctaLabel:    "warm group shot with hopeful expressions, soft emotional resolution",
+	},
+	"keunggulan akademik": {
+		globalStyle: "Corporate cinematic, clean bright uniform lighting, precise structured composition, professional uplifting score",
+		hookLabel:   "clean precision establishing shot of modern academic building, bright and authoritative",
+		valueLabel:  "structured showcase of laboratories, equipment, faculty, and academic achievements",
+		ctaLabel:    "confident graduate celebration shot, achievement highlight, clear institution branding",
+	},
+	"tren & gaya hidup cepat": {
+		globalStyle: "Dynamic fast-cut style, vivid saturated colors, bold text overlays, modern upbeat electronic score",
+		hookLabel:   "fast-cut montage of vibrant campus life, high energy, bold framing",
+		valueLabel:  "rapid visual showcase with dynamic transitions and bold on-screen text highlights",
+		ctaLabel:    "high-energy finale with punchy call-to-action text, music peak",
+	},
+}
+
+// toneAtmosphere maps frontend tone selection to visual atmosphere descriptors.
+var toneAtmosphere = map[string]string{
+	"santai & ramah":         "approachable, warm, friendly, welcoming atmosphere",
+	"profesional & formal":   "authoritative, structured, formal, trustworthy atmosphere",
+	"kreatif & inovatif":     "bold, creative, experimental, forward-thinking atmosphere",
+	"berwibawa & meyakinkan": "powerful, prestigious, commanding, inspiring atmosphere",
+}
+
 // BuildVeo3Prompt merangkai prompt sesuai dengan standar Veo 3 untuk video promosi pendidikan.
+// Format: bilingual — data institusi tetap dalam bahasa aslinya, arahan sinematik dalam English.
+// Tema dan tone yang dipilih user menghasilkan visual style yang berbeda-beda.
 func BuildVeo3Prompt(bb *model.BusinessBrief, cb *model.CreativeBrief, sections []model.StoryboardSection) string {
-	// Identify the 3 scenes (hook, value, cta)
 	var hook, value, cta model.StoryboardSection
 	for _, sec := range sections {
 		switch strings.ToLower(sec.SectionType) {
@@ -29,7 +72,6 @@ func BuildVeo3Prompt(bb *model.BusinessBrief, cb *model.CreativeBrief, sections 
 		}
 	}
 
-	// Fallback jika tidak ada section (untuk amannya)
 	if hook.Duration == 0 {
 		hook.Duration = 5
 	}
@@ -40,54 +82,61 @@ func BuildVeo3Prompt(bb *model.BusinessBrief, cb *model.CreativeBrief, sections 
 		cta.Duration = 5
 	}
 
-	// Standard phrasing (kata-kata pakem)
+	// Resolve visual style from theme
+	style, ok := themeVisualStyle[strings.ToLower(cb.Theme)]
+	if !ok {
+		style = themeVisualStyle["tur kampus sinematik"]
+	}
+
+	// Append tone atmosphere modifier to global style
+	globalStyle := style.globalStyle
+	if atm, found := toneAtmosphere[strings.ToLower(cb.ToneOfVoice)]; found {
+		globalStyle = globalStyle + ", " + atm
+	}
+
+	// Optional metadata — only included when provided by user
+	var optionalLines strings.Builder
+	if cb.EventContent != "" {
+		optionalLines.WriteString(fmt.Sprintf("Event context: %s\n", cb.EventContent))
+	}
+	if cb.KeyMessage != "" {
+		optionalLines.WriteString(fmt.Sprintf("Key message: %s\n", cb.KeyMessage))
+	}
+	if cb.Copywriting != "" {
+		optionalLines.WriteString(fmt.Sprintf("Tagline: %s\n", cb.Copywriting))
+	}
+	if cb.Hashtags != "" {
+		optionalLines.WriteString(fmt.Sprintf("Brand keywords: %s\n", cb.Hashtags))
+	}
+
+	scene2Start := hook.Duration
+	scene3Start := hook.Duration + value.Duration
+	totalDuration := hook.Duration + value.Duration + cta.Duration
+
 	prompt := fmt.Sprintf(
-		`Buatlah video promosi %s berkualitas tinggi untuk iklan institusi pendidikan.
+		`%s.
 
-		Detail Institusi:
-		- Nama: %s
-		- Tingkat Pendidikan: %s
-		- Program Studi: %s
-		- Latar Belakang/Sejarah: %s
-		- Gunakan logo dan foto lingkungan kampus sebagai referensi visual.
+Institution: %s | Level: %s | Programs: %s
+Background: %s
+%s
+SCENE 1 (%ds–%ds) — HOOK — %s:
+Cinematic scene showing: %s
 
-		Tujuan Video:
-		Membuat video promosi yang menarik, modern, profesional, dan membangun kepercayaan, dengan menonjolkan kualitas akademik, fasilitas, serta peluang masa depan.
+SCENE 2 (%ds–%ds) — KEY VALUES — %s:
+Cinematic scene showing: %s
 
-		Gaya & Tone:
-		%s
-		Target Audiens: Calon siswa/mahasiswa dan orang tua.
-		Gaya Visual: Sinematik, bersih, profesional, transisi halus, kualitas produksi tinggi.
+SCENE 3 (%ds–%ds) — CALL TO ACTION — %s:
+Cinematic scene showing: %s. Display institution name "%s" prominently on screen.
 
-		SCENE STRUCTURE:
-
-		SCENE 1 (%ds–%ds): HOOK
-		%s
-
-		SCENE 2 (%ds–%ds): NILAI UNGGULAN
-		%s
-
-		SCENE 3 (%ds–%ds): CALL TO ACTION
-		%s
-
-		Panduan Teknis:
-		- Pertahankan kesinambungan sinematik
-		- Gunakan karakter yang konsisten di setiap scene
-		- Transisi antar scene harus halus dan natural
-		- Tampilkan nama institusi dengan jelas
-		- Tonjolkan kepercayaan, prestasi, dan masa depan cerah
-		- Tambahkan nuansa musik latar inspiratif
-		- Hindari klaim berlebihan atau tidak realistis
-		- tolong hasilkan video dengan kualitas produksi tinggi, fokus pada detail visual dan storytelling yang kuat.`,
-		cb.Theme,
-		bb.InstitutionName,
-		bb.SchoolLevel,
-		bb.OfferedDegrees,
+Total duration: %ds. Consistent characters across all scenes, natural smooth transitions between scenes.`,
+		globalStyle,
+		bb.InstitutionName, bb.SchoolLevel, bb.OfferedDegrees,
 		bb.InstitutionHistory,
-		cb.Theme,
-		0, hook.Duration, hook.Content,
-		hook.Duration, hook.Duration+value.Duration, value.Content,
-		hook.Duration+value.Duration, hook.Duration+value.Duration+cta.Duration, cta.Content,
+		optionalLines.String(),
+		0, hook.Duration, style.hookLabel, hook.Content,
+		scene2Start, scene3Start, style.valueLabel, value.Content,
+		scene3Start, totalDuration, style.ctaLabel, cta.Content, bb.InstitutionName,
+		totalDuration,
 	)
 
 	return prompt

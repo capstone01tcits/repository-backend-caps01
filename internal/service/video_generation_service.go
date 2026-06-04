@@ -376,12 +376,12 @@ func (s *videoGenerationService) ProcessGenerationJob(ctx context.Context, jobID
 		return fmt.Errorf("failed to update job status: %w", err)
 	}
 
-	// 1. Persiapkan data Brief jika menggunakan model veo3
+	// 1. Persiapkan data Brief jika menggunakan model veo3/veo-3.1
 	var bb *model.BusinessBrief
 	var cb *model.CreativeBrief
 	var refImages []string
 
-	if job.Model == "veo3" {
+	if job.Model == "veo-3.1" || job.Model == "veo3" {
 		bb, _ = s.briefRepo.FindBusinessBriefByProjectID(job.ProjectID.String())
 		if bb != nil {
 			cbs, _ := s.briefRepo.FindCreativeBriefsByBusinessBriefID(bb.ID.String())
