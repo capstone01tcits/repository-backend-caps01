@@ -2,7 +2,7 @@ import os
 import time
 import logging
 import requests
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional, Tuple
 
 from .base import VideoProvider, VideoRequest, VideoResponse
 
@@ -105,7 +105,7 @@ class WavespeedProvider(VideoProvider):
             "Content-Type": "application/json",
         }
 
-    def _submit(self, prompt: str, duration: int) -> tuple[Optional[str], Optional[str]]:
+    def _submit(self, prompt: str, duration: int) -> Tuple[Optional[str], Optional[str]]:
         """POST to Wavespeed; return (task_id, get_url)."""
         url = f"{WAVESPEED_BASE_URL}/{self._model}"
 
