@@ -253,7 +253,7 @@ python main.py
 
 Service berjalan di `http://localhost:8000`
 
-## API Endpoints (27 Active)
+## API Endpoints (30 Active)
 
 ### Health Check (Public)
 
@@ -282,36 +282,38 @@ Service berjalan di `http://localhost:8000`
 | DELETE | `/api/projects/:id` | Soft delete project |
 | POST | `/api/projects/:id/restore` | Restore soft-deleted project |
 
-### Storyboard (6 endpoints - Protected)
+### Storyboard (7 endpoints - Protected)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/storyboard/create` | Create manual storyboard (3 sections: hook/value/cta) |
-| GET | `/api/storyboard/:project_id` | Get the storyboard for a project |
-| GET | `/api/storyboard/detail/:storyboard_id` | Get single storyboard with sections |
-| PUT | `/api/storyboard/:storyboard_id` | Update storyboard and sections |
-| DELETE | `/api/storyboard/:storyboard_id` | Soft delete storyboard |
-| POST | `/api/storyboard/:storyboard_id/restore` | Restore soft-deleted storyboard |
-| GET | `/api/storyboard/:storyboard_id/sections` | Get sections for a storyboard |
+| POST | /api/storyboard/create | Create manual storyboard (3 sections: hook/value/cta) |
+| GET | /api/storyboard/:project_id | Get the storyboard for a project |
+| GET | /api/storyboard/detail/:storyboard_id | Get single storyboard with sections |
+| GET | /api/storyboard/:storyboard_id/sections | Get sections for a storyboard |
+| PUT | /api/storyboard/:storyboard_id | Update storyboard and sections |
+| DELETE | /api/storyboard/:storyboard_id | Soft delete storyboard |
+| POST | /api/storyboard/:storyboard_id/restore | Restore soft-deleted storyboard |
 
-### Videos (7 endpoints - Protected)
+### Videos (8 endpoints - Protected)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/videos/generate` | Generate video from storyboard (creates job) |
-| GET | `/api/videos/:id` | Get video details with scenes |
-| GET | `/api/videos` | List user's videos |
-| GET | `/api/videos/preview/:id` | Stream/Preview video directly via Supabase CDN |
-| GET | `/api/videos/download/:id` | Get video download URL and metadata |
-| POST | `/api/videos/:variantId/regenerate` | Regenerate video (using new prompt) |
-| POST | `/api/videos/scene/:sceneId/regenerate` | Regenerate individual scene |
+| POST | /api/videos/generate | Generate video from storyboard (creates job) |
+| GET | /api/videos | List user's videos |
+| GET | /api/videos/storyboard/:storyboard_id | Get videos for a storyboard |
+| GET | /api/videos/preview/:id | Stream/Preview video directly via Supabase CDN |
+| GET | /api/videos/download/:id | Get video download URL and metadata |
+| POST | /api/videos/scene/:sceneId/regenerate | Regenerate a specific scene |
+| POST | /api/videos/:variantId/regenerate | Regenerate entire video variant |
+| GET | /api/videos/:id | Get video details with scenes |
 
-### Credits & Admin (2 endpoints - Protected)
+### Credits & Admin (3 endpoints - Protected)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/api/credits` | Protected | Get current user's credit balance |
-| POST | `/api/admin/credits` | Admin | Add credits to a user |
+| GET | /api/credits | User | Get current user's credit balance |
+| GET | /api/admin/users | Admin | Get list of all users |
+| POST | /api/admin/credits | Admin | Top-up user credits |
 
 ### AI Gateway (2 endpoints)
 

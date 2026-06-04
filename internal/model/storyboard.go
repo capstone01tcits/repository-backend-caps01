@@ -28,7 +28,9 @@ type Storyboard struct {
 }
 
 func (s *Storyboard) BeforeCreate(tx *gorm.DB) error {
-	s.ID = uuid.New()
+	if s.ID == uuid.Nil {
+		s.ID = uuid.New()
+	}
 	return nil
 }
 
@@ -52,7 +54,9 @@ type StoryboardSection struct {
 }
 
 func (ss *StoryboardSection) BeforeCreate(tx *gorm.DB) error {
-	ss.ID = uuid.New()
+	if ss.ID == uuid.Nil {
+		ss.ID = uuid.New()
+	}
 	return nil
 }
 

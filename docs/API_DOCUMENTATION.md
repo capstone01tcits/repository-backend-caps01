@@ -21,12 +21,12 @@ Core Workflow (4 Steps):
 3. Video Generation (Sends payload to Veo 3.1)
 4. Video Retrieval and Download (polling `generating_assets` and `stitching_video` statuses)
 
-Total Active Endpoints: 27
+Total Active Endpoints: 30
 - Authentication: 6 endpoints
-- Projects: 5 endpoints
-- Storyboard: 6 endpoints (create, get by project, get detail, update, delete, restore)
-- Videos: 7 endpoints
-- Credits & Admin: 2 endpoints
+- Projects: 6 endpoints
+- Storyboard: 7 endpoints (create, get by project, get detail, update, delete, restore)
+- Videos: 8 endpoints
+- Credits & Admin: 3 endpoints
 - Health Check: 1 endpoint
 
 **Database Tables (10 via AutoMigrate):**

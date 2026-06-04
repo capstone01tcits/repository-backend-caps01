@@ -32,7 +32,9 @@ type BusinessBrief struct {
 }
 
 func (b *BusinessBrief) BeforeCreate(tx *gorm.DB) error {
-	b.ID = uuid.New()
+	if b.ID == uuid.Nil {
+		b.ID = uuid.New()
+	}
 	return nil
 }
 
@@ -62,7 +64,9 @@ type CreativeBrief struct {
 }
 
 func (c *CreativeBrief) BeforeCreate(tx *gorm.DB) error {
-	c.ID = uuid.New()
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
 	return nil
 }
 
@@ -111,6 +115,8 @@ type UpdateCreativeBriefRequest struct {
 // ==================== Simplified FE Request (Matches Frontend Exactly) ====================
 
 type CreateProjectFromFERequest struct {
+	ProjectID          string `json:"project_id"` // optional - for updating existing
+	ProjectName        string `json:"project_name"` // optional - custom name
 	// Step 1: Business Brief
 	InstitutionName    string `json:"institution_name" validate:"required"`
 	InstitutionHistory string `json:"institution_history"` // optional - not always sent by FE

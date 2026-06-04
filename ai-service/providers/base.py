@@ -49,7 +49,7 @@ class VideoRequest:
             },
             routing={
                 "task_type": task_type,
-                "fallback": "ltx:ltx-2-fast",
+                "fallback": "wavespeed:wavespeed-ai/wan-2.1/t2v-480p",
             },
         )
 
@@ -71,7 +71,7 @@ class VideoResponse:
     }
     """
     status: str                        # "success" | "error"
-    route_used: str                    # e.g. "ltx:ltx-2-fast"
+    route_used: str                    # e.g. "wavespeed:wavespeed-ai/wan-2.1/t2v-480p"
     result: Dict[str, Any] = field(default_factory=dict)
     error: Optional[str] = None
 
@@ -104,7 +104,7 @@ class VideoProvider(ABC):
     @property
     @abstractmethod
     def name(self) -> str:
-        """Return provider identifier, e.g. 'ltx:ltx-2-fast'."""
+        """Return provider identifier, e.g. 'wavespeed:wavespeed-ai/wan-2.1/t2v-480p'."""
 
     @abstractmethod
     def generate(self, request: VideoRequest, output_path: str) -> VideoResponse:

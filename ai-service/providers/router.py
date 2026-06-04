@@ -17,8 +17,6 @@ import os
 from typing import Dict, Optional
 
 from .base import VideoProvider, VideoRequest
-from .ltx_provider import LTXProvider
-from .runway_provider import RunwayProvider
 from .wavespeed_provider import WavespeedProvider
 
 logger = logging.getLogger(__name__)
@@ -29,23 +27,11 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 ROUTING_TABLE: Dict[str, Dict[str, str]] = {
-    "text_to_video": {
-        "provider": "wavespeed",
-        "model": "wavespeed-ai/wan-2.1/t2v-480p",
-    },
-    "text_to_video_hq": {
-        "provider": "wavespeed",
-        "model": "wavespeed-ai/wan-2.1/t2v-480p",
-    },
-    "image_to_video": {
-        "provider": "wavespeed",
-        "model": "wavespeed-ai/wan-2.1/i2v-720p",
-    },
-    "veo3": {
+    "veo-3.1-lite": {
         "provider": "wavespeed",
         "model": "google/veo3.1-lite/text-to-video",
     },
-    "veo-3.1": {
+    "veo3": {
         "provider": "wavespeed",
         "model": "google/veo3.1-lite/text-to-video",
     },
@@ -104,32 +90,11 @@ def build_provider(
     Urutan prioritas:
     1. Parameter langsung (provider_name, model)
     2. Environment variables (ACTIVE_PROVIDER, ACTIVE_MODEL)
-    3. Fallback default (ltx:ltx-2-fast)
     """
-    _provider = (provider_name or os.getenv("ACTIVE_PROVIDER", "ltx")).strip().lower()
+    _provider = (provider_name or os.getenv("ACTIVE_PROVIDER", "wavespeed")).strip().lower()
     _model = (model or os.getenv("ACTIVE_MODEL", "")).strip()
 
     logger.info("[FACTORY] Building provider=%s model=%s", _provider, _model or "(default)")
-
-    if _provider == "ltx":
-        api_key = os.getenv("LTX_API_KEY", "").strip()
-        if not api_key:
-            raise EnvironmentError("LTX_API_KEY tidak ditemukan di environment")
-        return LTXProvider(
-            api_key=api_key,
-            model=_model or "ltx-2-3-fast",
-            fps=int(os.getenv("LTX_FPS", "25")),
-            generate_audio=True,  # # ltx-2-3-x support audio native
-        )
-
-    if _provider == "runway":
-        api_key = os.getenv("RUNWAY_API_KEY", "").strip()
-        if not api_key:
-            raise EnvironmentError("RUNWAY_API_KEY tidak ditemukan di environment")
-        return RunwayProvider(
-            api_key=api_key,
-            model=_model or "gen4.5",
-        )
 
     if _provider == "wavespeed":
         api_key = os.getenv("WAVESPEED_API_KEY", "").strip()
@@ -147,5 +112,5 @@ def build_provider(
         return WavespeedProvider(api_key=api_key, model="google/veo3.1-lite/text-to-video")
 
     raise ValueError(
-        f"Provider '{_provider}' tidak dikenali. Pilihan valid: wavespeed, ltx, runway"
+        f"Provider '{_provider}' tidak dikenali. Pilihan valid: wavespeed"
     )

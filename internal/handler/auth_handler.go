@@ -123,6 +123,17 @@ func (h *AuthHandler) GetUserProfile(c *fiber.Ctx) error {
 	return utils.OK(c, "User profile retrieved", profile)
 }
 
+// GetAllUsers godoc
+// GET /api/admin/users (Protected, Admin)
+func (h *AuthHandler) GetAllUsers(c *fiber.Ctx) error {
+	users, err := h.authService.GetAllUsers()
+	if err != nil {
+		return utils.InternalError(c, err.Error())
+	}
+
+	return utils.OK(c, "Users retrieved", users)
+}
+
 // ChangePassword godoc
 // POST /api/auth/change-password (Protected)
 func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
@@ -154,6 +165,27 @@ func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Password changed successfully", nil)
+}
+
+// UpdatePreferences godoc
+// PUT /api/auth/preferences (Protected)
+func (h *AuthHandler) UpdatePreferences(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return utils.Unauthorized(c, "Unauthorized")
+	}
+
+	var req model.UpdatePreferencesRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "Invalid request body")
+	}
+
+	err := h.authService.UpdatePreferences(userID, &req)
+	if err != nil {
+		return utils.InternalError(c, err.Error())
+	}
+
+	return utils.OK(c, "Preferences updated successfully", nil)
 }
 
 // DeleteAccount godoc

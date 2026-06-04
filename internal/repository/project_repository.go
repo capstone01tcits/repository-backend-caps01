@@ -36,7 +36,13 @@ func (r *projectRepository) FindByID(id string) (*model.Project, error) {
 	}
 	
 	var project model.Project
-	err = r.db.Where("id = ?", uid).First(&project).Error
+	err = r.db.
+		Preload("BusinessBriefs").
+		Preload("BusinessBriefs.CreativeBriefs").
+		Preload("Storyboard").
+		Preload("Storyboard.Sections").
+		Preload("Videos").
+		Where("id = ?", uid).First(&project).Error
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +70,7 @@ func (r *projectRepository) FindByUserID(userID string) ([]model.Project, error)
 	}
 	
 	var projects []model.Project
-	err = r.db.Where("user_id = ?", uid).Order("created_at DESC").Find(&projects).Error
+	err = r.db.Preload("Videos").Where("user_id = ?", uid).Order("created_at DESC").Find(&projects).Error
 	return projects, err
 }
 

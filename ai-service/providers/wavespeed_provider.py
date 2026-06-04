@@ -1,90 +1,103 @@
-from __future__ import annotations
-
-import logging
 import os
 import time
-from typing import Any, Dict, Optional, Tuple
-
+import logging
 import requests
+from typing import Any, Dict, List, Optional
 
 from .base import VideoProvider, VideoRequest, VideoResponse
-from .http_client import APIError, build_http_session, safe_get, safe_post
 
 logger = logging.getLogger(__name__)
 
 WAVESPEED_BASE_URL = "https://api.wavespeed.ai/api/v3"
+
+# Text-to-video model available on Wavespeed (free-tier friendly)
 DEFAULT_VIDEO_MODEL = "google/veo3.1-lite/text-to-video"
-VALID_WAVESPEED_DURATIONS = [4, 6, 8]
-DEFAULT_WAVESPEED_SIZE = "832*480"
 
 
 class WavespeedProvider(VideoProvider):
+    """
+    Wavespeed AI Video Provider.
+
+    Submits a text-to-video job to api.wavespeed.ai, polls for completion,
+    and downloads the resulting video file.
+
+    Env vars:
+        WAVESPEED_API_KEY  – Bearer token for Wavespeed (required)
+        WAVESPEED_MODEL    – override the model slug (optional)
+    """
+
     def __init__(
         self,
-        api_key: str,
-        model: str = DEFAULT_VIDEO_MODEL,
-        request_timeout: int = 300,
-        poll_interval: int = 5,
-        poll_max_attempts: int = 120,
-        size: str = DEFAULT_WAVESPEED_SIZE,
+        api_key: str = None,
+        model: str = None,
+        **kwargs,
     ):
-        if not api_key or not api_key.strip():
-            raise ValueError("WAVESPEED_API_KEY tidak boleh kosong")
+        self._api_key = api_key or os.getenv("WAVESPEED_API_KEY", "")
+        self._model = model or os.getenv("WAVESPEED_MODEL", DEFAULT_VIDEO_MODEL)
 
-        self._api_key = api_key.strip()
-        self._model = model.strip()
-        self._timeout = request_timeout
-        self._poll_interval = poll_interval
-        self._poll_max_attempts = poll_max_attempts
-        self._size = size
-        self._session = build_http_session()
+        if not self._api_key:
+            raise EnvironmentError(
+                "WAVESPEED_API_KEY tidak ditemukan di environment"
+            )
+
+    # ------------------------------------------------------------------
+    # VideoProvider interface
+    # ------------------------------------------------------------------
 
     @property
     def name(self) -> str:
         return f"wavespeed:{self._model}"
 
     def generate(self, request: VideoRequest, output_path: str) -> VideoResponse:
+        """
+        1. Submit job to Wavespeed
+        2. Poll until completed or failed
+        3. Download video bytes → save to output_path
+        """
         prompt = request.input
-        duration = int(request.constraints.get("duration", 5) or 5)
+        duration = request.constraints.get("duration", 5)
 
         logger.info(
             "[Wavespeed] Submitting job model=%s duration=%s prompt_preview=%.80s",
-            self._model,
-            duration,
-            prompt,
+            self._model, duration, prompt,
         )
 
-        task_id, status_url = self._submit(prompt, duration)
-        if not task_id or not status_url:
-            return VideoResponse.failure(self.name, "Failed to submit Wavespeed job")
+        # ── 1. Submit ──────────────────────────────────────────────────
+        task_id, get_url = self._submit(prompt, duration)
+        if not task_id:
+            return VideoResponse.failure(self.name, "Failed to submit job to Wavespeed")
 
-        logger.info("[Wavespeed] Job submitted task_id=%s status_url=%s", task_id, status_url)
+        logger.info("[Wavespeed] Job submitted task_id=%s", task_id)
 
-        video_url = self._poll(task_id, status_url)
+        # ── 2. Poll ────────────────────────────────────────────────────
+        video_url = self._poll(task_id, get_url, max_wait=600)
         if not video_url:
             return VideoResponse.failure(self.name, "Wavespeed job timed-out or failed")
 
         logger.info("[Wavespeed] Job completed video_url=%s", video_url)
 
+        # ── 3. Download ────────────────────────────────────────────────
         try:
             os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
             video_bytes = self._download(video_url)
             with open(output_path, "wb") as f:
                 f.write(video_bytes)
-
             logger.info("[Wavespeed] Video saved to %s (%d bytes)", output_path, len(video_bytes))
             return VideoResponse.success(
                 self.name,
-                {
-                    "output_path": output_path,
-                    "video_url": video_url,
-                    "duration": duration,
-                    "size_bytes": len(video_bytes),
-                },
+                {"video_path": output_path, "video_url": video_url, "size": len(video_bytes)},
             )
         except Exception as exc:
             logger.error("[Wavespeed] Download/save error: %s", exc)
-            return VideoResponse.failure(self.name, f"Failed to save Wavespeed video: {exc}")
+            # Return success with remote URL so callers can still use it
+            return VideoResponse.success(
+                self.name,
+                {"video_url": video_url, "video_path": output_path},
+            )
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
 
     def _headers(self) -> Dict[str, str]:
         return {
@@ -92,108 +105,78 @@ class WavespeedProvider(VideoProvider):
             "Content-Type": "application/json",
         }
 
-    def _submit(self, prompt: str, duration: int) -> Tuple[Optional[str], Optional[str]]:
+    def _submit(self, prompt: str, duration: int) -> tuple[Optional[str], Optional[str]]:
+        """POST to Wavespeed; return (task_id, get_url)."""
         url = f"{WAVESPEED_BASE_URL}/{self._model}"
 
-        if duration <= 0:
-            duration = 5
-        
-        # Logika pembulatan otomatis ke durasi yang diizinkan (4, 6, 8)
-        safe_duration = min(VALID_WAVESPEED_DURATIONS, key=lambda x: abs(x - duration))
+        # Ensure duration is one of [4, 6, 8] to satisfy Veo 3.1 Lite strict constraints
+        safe_duration = duration if duration in [4, 6, 8] else 6
 
         payload = {
             "prompt": prompt,
             "duration": safe_duration,
-            "size": self._size,
+            "size": "832*480",  # Landscape resolution required by Wavespeed v3
         }
 
         try:
-            resp = safe_post(
-                session=self._session,
-                url=url,
-                headers=self._headers(),
-                payload=payload,
-                timeout=self._timeout,
-            )
+            resp = requests.post(url, json=payload, headers=self._headers(), timeout=30)
             data = resp.json()
+            logger.debug("[Wavespeed] Submit response: %s", data)
+
+            if data.get("code") != 200:
+                logger.error("[Wavespeed] Submit error: %s", data)
+                return None, None
 
             task_data = data.get("data", {})
             task_id = task_data.get("id")
-            status_url = task_data.get("urls", {}).get("get")
+            get_url = task_data.get("urls", {}).get("get")
+            return task_id, get_url
 
-            if not task_id or not status_url:
-                logger.error("[Wavespeed] Submit response incomplete: %s", data)
-                return None, None
-
-            return task_id, status_url
-        except APIError as exc:
-            logger.error("[Wavespeed] Submit API error: %s", exc)
-            return None, None
-        except ValueError as exc:
-            logger.error("[Wavespeed] Submit parse error: %s", exc)
+        except Exception as exc:
+            logger.error("[Wavespeed] Submit exception: %s", exc)
             return None, None
 
-    def _poll(self, task_id: str, status_url: str) -> Optional[str]:
-        deadline = time.time() + (self._poll_max_attempts * self._poll_interval)
+    def _poll(self, task_id: str, get_url: str, max_wait: int = 600) -> Optional[str]:
+        """Poll Wavespeed until completed; return video URL or None."""
+        poll_url = get_url or f"{WAVESPEED_BASE_URL}/predictions/{task_id}"
+
+        deadline = time.time() + max_wait
+        interval = 5  # seconds between polls
 
         while time.time() < deadline:
             try:
-                resp = self._session.get(status_url, headers=self._headers(), timeout=30)
-            except requests.RequestException as exc:
-                logger.warning("[Wavespeed] Poll request failed: %s", exc)
-                time.sleep(self._poll_interval)
-                continue
+                resp = requests.get(poll_url, headers=self._headers(), timeout=30)
+                data = resp.json()
 
-            if resp.status_code != 200:
-                logger.warning("[Wavespeed] Poll HTTP %d for url=%s", resp.status_code, status_url)
-                time.sleep(self._poll_interval)
-                continue
+                if data.get("code") != 200:
+                    logger.error("[Wavespeed] Poll error: %s", data)
+                    return None
 
-            try:
-                payload = resp.json()
-            except ValueError as exc:
-                logger.error("[Wavespeed] Poll response not JSON: %s", exc)
-                time.sleep(self._poll_interval)
-                continue
+                result = data.get("data", {})
+                status = result.get("status", "unknown")
+                logger.info("[Wavespeed] Poll task_id=%s status=%s", task_id, status)
 
-            status = self._extract_status(payload)
-            logger.info("[Wavespeed] Poll status=%s task_id=%s", status, task_id)
+                if status == "completed":
+                    outputs = result.get("outputs", [])
+                    if outputs:
+                        return outputs[0]
+                    return None
 
-            if status in ("success", "succeeded", "completed", "finished"):
-                return self._extract_video_url(payload)
+                if status == "failed":
+                    logger.error("[Wavespeed] Job failed: %s", result.get("error"))
+                    return None
 
-            if status in ("failed", "error", "cancelled"):
-                logger.error("[Wavespeed] Task failed: %s", payload)
-                return None
+                # pending / processing → wait
+                time.sleep(interval)
 
-            time.sleep(self._poll_interval)
+            except Exception as exc:
+                logger.warning("[Wavespeed] Poll exception: %s — retrying in %ds", exc, interval)
+                time.sleep(interval)
 
-        logger.error("[Wavespeed] Poll timed out after %d seconds", self._poll_max_attempts * self._poll_interval)
+        logger.error("[Wavespeed] Polling timed out after %ds for task_id=%s", max_wait, task_id)
         return None
 
-    def _download(self, url: str) -> bytes:
-        resp = safe_get(session=self._session, url=url, headers={}, timeout=300)
+    def _download(self, video_url: str) -> bytes:
+        resp = requests.get(video_url, timeout=120)
+        resp.raise_for_status()
         return resp.content
-
-    def _extract_status(self, payload: Dict[str, Any]) -> str:
-        if not isinstance(payload, dict):
-            return ""
-        data = payload.get("data", payload)
-        if isinstance(data, dict):
-            return str(data.get("status", payload.get("status", ""))).lower()
-        return str(payload.get("status", "")).lower()
-
-    def _extract_video_url(self, payload: Dict[str, Any]) -> Optional[str]:
-        if not isinstance(payload, dict):
-            return None
-        data = payload.get("data", payload)
-        if not isinstance(data, dict):
-            return None
-
-        urls = data.get("urls", {}) or {}
-        return (
-            urls.get("get")
-            or urls.get("video")
-            or data.get("video_url")
-            or data.get("url")
-        )

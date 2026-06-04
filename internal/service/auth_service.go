@@ -16,8 +16,10 @@ type AuthService interface {
 	RefreshToken(refreshToken string) (*model.AuthResponse, error)
 	GetProfile(userID string) (*model.UserInfo, error)
 	ChangePassword(userID string, req *model.ChangePasswordRequest) error
+	UpdatePreferences(userID string, req *model.UpdatePreferencesRequest) error
 	DeleteAccount(userID string) error
 	RestoreAccount(refreshToken string) (*model.UserInfo, error)
+	GetAllUsers() ([]model.UserInfo, error)
 }
 
 type authService struct {
@@ -99,13 +101,17 @@ func (s *authService) GetProfile(userID string) (*model.UserInfo, error) {
 	}
 
 	return &model.UserInfo{
-		ID:        user.ID.String(),
-		Name:      user.Name,
-		Email:     user.Email,
-		Role:      user.Role,
-		Credits:   user.Credits,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		ID:            user.ID.String(),
+		Name:          user.Name,
+		Email:         user.Email,
+		Role:          user.Role,
+		Credits:       user.Credits,
+		EmailAlerts:   user.EmailAlerts,
+		Newsletter:    user.Newsletter,
+		PublicProfile: user.PublicProfile,
+		DataTraining:  user.DataTraining,
+		CreatedAt:     user.CreatedAt,
+		UpdatedAt:     user.UpdatedAt,
 	}, nil
 }
 
@@ -132,6 +138,13 @@ func (s *authService) ChangePassword(userID string, req *model.ChangePasswordReq
 		return errors.New("failed to update password")
 	}
 
+	return nil
+}
+
+func (s *authService) UpdatePreferences(userID string, req *model.UpdatePreferencesRequest) error {
+	if err := s.userRepo.UpdatePreferences(userID, req); err != nil {
+		return errors.New("failed to update preferences")
+	}
 	return nil
 }
 
@@ -179,6 +192,28 @@ func (s *authService) RestoreAccount(refreshToken string) (*model.UserInfo, erro
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}, nil
+}
+
+func (s *authService) GetAllUsers() ([]model.UserInfo, error) {
+	users, err := s.userRepo.FindAll()
+	if err != nil {
+		return nil, errors.New("failed to retrieve users")
+	}
+
+	var userInfos []model.UserInfo
+	for _, user := range users {
+		userInfos = append(userInfos, model.UserInfo{
+			ID:        user.ID.String(),
+			Name:      user.Name,
+			Email:     user.Email,
+			Role:      user.Role,
+			Credits:   user.Credits,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		})
+	}
+
+	return userInfos, nil
 }
 
 func (s *authService) generateTokenResponse(user *model.User) (*model.AuthResponse, error) {

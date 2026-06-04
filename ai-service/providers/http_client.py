@@ -1,6 +1,7 @@
 """
 Shared HTTP client dengan retry mechanism dan timeout.
-Ticket PM: LTX Client Setup — timeout dan retry diimplementasikan.
+Ticket PM: Client Setup — timeout dan retry diimplementasikan.
+Untuk memastikan backend stabil jika AI API provider delay atau fail.
 """
 
 from __future__ import annotations
@@ -137,7 +138,7 @@ def poll_until_done(
 ) -> Union[Dict[str, Any], NoReturn]:
     """
     Generic polling loop untuk async task.
-    Digunakan oleh Runway dan provider lain yang async.
+    Digunakan oleh provider async.
 
     Returns:
         Dict response dari API jika success.

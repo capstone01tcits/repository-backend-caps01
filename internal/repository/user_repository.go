@@ -16,9 +16,11 @@ type UserRepository interface {
 	UpdatePassword(id string, newPassword string) error
 	UpdateCredits(id string, credits int) error
 	DeductCredits(id string, amount int) error
+	UpdatePreferences(id string, req *model.UpdatePreferencesRequest) error
 	Delete(id string) error
 	Restore(id string) error
 	FindByIDIncludeDeleted(id string) (*model.User, error)
+	FindAll() ([]model.User, error)
 	Count() (int64, error)
 }
 
@@ -94,6 +96,30 @@ func (r *userRepository) DeductCredits(id string, amount int) error {
 	return nil
 }
 
+func (r *userRepository) UpdatePreferences(id string, req *model.UpdatePreferencesRequest) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	updates := map[string]interface{}{}
+	if req.EmailAlerts != nil {
+		updates["email_alerts"] = *req.EmailAlerts
+	}
+	if req.Newsletter != nil {
+		updates["newsletter"] = *req.Newsletter
+	}
+	if req.PublicProfile != nil {
+		updates["public_profile"] = *req.PublicProfile
+	}
+	if req.DataTraining != nil {
+		updates["data_training"] = *req.DataTraining
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+	return r.db.Model(&model.User{}).Where("id = ?", uid).Updates(updates).Error
+}
+
 func (r *userRepository) Delete(id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
@@ -123,6 +149,12 @@ func (r *userRepository) FindByIDIncludeDeleted(id string) (*model.User, error) 
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) FindAll() ([]model.User, error) {
+	var users []model.User
+	err := r.db.Find(&users).Error
+	return users, err
 }
 
 func (r *userRepository) Count() (int64, error) {

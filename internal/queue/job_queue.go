@@ -170,17 +170,20 @@ func (q *SimpleJobQueue) worker(ctx context.Context, workerID int) {
 			return
 
 		case <-ticker.C:
+			q.mu.Lock()
 			// Get pending jobs
 			jobs, err := q.Dequeue(ctx, 1)
 			if err != nil || len(jobs) == 0 {
+				q.mu.Unlock()
 				continue
 			}
 
 			job := jobs[0]
-			log.Printf("Worker %d processing job %s (type: %s)", workerID, job.ID, job.JobType)
-
-			// Mark as processing
+			// Mark as processing immediately while locked
 			q.MarkProcessing(ctx, job.ID.String())
+			q.mu.Unlock()
+
+			log.Printf("Worker %d processing job %s (type: %s)", workerID, job.ID, job.JobType)
 
 			// Process the job
 			if err := q.videoGenService.ProcessGenerationJob(ctx, job.ID); err != nil {
