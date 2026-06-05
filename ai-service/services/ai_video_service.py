@@ -162,15 +162,16 @@ class AIVideoService:
             }
 
         return {
-            "job_id": job.job_id,
-            "status": "done",
-            "video_url": job.video_url,
-            "prompt": job.prompt,
+            "job_id":        job.job_id,
+            "status":        "done",
+            "video_url":     job.video_url or "",
+            "thumbnail_url": getattr(job, "thumbnail_url", None) or "",
+            "prompt":        job.prompt,
             "meta": {
                 "provider": job.provider,
-                "model": job.model,
+                "model":    job.model,
                 "duration": job.duration,
-                "ratio": job.ratio,
+                "ratio":    job.ratio,
             },
         }
 
@@ -203,8 +204,19 @@ class AIVideoService:
             logger.error("[SERVICE] Job not found saat inference job_id=%s", job_id)
             return
 
-        # FIX: Ganti bare 'except Exception' dengan exception spesifik
-        # yang mungkin terjadi di inference pipeline
+        # TEST MODE: langsung mark done tanpa memanggil provider atau WaveSpeed.
+        # video_url dan thumbnail_url dikosongkan — video card tampil Ready tanpa file.
+        if os.getenv("MODE", "production").strip().lower() == "test":
+            job.mark_processing(provider="test-mode", model="test-mode")
+            self._store.update(job)
+            logger.info(
+                "[SERVICE][TEST MODE] Job instantly completed — no request sent to WaveSpeed. "
+                "job_id=%s prompt_preview=%.80s", job_id, prompt,
+            )
+            job.mark_done(video_url="", thumbnail_url=None)
+            self._store.update(job)
+            return
+
         try:
             request = VideoRequest(
                 instruction=task_type,

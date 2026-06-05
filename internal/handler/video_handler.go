@@ -153,16 +153,20 @@ func (h *VideoHandler) GetVideo(c *fiber.Ctx) error {
 	}
 
 	return utils.OK(c, "Video retrieved", map[string]interface{}{
-		"id":           video.ID.String(),
-		"title":        video.Title,
-		"status":       video.Status,
-		"video_url":    video.VideoURL,
-		"thumbnail_url": video.ThumbnailURL,
-		"duration":     video.Duration,
-		"section_type": video.SectionType,
-		"scene_index":  video.SceneIndex,
-		"created_at":   video.CreatedAt,
-		"updated_at":   video.UpdatedAt,
+		"id":                video.ID.String(),
+		"title":             video.Title,
+		"status":            video.Status,
+		"video_url":         video.VideoURL,
+		"thumbnail_url":     video.ThumbnailURL,
+		"duration":          video.Duration,
+		"section_type":      video.SectionType,
+		"scene_index":       video.SceneIndex,
+		"narrator_text":     video.NarratorText,
+		"visual_text":       video.VisualText,
+		"regenerate_prompt": video.RegeneratePrompt,
+		"regenerate_count":  video.RegenerateCount,
+		"created_at":        video.CreatedAt,
+		"updated_at":        video.UpdatedAt,
 	})
 }
 
@@ -282,14 +286,14 @@ func (h *VideoHandler) RegenerateScene(c *fiber.Ctx) error {
 	}
 	c.BodyParser(&body)
 
-	job, err := h.videoGenService.RegenerateScene(c.Context(), userUUID, sceneID, body.CustomPrompt)
+	job, newVideo, err := h.videoGenService.RegenerateScene(c.Context(), userUUID, sceneID, body.CustomPrompt)
 	if err != nil {
 		return utils.BadRequest(c, err.Error())
 	}
 
 	return utils.OK(c, "Scene regeneration started", map[string]interface{}{
-		"video_id": sceneID.String(),
-		"job_id":   job.ID.String(),
-		"status":   job.Status,
+		"new_video_id": newVideo.ID.String(),
+		"job_id":       job.ID.String(),
+		"status":       job.Status,
 	})
 }

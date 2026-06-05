@@ -21,8 +21,8 @@ type VideoGenerationService interface {
 	// Generate video from a storyboard — creates one job per scene (3 total)
 	GenerateVideo(ctx context.Context, userID, projectID, storyboardID uuid.UUID, req model.GenerateVideoRequest) ([]*model.GenerationJob, error)
 
-	// Regenerate a single scene video in-place
-	RegenerateScene(ctx context.Context, userID uuid.UUID, videoID uuid.UUID, customPrompt string) (*model.GenerationJob, error)
+	// Regenerate a single scene — creates a new version (new video + copies of sibling scenes)
+	RegenerateScene(ctx context.Context, userID uuid.UUID, videoID uuid.UUID, customPrompt string) (*model.GenerationJob, *model.Video, error)
 
 	// Get generation job status
 	GetJobStatus(ctx context.Context, jobID uuid.UUID) (*model.GenerationJob, error)
@@ -79,6 +79,20 @@ func NewVideoGenerationService(
 		storageService:  storageService,
 		providerFactory: &ai.ProviderFactory{},
 	}
+}
+
+// parseNarratorVisual mengurai section content JSON menjadi narasi dan visual.
+// Format: {"narration": "...", "visual": "..."}
+// Jika bukan JSON, seluruh konten dianggap sebagai narasi.
+func parseNarratorVisual(content string) (narration, visual string) {
+	var parsed struct {
+		Narration string `json:"narration"`
+		Visual    string `json:"visual"`
+	}
+	if err := json.Unmarshal([]byte(content), &parsed); err == nil {
+		return parsed.Narration, parsed.Visual
+	}
+	return content, ""
 }
 
 func creditMultiplierForMode(mode string) int {
@@ -164,6 +178,9 @@ func (s *videoGenerationService) GenerateVideo(ctx context.Context, userID, proj
 			sectionContent = section.Content
 		}
 
+		// Parse narasi & visual dari section content untuk disimpan per video
+		narratorText, visualText := parseNarratorVisual(sectionContent)
+
 		video := &model.Video{
 			UserID:       userID,
 			ProjectID:    projectID,
@@ -177,6 +194,8 @@ func (s *videoGenerationService) GenerateVideo(ctx context.Context, userID, proj
 			SectionType:  sectionType,
 			SceneIndex:   idx + 1,
 			VideoMode:    videoMode,
+			NarratorText: narratorText,
+			VisualText:   visualText,
 		}
 
 		if err := s.videoRepo.Create(video); err != nil {
@@ -238,36 +257,62 @@ func (s *videoGenerationService) GenerateVideo(ctx context.Context, userID, proj
 	return jobs, nil
 }
 
-func (s *videoGenerationService) RegenerateScene(ctx context.Context, userID uuid.UUID, videoID uuid.UUID, customPrompt string) (*model.GenerationJob, error) {
+func (s *videoGenerationService) RegenerateScene(ctx context.Context, userID uuid.UUID, videoID uuid.UUID, customPrompt string) (*model.GenerationJob, *model.Video, error) {
+	// 1. Validasi video target
 	video, err := s.videoRepo.FindByID(videoID.String())
 	if err != nil {
-		return nil, fmt.Errorf("video not found: %w", err)
+		return nil, nil, fmt.Errorf("video not found: %w", err)
 	}
-
 	if video.UserID != userID {
-		return nil, errors.New("unauthorized: video does not belong to user")
+		return nil, nil, errors.New("unauthorized: video does not belong to user")
 	}
-
 	switch video.Status {
 	case "pending", "processing", "stitching_video", "generating_assets":
-		return nil, errors.New("scene is already being processed")
+		return nil, nil, errors.New("scene is already being processed")
 	}
 
+	// 2. Cek kredit (hanya 1 scene yang di-regen)
 	multiplier := creditMultiplierForMode(video.VideoMode)
 	creditsRequired := video.Duration * multiplier
 	if creditsRequired == 0 {
 		creditsRequired = 6 * multiplier
 	}
-
 	credits, err := s.creditService.GetUserCredits(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get credits: %w", err)
+		return nil, nil, fmt.Errorf("failed to get credits: %w", err)
 	}
 	if credits < creditsRequired {
-		return nil, fmt.Errorf("insufficient credits: need %d, have %d", creditsRequired, credits)
+		return nil, nil, fmt.Errorf("insufficient credits: need %d, have %d", creditsRequired, credits)
 	}
 
-	// Get latest section content from storyboard
+	// 3. Cari sibling scenes dari versi yang sama (chunk of 3 by created_at ASC)
+	allVideos, _ := s.videoRepo.FindAllByStoryboardID(video.StoryboardID.String())
+	// FindAllByStoryboardID sudah sorted created_at ASC
+	var siblings []model.Video
+	for i := 0; i < len(allVideos); i += 3 {
+		end := i + 3
+		if end > len(allVideos) {
+			end = len(allVideos)
+		}
+		chunk := allVideos[i:end]
+		inChunk := false
+		for _, v := range chunk {
+			if v.ID == videoID {
+				inChunk = true
+				break
+			}
+		}
+		if inChunk {
+			for _, v := range chunk {
+				if v.ID != videoID {
+					siblings = append(siblings, v)
+				}
+			}
+			break
+		}
+	}
+
+	// 4. Ambil section content dari storyboard
 	storyboardSections, _ := s.storyboardRepo.FindSectionsByStoryboardID(video.StoryboardID.String())
 	var sectionContent string
 	for _, sec := range storyboardSections {
@@ -277,7 +322,7 @@ func (s *videoGenerationService) RegenerateScene(ctx context.Context, userID uui
 		}
 	}
 
-	// Get images from business brief for image-based modes
+	// 5. Ambil images untuk mode image-based
 	var startImage, endImage string
 	if video.VideoMode == "image-to-video" || video.VideoMode == "start-end-to-video" {
 		if bb, err := s.briefRepo.FindBusinessBriefByProjectID(video.ProjectID.String()); err == nil && bb != nil {
@@ -288,17 +333,67 @@ func (s *videoGenerationService) RegenerateScene(ctx context.Context, userID uui
 		}
 	}
 
-	// Reset video in-place
-	video.Status = "pending"
-	video.VideoURL = ""
-	video.ThumbnailURL = ""
-	video.ErrorMessage = ""
-	video.ExternalJobID = ""
-	video.RegenerateCount++
-	if err := s.videoRepo.Update(video); err != nil {
-		return nil, fmt.Errorf("failed to reset video status: %w", err)
+	// 6. Buat copy sibling scenes — gunakan konten storyboard TERKINI agar edit narasi tercermin
+	for _, sib := range siblings {
+		// Cari section storyboard yang sesuai dengan sibling ini
+		sibNarrator := sib.NarratorText
+		sibVisual := sib.VisualText
+		for _, sec := range storyboardSections {
+			if strings.EqualFold(sec.SectionType, sib.SectionType) {
+				sibNarrator, sibVisual = parseNarratorVisual(sec.Content)
+				break
+			}
+		}
+
+		sibCopy := &model.Video{
+			UserID:       userID,
+			ProjectID:    sib.ProjectID,
+			StoryboardID: sib.StoryboardID,
+			Title:        sib.Title,
+			Status:       "completed",
+			VideoURL:     sib.VideoURL,
+			ThumbnailURL: sib.ThumbnailURL,
+			Duration:     sib.Duration,
+			Resolution:   sib.Resolution,
+			Format:       sib.Format,
+			CreditsUsed:  0,
+			SectionType:  sib.SectionType,
+			SceneIndex:   sib.SceneIndex,
+			VideoMode:    sib.VideoMode,
+			NarratorText: sibNarrator,
+			VisualText:   sibVisual,
+		}
+		if sib.VideoURL == "" {
+			sibCopy.Status = sib.Status
+		}
+		s.videoRepo.Create(sibCopy)
 	}
 
+	// 7. Buat video baru (pending) untuk scene yang di-regen
+	newNarratorText, newVisualText := parseNarratorVisual(sectionContent)
+	newVideo := &model.Video{
+		UserID:           userID,
+		ProjectID:        video.ProjectID,
+		StoryboardID:     video.StoryboardID,
+		Title:            video.Title,
+		Status:           "pending",
+		Duration:         video.Duration,
+		Resolution:       video.Resolution,
+		Format:           video.Format,
+		CreditsUsed:      creditsRequired,
+		SectionType:      video.SectionType,
+		SceneIndex:       video.SceneIndex,
+		VideoMode:        video.VideoMode,
+		NarratorText:     newNarratorText,
+		VisualText:       newVisualText,
+		RegeneratePrompt: customPrompt,
+		RegenerateCount:  1,
+	}
+	if err := s.videoRepo.Create(newVideo); err != nil {
+		return nil, nil, fmt.Errorf("failed to create new video record: %w", err)
+	}
+
+	// 8. Buat job untuk video baru
 	promptData := map[string]interface{}{
 		"section_type":    video.SectionType,
 		"scene_index":     video.SceneIndex,
@@ -317,7 +412,7 @@ func (s *videoGenerationService) RegenerateScene(ctx context.Context, userID uui
 		UserID:          userID,
 		ProjectID:       video.ProjectID,
 		StoryboardID:    video.StoryboardID,
-		VideoID:         &video.ID,
+		VideoID:         &newVideo.ID,
 		JobType:         "regenerate_scene",
 		Status:          "queued",
 		Priority:        2,
@@ -330,15 +425,16 @@ func (s *videoGenerationService) RegenerateScene(ctx context.Context, userID uui
 		Prompt:          promptJSON,
 	}
 	if err := s.jobRepo.Create(ctx, job); err != nil {
-		return nil, fmt.Errorf("failed to create regeneration job: %w", err)
+		return nil, nil, fmt.Errorf("failed to create regeneration job: %w", err)
 	}
 
+	// 9. Potong kredit
 	deductReason := fmt.Sprintf("Regenerate Scene %d (%s)", video.SceneIndex, video.SectionType)
 	if err := s.creditService.DeductCredits(ctx, userID, creditsRequired, deductReason); err != nil {
-		return nil, fmt.Errorf("failed to deduct credits: %w", err)
+		return nil, nil, fmt.Errorf("failed to deduct credits: %w", err)
 	}
 
-	return job, nil
+	return job, newVideo, nil
 }
 
 func (s *videoGenerationService) GetJobStatus(ctx context.Context, jobID uuid.UUID) (*model.GenerationJob, error) {
@@ -537,23 +633,25 @@ func (s *videoGenerationService) PollJobStatus(ctx context.Context, jobID uuid.U
 		s.jobRepo.UpdateStatus(ctx, jobID, "stitching_video", "Menggabungkan video...")
 	}
 
-	if resp.Status == "completed" && resp.VideoURL != "" {
-		// Download & Upload to Storage
-		videoBytes, err := s.downloadVideoFromProvider(ctx, resp.VideoURL)
-		if err == nil {
-			videoFilename := fmt.Sprintf("video_%s.mp4", video.ID.String())
-			videoPath, uploadErr := s.storageService.UploadVideo(ctx, videoFilename, videoBytes)
-			if uploadErr == nil {
-				video.VideoURL = s.storageService.GetPublicURL("videos", videoPath)
-				video.FileSize = int64(len(videoBytes))
+	if resp.Status == "completed" {
+		// Download & upload ke storage hanya jika ada URL video
+		if resp.VideoURL != "" {
+			videoBytes, err := s.downloadVideoFromProvider(ctx, resp.VideoURL)
+			if err == nil {
+				videoFilename := fmt.Sprintf("video_%s.mp4", video.ID.String())
+				videoPath, uploadErr := s.storageService.UploadVideo(ctx, videoFilename, videoBytes)
+				if uploadErr == nil {
+					video.VideoURL = s.storageService.GetPublicURL("videos", videoPath)
+					video.FileSize = int64(len(videoBytes))
+				} else {
+					video.VideoURL = resp.VideoURL
+				}
 			} else {
 				video.VideoURL = resp.VideoURL
 			}
-		} else {
-			video.VideoURL = resp.VideoURL
 		}
 
-		// Thumbnail logic
+		// Thumbnail — hanya jika ada URL thumbnail
 		if resp.ThumbnailURL != "" {
 			thumbBytes, err := s.downloadVideoFromProvider(ctx, resp.ThumbnailURL)
 			if err == nil {
