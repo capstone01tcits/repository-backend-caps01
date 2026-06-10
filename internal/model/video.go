@@ -21,9 +21,16 @@ type Video struct {
 	Resolution      string         `gorm:"default:1080p" json:"resolution"`
 	FileSize        int64          `json:"file_size"`     // in bytes
 	CreditsUsed     int            `gorm:"default:1" json:"credits_used"`
-	RegenerateCount int            `gorm:"default:0" json:"regenerate_count"` // max 3
-	ErrorMessage    string         `gorm:"type:text" json:"error_message,omitempty"`
-	ExternalJobID   string         `json:"external_job_id,omitempty"` // job ID from provider (Wavespeed)
+	RegenerateCount  int            `gorm:"default:0" json:"regenerate_count"`
+	ErrorMessage     string         `gorm:"type:text" json:"error_message,omitempty"`
+	ExternalJobID    string         `json:"external_job_id,omitempty"`
+	SectionType      string         `gorm:"default:''" json:"section_type"`  // hook, value, cta
+	SceneIndex       int            `gorm:"default:0" json:"scene_index"`    // 1, 2, 3
+	VideoMode        string         `gorm:"default:'text-to-video'" json:"video_mode"`
+	// Konten narasi & visual yang dipakai saat generate — disimpan per video agar tiap versi independen
+	NarratorText     string         `gorm:"type:text" json:"narrator_text,omitempty"`
+	VisualText       string         `gorm:"type:text" json:"visual_text,omitempty"`
+	RegeneratePrompt string         `gorm:"type:text" json:"regenerate_prompt,omitempty"` // custom prompt yang dipakai saat regen
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`

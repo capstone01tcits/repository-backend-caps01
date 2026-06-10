@@ -112,7 +112,7 @@ func ConnectDB() *gorm.DB {
 		panic("Failed to connect to database: " + err.Error())
 	}
 
-	fmt.Println("✓ Database connected!")
+	fmt.Println("Database connected")
 	return db
 }
 

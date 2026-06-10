@@ -63,8 +63,24 @@ type GenerateVideoRequest struct {
 	ProjectID    string `json:"project_id" validate:"required"`
 	StoryboardID string `json:"storyboard_id" validate:"required"`
 	CustomPrompt string `json:"custom_prompt,omitempty"`
-	SceneCount   int    `json:"scene_count,omitempty"` // default 2-3
-	VideoDuration int   `json:"video_duration,omitempty"` // default 8-12
+	SceneCount   int    `json:"scene_count,omitempty"`
+	VideoDuration int   `json:"video_duration,omitempty"`
+
+	// Video mode — controls which WaveSpeed model is used
+	// "text-to-video" (default, x1 credits)
+	// "image-to-video" (x2 credits, requires StartImage)
+	// "start-end-to-video" (x3 credits, requires StartImage + EndImage)
+	VideoMode string `json:"video_mode,omitempty"`
+
+	// Image inputs (CDN URLs)
+	StartImage string `json:"start_image,omitempty"`
+	EndImage   string `json:"end_image,omitempty"`
+
+	// Generation controls
+	NegativePrompt string `json:"negative_prompt,omitempty"`
+	GenerateAudio  bool   `json:"generate_audio,omitempty"`
+	Seed           int    `json:"seed,omitempty"` // -1 = random
+	Resolution     string `json:"resolution,omitempty"` // "720p" | "1080p"
 }
 
 

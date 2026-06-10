@@ -89,13 +89,28 @@ class GenerateRequest(BaseModel):
         description="Jenis task: text_to_video | text_to_video_hq | image_to_video",
     )
 
+    # Video mode (menentukan model WaveSpeed yang dipakai)
+    video_mode: str = Field(default="text-to-video", description="text-to-video | image-to-video | start-end-to-video")
+
+    # Image inputs (CDN URLs)
+    start_image: str = Field(default="", description="URL gambar start frame (image-to-video / start-end-to-video)")
+    end_image: str = Field(default="", description="URL gambar end frame (start-end-to-video)")
+
+    # Generation controls
+    negative_prompt: str = Field(default="", description="Hal yang ingin dihindari dalam video")
+    generate_audio: bool = Field(default=False, description="Generate audio sinkron (text-to-video only)")
+    seed: int = Field(default=-1, description="-1 = random")
+    resolution: str = Field(default="480p", description="Resolusi output: 480p | 720p | 1080p")
+
     model_config = {
         "json_schema_extra": {
             "example": {
                 "prompt": "Cinematic video of Institut Teknologi Sepuluh Nopember Surabaya campus at golden hour, drone shot",
-                "duration": 10,
+                "duration": 6,
                 "ratio": "16:9",
-                "task_type": "text_to_video_hq",
+                "task_type": "veo3",
+                "resolution": "1080p",
+                "generate_audio": True,
             }
         }
     }
@@ -123,6 +138,13 @@ class Veo3Payload(BaseModel):
     model: str = Field(default="veo-3.1-lite")
     prompt: str = Field(..., description="Prompt lengkap dengan format SCENE")
     reference_images: List[str] = Field(default_factory=list)
+    video_mode: str = Field(default="text-to-video")
+    start_image: str = Field(default="")
+    end_image: str = Field(default="")
+    negative_prompt: str = Field(default="")
+    generate_audio: bool = Field(default=False)
+    seed: int = Field(default=-1)
+    resolution: str = Field(default="480p")
 
 @app.post("/generate", response_model=GenerateResponse, status_code=202)
 def generate_video(body: GenerateRequest):
@@ -136,6 +158,13 @@ def generate_video(body: GenerateRequest):
             duration=body.duration,
             ratio=body.ratio,
             task_type=body.task_type,
+            video_mode=body.video_mode,
+            start_image=body.start_image,
+            end_image=body.end_image,
+            negative_prompt=body.negative_prompt,
+            generate_audio=body.generate_audio,
+            seed=body.seed,
+            resolution=body.resolution,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -157,10 +186,17 @@ def generate_veo3(body: Veo3Payload):
         # Kita gunakan task_type 'veo3' agar router memilih Veo3Provider
         job = service.submit(
             prompt=body.prompt,
-            duration=15, # Default duration total untuk 3 scene
+            duration=15,
             ratio="16:9",
             task_type="veo3",
-            reference_images=body.reference_images
+            reference_images=body.reference_images,
+            video_mode=body.video_mode,
+            start_image=body.start_image,
+            end_image=body.end_image,
+            negative_prompt=body.negative_prompt,
+            generate_audio=body.generate_audio,
+            seed=body.seed,
+            resolution=body.resolution,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
