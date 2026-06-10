@@ -2,7 +2,7 @@ import os
 import time
 import logging
 import requests
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional, Tuple
 
 from .base import VideoProvider, VideoRequest, VideoResponse
 
