@@ -75,7 +75,7 @@ func Load() {
 		JWTRefreshSecret:      jwtRefreshSecret,
 		JWTRefreshExpireHours: getEnv("JWT_REFRESH_EXPIRE_HOURS", "168"),
 		AIServiceURL:          getEnv("AI_SERVICE_URL", "http://localhost:8000"),
-		CORSAllowOrigins:      getEnv("CORS_ALLOW_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000"),
+		CORSAllowOrigins:      getEnv("CORS_ALLOW_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,https://capstone-01-fe.vercel.app,https://sevimavidgen.online,https://www.sevimavidgen.online"),
 	}
 
 	// Validate JWT expire hours
