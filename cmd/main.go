@@ -14,6 +14,7 @@ import (
 	"Sevima-AI-Content-Creator/internal/service"
 
 	"github.com/gofiber/fiber/v2"
+	"strings"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -83,6 +84,27 @@ func main() {
 	// Global Middleware
 	app.Use(recover.New())
 	app.Use(logger.New())
+
+	// Custom middleware to set Access-Control-Allow-Origin dynamically
+	app.Use(func(c *fiber.Ctx) error {
+		origin := c.Get("Origin")
+		if origin != "" {
+			allowed := strings.Split(config.Cfg.CORSAllowOrigins, ",")
+			for _, a := range allowed {
+				if strings.TrimSpace(a) == origin {
+					c.Set("Access-Control-Allow-Origin", origin)
+					c.Set("Access-Control-Allow-Credentials", "true")
+					c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+					c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+					break
+				}
+			}
+		}
+		if c.Method() == "OPTIONS" {
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Next()
+	})
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: config.Cfg.CORSAllowOrigins,
