@@ -5,7 +5,6 @@
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "",
     "restartPolicyMaxRetries": 5,
     "healthchecks": {
       "readiness": {
