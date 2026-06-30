@@ -59,7 +59,7 @@ func Load() {
 	// Railway sets PORT env var, so check that first
 	appPort := getEnv("PORT", "")
 	if appPort == "" {
-		appPort = getEnv("APP_PORT", "5000")
+		appPort = getEnv("APP_PORT", "8080")
 	}
 
 	Cfg = Config{
