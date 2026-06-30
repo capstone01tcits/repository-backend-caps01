@@ -38,9 +38,6 @@ WORKDIR /app
 # Copy compiled binary from builder
 COPY --from=builder /app/main .
 
-# Copy default environment template
-COPY --from=builder /app/.env.example .env
-
 # Documentation:
 # - Railway sets PORT env var → app reads it in config.go
 # - If PORT not set, defaults to APP_PORT (5000)
