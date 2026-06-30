@@ -1,124 +1,208 @@
-package config
+package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"os"
-	"strconv"
 
-	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
-	"gorm.io/gorm/schema"
+	"Sevima-AI-Content-Creator/config"
+	"Sevima-AI-Content-Creator/internal/handler"
+	"Sevima-AI-Content-Creator/internal/middleware"
+	"Sevima-AI-Content-Creator/internal/model"
+	"Sevima-AI-Content-Creator/internal/queue"
+	"Sevima-AI-Content-Creator/internal/repository"
+	"Sevima-AI-Content-Creator/internal/service"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
-type Config struct {
-	AppPort               string
-	AppEnv                string
-	DBHost                string
-	DBPort                string
-	DBUser                string
-	DBPassword            string
-	DBName                string
-	JWTSecret             string
-	JWTExpireHours        string
-	JWTRefreshSecret      string
-	JWTRefreshExpireHours string
-	AIServiceURL          string
-	CORSAllowOrigins      string
-}
+func main() {
+	// Load config
+	config.Load()
 
-var Cfg Config
+	// Connect database
+	db := config.ConnectDB()
 
-func Load() {
-	_ = godotenv.Load()
-
-	appEnv := getEnv("APP_ENV", "development")
-	jwtSecret := getEnv("JWT_SECRET", "")
-	jwtRefreshSecret := getEnv("JWT_REFRESH_SECRET", "")
-
-	if jwtSecret == "" {
-		if appEnv == "production" {
-			log.Fatal("ERROR: JWT_SECRET must be set in production environment. Please set JWT_SECRET in .env")
-		}
-		jwtSecret = "dev-secret-change-in-production"
-		log.Println("WARNING: Using default JWT secret. Set JWT_SECRET in .env for production")
+	// Auto migrate
+	fmt.Println("Running database migrations...")
+	if err := db.AutoMigrate(
+		&model.User{},
+		&model.Project{},
+		&model.BusinessBrief{},
+		&model.CreativeBrief{},
+		&model.Storyboard{},
+		&model.StoryboardSection{},
+		&model.Video{},
+		&model.GenerationJob{},
+	); err != nil {
+		log.Fatal("Migration failed:", err)
 	}
+	fmt.Println("Database migration completed successfully!")
 
-	if jwtRefreshSecret == "" {
-		if appEnv == "production" {
-			log.Fatal("ERROR: JWT_REFRESH_SECRET must be set in production environment. Please set JWT_REFRESH_SECRET in .env")
-		}
-		jwtRefreshSecret = "dev-refresh-secret-change-in-production"
-		if appEnv != "production" {
-			log.Println("WARNING: Using default JWT refresh secret. Set JWT_REFRESH_SECRET in .env for production")
-		}
-	}
+	// Init repositories
+	userRepo := repository.NewUserRepository(db)
+	projectRepo := repository.NewProjectRepository(db)
+	briefRepo := repository.NewBriefRepository(db)
+	storyboardRepo := repository.NewStoryboardRepository(db)
+	jobRepo := repository.NewGenerationJobRepository(db)
+	videoRepo := repository.NewVideoRepository(db)
 
-	// Railway sets PORT env var, so check that first
-	appPort := getEnv("PORT", "")
-	if appPort == "" {
-		appPort = getEnv("APP_PORT", "5000")
-	}
+	// Init services
+	authSvc := service.NewAuthService(userRepo)
+	projectSvc := service.NewProjectService(projectRepo)
+	storageSvc := service.NewStorageService()
+	storyboardSvc := service.NewStoryboardService(storyboardRepo, projectRepo, briefRepo)
+	briefSvc := service.NewBriefService(briefRepo, projectRepo, storyboardSvc, storageSvc)
+	creditSvc := service.NewCreditService(userRepo)
+	videoGenSvc := service.NewVideoGenerationService(jobRepo, videoRepo, projectRepo, briefRepo, storyboardRepo, creditSvc, storageSvc)
 
-	Cfg = Config{
-		AppPort:               appPort,
-		AppEnv:                appEnv,
-		DBHost:                getEnv("DB_HOST", "localhost"),
-		DBPort:                getEnv("DB_PORT", "5432"),
-		DBUser:                getEnv("DB_USER", "postgres"),
-		DBPassword:            getEnv("DB_PASSWORD", ""),
-		DBName:                getEnv("DB_NAME", "go_auth"),
-		JWTSecret:             jwtSecret,
-		JWTExpireHours:        getEnv("JWT_EXPIRE_HOURS", "24"),
-		JWTRefreshSecret:      jwtRefreshSecret,
-		JWTRefreshExpireHours: getEnv("JWT_REFRESH_EXPIRE_HOURS", "168"),
-		AIServiceURL:          getEnv("AI_SERVICE_URL", "http://localhost:8000"),
-		CORSAllowOrigins:      getEnv("CORS_ALLOW_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,https://capstone-01-fe.vercel.app,https://sevimavidgen.online,https://www.sevimavidgen.online"),
-	}
+	// Init handlers
+	authHandler := handler.NewAuthHandler(authSvc)
+	projectHandler := handler.NewProjectHandler(projectSvc)
+	briefHandler := handler.NewBriefHandler(briefSvc)
+	storyboardHandler := handler.NewStoryboardHandler(storyboardSvc, videoGenSvc)
+	videoHandler := handler.NewVideoHandler(videoGenSvc, storageSvc)
+	creditHandler := handler.NewCreditHandler(creditSvc)
 
-	// Validate JWT expire hours
-	if _, err := strconv.Atoi(Cfg.JWTExpireHours); err != nil {
-		log.Fatal("ERROR: JWT_EXPIRE_HOURS must be a valid integer")
-	}
-	if _, err := strconv.Atoi(Cfg.JWTRefreshExpireHours); err != nil {
-		log.Fatal("ERROR: JWT_REFRESH_EXPIRE_HOURS must be a valid integer")
-	}
-}
-
-func ConnectDB() *gorm.DB {
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
-		Cfg.DBHost, Cfg.DBUser, Cfg.DBPassword, Cfg.DBName, Cfg.DBPort,
-	)
-
-	logLevel := logger.Silent
-	if Cfg.AppEnv == "development" {
-		logLevel = logger.Info
-	}
-
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  dsn,
-		PreferSimpleProtocol: true, // disables implicit prepared statement usage
-	}), &gorm.Config{
-		Logger:                                   logger.Default.LogMode(logLevel),
-		DisableForeignKeyConstraintWhenMigrating: true,
-		NamingStrategy: schema.NamingStrategy{
-			SingularTable: false,
-		},
+	// Init Fiber
+	app := fiber.New(fiber.Config{
+		AppName: "Sevima AI Video Gen API v1.0",
 	})
-	if err != nil {
-		panic("Failed to connect to database: " + err.Error())
-	}
 
-	fmt.Println("Database connected")
-	return db
-}
+	// Global Middleware
+	// app.Use(recover.New())
+	// app.Use(logger.New())
+	// app.Use(cors.New(cors.Config{
+	// 	AllowOrigins: "*",
+	// 	AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+	// 	AllowMethods: "GET, POST, PUT, DELETE",
+	// }))
+	// Global Middleware
+	app.Use(recover.New())
+	app.Use(logger.New())
 
-func getEnv(key, fallback string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
-	return fallback
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: config.Cfg.CORSAllowOrigins,
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowCredentials: true,
+		ExposeHeaders: "Content-Length",
+		MaxAge: 86400,
+	}))
+
+	app.Options("/*", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusNoContent)
+	})
+
+	// ══════════════════════════════════════════════════════════════════════════
+	// HEALTH
+	// GET /health
+	// ══════════════════════════════════════════════════════════════════════════
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "ok", "service": "sevima-ai-video-gen"})
+	})
+
+	api := app.Group("/api")
+
+	// ══════════════════════════════════════════════════════════════════════════
+	// AUTH
+	// POST   /api/auth/register
+	// POST   /api/auth/login
+	// POST   /api/auth/refresh
+	// GET    /api/auth/me              [protected]
+	// POST   /api/auth/change-password [protected]
+	// DELETE /api/auth/account         [protected]
+	// ══════════════════════════════════════════════════════════════════════════
+	auth := api.Group("/auth")
+	auth.Post("/register", authHandler.Register)
+	auth.Post("/login", authHandler.Login)
+	auth.Post("/refresh", authHandler.RefreshToken)
+	auth.Get("/me", middleware.Protected(), authHandler.GetProfile)
+	auth.Put("/preferences", middleware.Protected(), authHandler.UpdatePreferences)
+	auth.Post("/change-password", middleware.Protected(), authHandler.ChangePassword)
+	auth.Delete("/account", middleware.Protected(), authHandler.DeleteAccount)
+
+	// ══════════════════════════════════════════════════════════════════════════
+	// PROJECTS
+	// POST /api/projects/initialize    — wizard: project + briefs + storyboard
+	// GET  /api/projects               — list user projects
+	// GET  /api/projects/:id           — get single project
+	// DELETE /api/projects/:id         — soft delete project
+	// POST /api/projects/:id/restore   — restore deleted project
+	// ══════════════════════════════════════════════════════════════════════════
+	projects := api.Group("/projects", middleware.Protected())
+	projects.Post("/initialize", briefHandler.CreateProjectFromFE)
+	projects.Get("/", projectHandler.GetProjects)
+	projects.Get("/:id", projectHandler.GetProject)
+	projects.Put("/:id", projectHandler.UpdateProject)
+	projects.Delete("/:id", projectHandler.DeleteProject)
+	projects.Post("/:id/restore", projectHandler.RestoreProject)
+
+	// ══════════════════════════════════════════════════════════════════════════
+	// STORYBOARD
+	// POST /api/storyboard/create
+	// GET  /api/storyboard/detail/:storyboard_id
+	// GET  /api/storyboard/:project_id
+	// GET  /api/storyboard/:storyboard_id/sections
+	// PUT  /api/storyboard/:storyboard_id
+	// DELETE /api/storyboard/:storyboard_id
+	// POST /api/storyboard/:storyboard_id/restore
+	// ══════════════════════════════════════════════════════════════════════════
+	storyboard := api.Group("/storyboard", middleware.Protected())
+	storyboard.Post("/create", storyboardHandler.CreateManualStoryboard)
+	storyboard.Get("/detail/:storyboard_id", storyboardHandler.GetStoryboard)
+	storyboard.Get("/:storyboard_id/sections", storyboardHandler.GetStoryboardSections)
+	storyboard.Get("/:project_id", storyboardHandler.GetStoryboardByProject)
+	storyboard.Put("/:storyboard_id", storyboardHandler.UpdateStoryboard)
+	storyboard.Delete("/:storyboard_id", storyboardHandler.DeleteStoryboard)
+	storyboard.Post("/:storyboard_id/restore", storyboardHandler.RestoreStoryboard)
+
+	// ══════════════════════════════════════════════════════════════════════════
+	// VIDEO — AI Generation Pipeline
+	// POST /api/videos/generate
+	// GET  /api/videos/storyboard/:storyboard_id   — find variant IDs after generation
+	// GET  /api/videos/download/:id                — get download URL
+	// POST /api/videos/:variantId/regenerate        — regenerate a variant
+	// POST /api/videos/scene/:sceneId/regenerate   — regenerate a single scene
+	// GET  /api/videos/:id                         — get variant status (LAST, wildcard)
+	// ══════════════════════════════════════════════════════════════════════════
+	videos := api.Group("/videos", middleware.Protected())
+	videos.Post("/generate", videoHandler.GenerateVideo)
+	videos.Get("/", videoHandler.ListVideos)
+	videos.Get("/storyboard/:storyboard_id", videoHandler.GetVideosByStoryboard)
+	videos.Get("/download/:id", videoHandler.DownloadVideo)
+	videos.Get("/preview/:id", videoHandler.PreviewVideo)
+	videos.Post("/scene/:sceneId/regenerate", videoHandler.RegenerateScene)
+	videos.Post("/:variantId/regenerate", videoHandler.RegenerateVideoVariant)
+	videos.Get("/:id", videoHandler.GetVideo) // wildcard — must be last
+
+	// ══════════════════════════════════════════════════════════════════════════
+	// CREDITS
+	// GET  /api/credits          — get my balance
+	// POST /api/admin/credits    — admin: top-up user credits
+	// ══════════════════════════════════════════════════════════════════════════
+	credits := api.Group("/credits", middleware.Protected())
+	credits.Get("/", creditHandler.GetMyCredits)
+
+	admin := api.Group("/admin", middleware.Protected(), middleware.RequireRole("admin"))
+	admin.Get("/users", authHandler.GetAllUsers)
+	admin.Post("/credits", creditHandler.AddCredits)
+
+	// ══════════════════════════════════════════════════════════════════════════
+	// JOB QUEUE — async video generation worker
+	// ══════════════════════════════════════════════════════════════════════════
+	jobQueue := queue.NewJobQueue(jobRepo, videoGenSvc)
+	go func() {
+		if err := jobQueue.Start(context.Background(), 3); err != nil {
+			log.Printf("Job queue start error: %v", err)
+		}
+	}()
+
+	// Start server
+	addr := fmt.Sprintf(":%s", config.Cfg.AppPort)
+	fmt.Printf("Sevima AI Video Gen API running on http://localhost%s\n", addr)
+	log.Fatal(app.Listen(addr))
 }
