@@ -37,6 +37,7 @@ WORKDIR /app
 
 # Copy compiled binary from builder
 COPY --from=builder /app/main .
+RUN chmod +x /app/main
 
 # Documentation:
 # - Railway sets PORT env var → app reads it in config.go
